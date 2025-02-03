@@ -4,9 +4,9 @@
   "version": "1.0",
   "description": "Scrapes emails from LinkedIn profiles, drafts outreach emails via Gmail API, and uses AI to generate messages.",
   "icons": {
-    "16": "assets/icon.png",
-    "48": "assets/icon.png",
-    "128": "assets/icon.png"
+    "16": "assets/logo.png",
+    "48": "assets/logo.png",
+    "128": "assets/logo.png"
   },
   "permissions": [
     "activeTab",
@@ -33,8 +33,8 @@
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
-      "16": "assets/icon.png",
-      "48": "assets/icon.png"
+      "16": "assets/logo.png",
+      "48": "assets/logo.png"
     }
   }
 }
