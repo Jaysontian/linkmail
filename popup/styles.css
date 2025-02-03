@@ -1,0 +1,42 @@
+/* popup/styles.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 10px;
+  padding: 0;
+  background: #f9f9f9;
+}
+
+h1, h2 {
+  text-align: center;
+}
+
+#emailsSection, #composeSection {
+  margin-bottom: 15px;
+}
+
+#emailList {
+  list-style: none;
+  padding: 0;
+  max-height: 100px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+#emailList li {
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+#emailBody {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  width: 48%;
+  padding: 10px;
+  margin: 2%;
+  font-size: 14px;
+  cursor: pointer;
+}
