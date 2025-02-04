@@ -1,9 +1,10 @@
 /* popup/styles.css */
-body {
-  font-family: Arial, sans-serif;
-  margin: 10px;
+html, body {
+  margin: 0;
   padding: 0;
-  background: #f9f9f9;
+  width: 300px; /* Set your desired fixed width */
+  height: fit-content; /* Set your desired fixed height */
+  overflow: hidden;
 }
 
 h1, h2 {
