@@ -17,7 +17,21 @@ document.addEventListener("DOMContentLoaded", function() {
     logoutButton.addEventListener('click', signOut);
   }
   if (composeButton) {
-    composeButton.addEventListener('click', () => {
+    composeButton.addEventListener('click', async () => {
+      // Query for the active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // Only proceed with email search if we're on a LinkedIn page
+      if (tab.url.includes('linkedin.com')) {
+        chrome.tabs.sendMessage(tab.id, { action: "findEmail" }, response => {
+          if (response.email) {
+            document.getElementById('recipientEmail').value = response.email;
+          } else if (response.error) {
+            alert(response.error);
+          }
+        });
+      }
+      
       composeForm.style.display = 'block';
       composeButton.style.display = 'none';
     });

@@ -11,7 +11,8 @@
   "permissions": [
     "identity",
     "identity.email",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://gmail.googleapis.com/*",
