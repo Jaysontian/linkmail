@@ -1,22 +1,28 @@
 {
   "manifest_version": 3,
-  "name": "LinkedIn Email Scraper & Outreach",
+  "name": "Your Extension Name",
   "version": "1.0",
-  "description": "Scrapes emails from LinkedIn profiles, drafts outreach emails via Gmail API, and uses AI to generate messages.",
+  "description": "Your extension description",
   "icons": {
     "16": "assets/logo.png",
     "48": "assets/logo.png",
     "128": "assets/logo.png"
   },
   "permissions": [
-    "activeTab",
-    "scripting",
+    "identity",
+    "identity.email",
     "storage"
   ],
   "host_permissions": [
-    "https://www.linkedin.com/*",
-    "https://mail.google.com/*"
+    "https://gmail.googleapis.com/*",
+    "https://www.googleapis.com/*"
   ],
+  "oauth2": {
+    "client_id": "632205525374-umvqu1g1u4cp632kvbv30j3699fkpnoj.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/gmail.modify"
+    ]
+  },
   "background": {
     "service_worker": "background.js"
   },

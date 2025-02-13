@@ -1,5 +1,4 @@
 
-
 // background.js
 chrome.runtime.onInstalled.addListener(() => {
   console.log("LinkedIn Email Scraper Extension installed.");
