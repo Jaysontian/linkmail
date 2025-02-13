@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Your Extension Name",
+  "name": "LinkMail",
   "version": "1.0",
-  "description": "Your extension description",
+  "description": "Email Client for LinkedIn",
   "icons": {
     "16": "assets/logo.png",
     "48": "assets/logo.png",
