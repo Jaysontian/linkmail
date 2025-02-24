@@ -1,0 +1,149 @@
+<!-- template.html -->
+
+
+<div class="linkmail-container">
+    <div id="linkmail-splash">
+        <h2 id="title" class="linkmail-header"></h2>
+        <div class="linkmail-prompt">
+            <h1>☕</h1>
+            <div>
+                <h2>Coffee Chat</h2>
+                <p>Send a friendly request to chat with this person.</p>
+            </div>
+        </div>
+        <br>
+        <div class="linkmail-prompt">
+            <h1>💼</h1>
+            <div>
+                <h2>Job Application</h2>
+                <p>Craft a cordial and professional email to a recruiter or manager.</p>
+            </div>
+        </div>
+        <br>
+        <button id="generateButton" class="linkmail-button">Generate</button>
+    </div>
+
+  <div id="linkmail-editor" style="display: none;">
+    <input type="email" id="recipientEmailInput" class="linkmail-input" placeholder="Recipient Email">
+    <input id="emailSubject" class="linkmail-input linkmail-subject" placeholder="Empty Subject">
+    <textarea id="emailResult" class="linkmail-textarea" id="auto-resize-textarea"></textarea>
+    <div class="linkmail-button-group">
+        <button id="copyButton" class="linkmail-button linkmail-copy-button">Copy to Clipboard</button>
+        <button id="sendGmailButton" class="linkmail-button linkmail-send-button">Send via Gmail</button>
+    </div>
+  </div>
+
+  <div id="linkmail-success" style="display:none;">
+    <h2 class="linkmail-header">Email sent successfully!</h2>
+    <a href="https://mail.google.com/mail/u/0/#sent" target="_blank" class="linkmail-button">Check in Gmail</a>
+  </div>
+  
+</div>
+
+<style>
+    #linkmail-splash {
+        display:flex;
+        flex-direction: column;
+        justify-items: center;
+        align-items: center;
+        justify-content: space-around;
+    }
+
+
+    .linkmail-prompt{
+        background-color:white;
+        display:flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction:row;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius:8px;
+        padding:12px 8px;
+        cursor:pointer;
+        box-shadow: 0px 0px 2px 2px rgba(0, 0, 0, 0.04);
+    }
+    .linkmail-prompt h1{
+        font-size:20pt;
+        width: fit-content;
+        padding:2px 8px;
+        margin-right:4px;
+    }
+    .linkmail-prompt h2{
+        font-size:12pt;
+        font-weight:600;
+        color:rgba(0, 0, 0, 0.65);
+    }
+    .linkmail-prompt p {
+        font-size:9.5pt;
+        color:rgba(128, 128, 128, 0.6);
+        line-height:1.2;
+        margin-top:4px;
+    }
+
+    #generateButton {
+        margin: 0px auto;
+    }
+
+    .linkmail-header {
+        font-size:14pt;
+        font-weight:600;
+        text-align: center;
+        margin: 16px 0px;
+    }
+
+    .linkmail-container {
+        background-color:white;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        padding:24px 12px;
+        margin-bottom:16px;
+        border-radius:8px;
+    }
+
+    .linkmail-button {
+        background-color:rgb(24, 170, 255);
+        color:white !important;
+        text-decoration:none;
+        padding: 6px 16px;
+        border-radius:8px;
+        font-size:11pt;
+        margin: 8px 0px;
+    }
+
+    .linkmail-input {
+        font-size:11pt;
+    }
+
+    .linkmail-subject, .linkmail-subject:focus, .linkmail-subject:active, .linkmail-subject:hover {
+        border:0px solid rgba(255, 255, 255, 0);
+        outline:none;
+        box-shadow: none;
+        font-size:12.5pt;
+        font-weight:600;
+        padding:4px;
+        background-color:white;
+        margin:8px 0px;
+        width:100%;
+    }
+
+    .linkmail-subject:hover{
+        background-color:rgba(0, 0, 0, 0.05);
+    }
+
+    .linkmail-textarea {
+        border:0px solid rgba(255, 255, 255, 0);
+        padding:4px;
+        outline:none;
+        box-shadow: none;
+        font-size:11pt;
+        resize: none;
+        overflow: hidden;
+        min-height: 80px;
+        width: 100%;
+        resize: none;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+
+
+</style>

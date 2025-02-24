@@ -78,5 +78,38 @@ window.GmailManager = {
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
+  },
+  
+  async getUserProfile() {
+    try {
+      if (!this.currentToken) {
+        await this.getAuthToken();
+      }
+
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.currentToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to fetch user profile');
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error.message.includes('401') || error.message.includes('invalid_token')) {
+        // Token expired or invalid, try to get a new one
+        this.currentToken = null;
+        await this.getAuthToken();
+        // Retry the fetch once
+        return this.getUserProfile();
+      }
+      throw error;
+    }
   }
+
 };

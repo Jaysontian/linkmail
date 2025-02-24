@@ -1,5 +1,13 @@
 window.UIManager = {
   elements: {},
+  userData: null,
+
+  async loadHTML() {
+    const url = chrome.runtime.getURL('/content/linkedin-div.html');
+    const response = await fetch(url);
+    const html = await response.text();
+    return html;
+  },
 
   async populateForm() {
     const email = await EmailFinder.findLinkedInEmail();
@@ -15,44 +23,26 @@ window.UIManager = {
     }
   },
 
-  createUI() {
-    const injectedDiv = document.createElement('div');
-    const nameElement = document.createElement('p');
-    nameElement.id = 'profileName';
-    nameElement.textContent = `Generate an outreach email to ${document.querySelector('h1')?.innerText || ''} with AI instantly.`;
+  async createUI() {
+    const templateHtml = await this.loadHTML();
 
-    injectedDiv.innerHTML = `
-    <input type="email" id="recipientEmailInput" placeholder="Recipient Email" style="width: 90%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
-    <button id="generateButton" style='background-color: rgb(0, 106, 255); margin-top:8px; border-radius: 16px; color: white; padding: 8px 16px; border: none;'>Generate Email</button>
-    <div id="loadingIndicator" style="display: none; margin-top: 10px;">
-        Generating your email...
-    </div>
-    <input id="emailSubject" placeholder="Outreach Request" style="width: 90%; height: fit-content; margin-top: 16px; padding: 12px; border-radius: 8px; border: 1px solid #ccc; display: none;"></input>
-    <textarea id="emailResult" style="width: 100%; height: 250px; margin-top: 16px; padding: 12px; border-radius: 8px; border: 1px solid #ccc; display: none;"></textarea>
-    <div style="display: flex; gap: 8px; margin-top: 8px;">
-        <button id="copyButton" style='background-color: #28a745; border-radius: 16px; color: white; padding: 8px 16px; border: none; display: none;'>Copy to Clipboard</button>
-        <button id="sendGmailButton" style='background-color: #dc3545; border-radius: 16px; color: white; padding: 8px 16px; border: none; display: none;'>Send via Gmail</button>
-    </div>
-    `;
+    // Create a temporary container, inject styles
+    const temp = document.createElement('div');
+    temp.innerHTML = templateHtml;
+    const styleElement = temp.querySelector('style');
+    if (styleElement) {
+        document.head.appendChild(styleElement);
+    }
+    
+    // Get the first element (our container)
+    const injectedDiv = temp.firstElementChild;
+    
+    // Set the recipient name
+    const nameElement = injectedDiv.querySelector('#title');
+    const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
+    nameElement.textContent = `Draft an email to ${firstName}`;
 
-
-    injectedDiv.prepend(nameElement);
-
-    Object.assign(injectedDiv.style, {
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      textAlign: 'center',
-      alignItems: 'center',
-      boxShadow: '0 0 10px rgba(0,0,0,0.15)',
-      padding: '16px',
-      minHeight: '300px',
-      borderRadius: '8px',
-      backgroundColor: 'white',
-      marginBottom: '20px',
-    });
-
+    // Insert into the page
     const asideElement = document.querySelector('aside.scaffold-layout__aside');
     if (asideElement) {
       asideElement.prepend(injectedDiv);
@@ -60,6 +50,7 @@ window.UIManager = {
       console.error('Target aside element not found.');
     }
 
+    // Store references to elements
     this.elements = {
       generateButton: injectedDiv.querySelector('#generateButton'),
       loadingIndicator: injectedDiv.querySelector('#loadingIndicator'),
@@ -68,6 +59,7 @@ window.UIManager = {
       copyButton: injectedDiv.querySelector('#copyButton'),
       sendGmailButton: injectedDiv.querySelector('#sendGmailButton')
     };
+
   },
 
   setupEventListeners() {
@@ -75,37 +67,51 @@ window.UIManager = {
     // GENERATE BUTTON UI
     this.elements.generateButton.addEventListener('click', async () => {
       this.elements.generateButton.disabled = true;
-      this.elements.loadingIndicator.style.display = 'block';
-      this.elements.emailResult.style.display = 'none';
-      this.elements.copyButton.style.display = 'none';
+      this.elements.generateButton.innerText = "Generating...";
+      // this.elements.loadingIndicator.style.display = 'block';
+      // this.elements.emailResult.style.display = 'none';
+      // this.elements.copyButton.style.display = 'none';
+
+      function adjustHeight(element) {
+        element.style.height = 'auto';
+        element.style.height = element.scrollHeight + 'px';
+      }
+      // Make textarea autoresizable
+      emailResult.addEventListener('input', function() {adjustHeight(this);});
+
 
       try {
         const profileData = await ProfileScraper.scrapeProfileData();
-        
         const recipientEmail = document.getElementById('recipientEmailInput').value;
         if (recipientEmail) {
           profileData.email = recipientEmail;
         }
         
         const response = await ProfileScraper.generateColdEmail(profileData);
+
+        console.log(response);
+
+        document.querySelector('#linkmail-splash').style.display = "none";
+        document.querySelector('#linkmail-editor').style.display = "block";
         
         if (response?.email) {
-          this.elements.emailResult.value = response.email;
-          this.elements.emailResult.style.display = 'block';
-          this.elements.copyButton.style.display = 'block';
-          this.elements.emailSubject.style.display = 'block';
-          this.elements.sendGmailButton.style.display = 'block';
+          let emailContent = response.email;
+          if (this.userData && this.userData.name) {
+            emailContent = emailContent.replace('[Your Name]', this.userData.name);
+          }
+
+          this.elements.emailResult.value = emailContent;
+          this.elements.emailSubject.value = response.subject;
+          
+          adjustHeight(this.elements.emailResult);
         } else {
           this.elements.emailResult.value = "Failed to generate email. Please try again.";
-          this.elements.emailResult.style.display = 'block';
         }
       } catch (error) {
         console.error('Error:', error);
         this.elements.emailResult.value = "An error occurred while generating the email.";
-        this.elements.emailResult.style.display = 'block';
       } finally {
         this.elements.generateButton.disabled = false;
-        this.elements.loadingIndicator.style.display = 'none';
       }
     });
 
@@ -137,7 +143,7 @@ window.UIManager = {
 
         await GmailManager.sendEmail(email, subject, emailContent);
         
-        alert('Email sent successfully!');
+        //alert('Email sent successfully!');
         
         // Clear the form
         this.elements.emailResult.value = '';
@@ -150,12 +156,22 @@ window.UIManager = {
       } finally {
         this.elements.sendGmailButton.disabled = false;
         this.elements.sendGmailButton.textContent = 'Send via Gmail';
+
+        document.querySelector('#linkmail-editor').style.display = "none";
+        document.querySelector('#linkmail-success').style.display = "block";
       }
     });
   },
 
-  init() {
-    this.createUI();
+  async init() {
+    const profile = await GmailManager.getUserProfile();
+    this.userData = {
+      email: profile.emailAddress,
+      // Extract name from email or fetch it from People API if needed
+      name: profile.emailAddress.split('@')[0] // Basic fallback
+    };
+
+    await this.createUI();
     this.setupEventListeners();
   }
 };

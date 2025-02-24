@@ -14,6 +14,10 @@
     "storage",
     "tabs"
   ],
+  "web_accessible_resources": [{
+    "resources": ["content/linkedin-div.html"],
+    "matches": ["https://*.linkedin.com/*"]
+  }],
   "host_permissions": [
     "https://*.googleapis.com/*",
     "https://gmail.googleapis.com/*",

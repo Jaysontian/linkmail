@@ -1,11 +1,11 @@
 const BACKEND_URL = 'http://localhost:3000';
 
-(function() {
+(async function() {
   console.log("Linkmail Content Script running");
   
   // Initialize all modules
   URLObserver.init();
-  UIManager.init();
+  await UIManager.init();
   
   // Initial email search
   setTimeout(() => {
