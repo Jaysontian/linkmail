@@ -39,8 +39,14 @@ const BACKEND_URL = 'http://localhost:3000';
   async function scrapeProfileData() {
     const email = await findLinkedInEmail(); // Get email first
     const recipientInput = document.getElementById('recipientEmailInput');
+    const nameElement = document.getElementById('profileName');
+    
     if (recipientInput && email) {
       recipientInput.value = email;
+    }
+    
+    if (nameElement) {
+      nameElement.textContent = `Generate an outreach email to ${document.querySelector('h1')?.innerText || ''} with AI instantly.`;
     }
     
     return {
@@ -77,8 +83,11 @@ const BACKEND_URL = 'http://localhost:3000';
 
   // Create the injected div with a textarea
   const injectedDiv = document.createElement('div');
+  const nameElement = document.createElement('p');
+  nameElement.id = 'profileName';
+  nameElement.textContent = `Generate an outreach email to ${document.querySelector('h1')?.innerText || ''} with AI instantly.`;
+  
   injectedDiv.innerHTML = `
-    <p>Generate an outreach email to ${document.querySelector('h1')?.innerText} with AI instantly.</p>
     <input type="email" id="recipientEmailInput" placeholder="Recipient Email" style="width: 90%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
     <button id="generateButton" style='background-color: rgb(0, 106, 255); margin-top:8px; border-radius: 16px; color: white; padding: 8px 16px; border: none;'>Generate Email</button>
     <div id="loadingIndicator" style="display: none; margin-top: 10px;">
@@ -87,6 +96,8 @@ const BACKEND_URL = 'http://localhost:3000';
     <textarea id="emailResult" style="width: 90%; height: 200px; margin-top: 16px; padding: 12px; border-radius: 8px; border: 1px solid #ccc; display: none;"></textarea>
     <button id="copyButton" style='background-color: #28a745; margin-top:8px; border-radius: 16px; color: white; padding: 8px 16px; border: none; display: none;'>Copy to Clipboard</button>
   `;
+
+  injectedDiv.prepend(nameElement);
 
   Object.assign(injectedDiv.style, {
     width: '100%',
