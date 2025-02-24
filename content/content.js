@@ -2,12 +2,32 @@
 
 const BACKEND_URL = 'http://localhost:3000';
 
+// Add a URL observer to detect page changes
+let lastUrl = location.href;
+const urlObserver = new MutationObserver(() => {
+  if (location.href !== lastUrl) {
+    lastUrl = location.href;
+    console.log('LinkedIn page changed, updating email...');
+    // Re-run scraping when URL changes
+    scrapeProfileData();
+  }
+});
+
+// Start observing URL changes
+urlObserver.observe(document, { subtree: true, childList: true });
+
 (function() {
   
   console.log("LinkedIn Email Scraper Content Script running");
 
     // Add function to scrape profile data
     async function scrapeProfileData() {
+        const email = await findLinkedInEmail(); // Get email first
+        const recipientInput = document.getElementById('recipientEmailInput');
+        if (recipientInput && email) {
+            recipientInput.value = email;
+        }
+        
         return {
             name: document.querySelector('h1')?.innerText || '',
             headline: document.querySelector('.pv-text-details__headline')?.innerText || '',
@@ -17,7 +37,7 @@ const BACKEND_URL = 'http://localhost:3000';
                 company: exp.querySelector('.pv-entity__secondary-title')?.innerText || '',
                 duration: exp.querySelector('.pv-entity__date-range span:nth-child(2)')?.innerText || ''
             })),
-            email: await findLinkedInEmail()
+            email: email
         };
     }
 
@@ -44,6 +64,7 @@ const BACKEND_URL = 'http://localhost:3000';
     const injectedDiv = document.createElement('div');
     injectedDiv.innerHTML = `
         <p>Generate an outreach email to ${document.querySelector('h1')?.innerText} with AI instantly.</p>
+        <input type="email" id="recipientEmailInput" placeholder="Recipient Email" style="width: 90%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
         <button id="generateButton" style='background-color: rgb(0, 106, 255); margin-top:8px; border-radius: 16px; color: white; padding: 8px 16px; border: none;'>Generate Email</button>
         <div id="loadingIndicator" style="display: none; margin-top: 10px;">
             Generating your email...
@@ -93,6 +114,12 @@ const BACKEND_URL = 'http://localhost:3000';
             // Scrape profile data
             const profileData = await scrapeProfileData();
             
+            // Get the recipient email from the input field
+            const recipientEmail = document.getElementById('recipientEmailInput').value;
+            if (recipientEmail) {
+                profileData.email = recipientEmail;
+            }
+            
             // Generate email
             const response = await generateColdEmail(profileData);
             
@@ -129,6 +156,7 @@ const BACKEND_URL = 'http://localhost:3000';
 
 
     // Example of scraping emails from page content (customize the selector as needed)
+    /*
     const emails = [];
     const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b/gi;
     const bodyText = document.body.innerText;
@@ -146,6 +174,7 @@ const BACKEND_URL = 'http://localhost:3000';
     chrome.storage.local.set({ scrapedEmails: emails }, () => {
         console.log("Scraped emails saved: ", emails);
     });
+    */
 
 
 
@@ -240,7 +269,8 @@ const BACKEND_URL = 'http://localhost:3000';
     return null;
   }
 
-  // Listen for messages from popup
+  // Comment out the message listener since we're not using the popup anymore
+  /*
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "findEmail") {
       findLinkedInEmail().then(email => {
@@ -253,4 +283,8 @@ const BACKEND_URL = 'http://localhost:3000';
       return true; // Required for async response
     }
   });
+  */
+
+  // Initial scrape
+  scrapeProfileData();
 })();
