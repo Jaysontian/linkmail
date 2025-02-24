@@ -155,8 +155,13 @@ const BACKEND_URL = 'http://localhost:3000';
 
   // Helper function to extract email using regex
   function extractEmail(text) {
-    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+    if (!text) return null;
+    
+    // More comprehensive email regex
+    const emailRegex = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi;
+    
     const matches = text.match(emailRegex);
+    console.log('All email matches:', matches); // Debug log
     return matches ? matches[0] : null;
   }
 
@@ -168,20 +173,44 @@ const BACKEND_URL = 'http://localhost:3000';
     // Click the contact info button
     contactButton.click();
     
-    // Wait for modal to appear
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Look for email in contact info modal
-    const modalContent = document.querySelector('div[aria-label="Contact info"] .artdeco-modal__content');
+    // Wait for modal to appear and try multiple times
+    let modalContent = null;
+    for (let i = 0; i < 5; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try multiple possible selectors for the modal content
+      modalContent = document.querySelector([
+        'div[aria-label="Contact info"] .artdeco-modal__content',
+        '.pv-contact-info__contact-type',
+        '.pv-profile-section__section-info',
+        '.artdeco-modal__content'
+      ].join(','));
+
+      if (modalContent) break;
+    }
+
     if (modalContent) {
-      const email = extractEmail(modalContent.textContent);
+      // Search through all text content in the modal
+      const allText = modalContent.innerText || modalContent.textContent;
+      console.log('Modal content found:', allText); // Debug log
+      
+      const email = extractEmail(allText);
+      console.log('Email found:', email); // Debug log
       
       // Close the modal
-      const closeButton = document.querySelector('button[aria-label="Dismiss"]');
+      const closeButton = document.querySelector([
+        'button[aria-label="Dismiss"]',
+        '.artdeco-modal__dismiss',
+        '.artdeco-modal__close'
+      ].join(','));
+      
       if (closeButton) closeButton.click();
       
       return email;
     }
+
+    // If we get here, we couldn't find the modal or email
+    console.log('No modal content found'); // Debug log
     return null;
   }
 
