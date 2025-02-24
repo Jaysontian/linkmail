@@ -42,8 +42,11 @@ window.UIManager = {
     const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
     nameElement.textContent = `Draft an email to ${firstName}`;
 
+    console.log('Injecting this code...');
+
     // Insert into the page
     const asideElement = document.querySelector('aside.scaffold-layout__aside');
+    console.log('Aside element found:', asideElement); // Add this
     if (asideElement) {
       asideElement.prepend(injectedDiv);
     } else {

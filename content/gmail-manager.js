@@ -12,6 +12,7 @@ window.GmailManager = {
       });
 
       if (response.error) {
+        console.log("could not get auth token!");
         throw new Error(response.error.message);
       }
 

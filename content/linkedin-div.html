@@ -4,21 +4,26 @@
 <div class="linkmail-container">
     <div id="linkmail-splash">
         <h2 id="title" class="linkmail-header"></h2>
-        <div class="linkmail-prompt">
-            <h1>☕</h1>
-            <div>
-                <h2>Coffee Chat</h2>
-                <p>Send a friendly request to chat with this person.</p>
+
+        <div class="linkmail-prompt-list">
+            <div class="linkmail-prompt">
+                <h1>☕</h1>
+                <div>
+                    <h2>Coffee Chat</h2>
+                    <p>Send a friendly request to chat with this person.</p>
+                </div>
+            </div>
+            <br>
+            <div class="linkmail-prompt">
+                <h1>💼</h1>
+                <div>
+                    <h2>Job Application</h2>
+                    <p>Craft a professional email to a recruiter or manager.</p>
+                </div>
             </div>
         </div>
-        <br>
-        <div class="linkmail-prompt">
-            <h1>💼</h1>
-            <div>
-                <h2>Job Application</h2>
-                <p>Craft a cordial and professional email to a recruiter or manager.</p>
-            </div>
-        </div>
+
+        
         <br>
         <button id="generateButton" class="linkmail-button">Generate</button>
     </div>
@@ -41,6 +46,14 @@
 </div>
 
 <style>
+    .linkmail-container {
+        background-color:rgb(245, 245, 240);
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        padding:24px 12px;
+        margin-bottom:16px;
+        border-radius:8px;
+    }
+
     #linkmail-splash {
         display:flex;
         flex-direction: column;
@@ -50,32 +63,49 @@
     }
 
 
+    .linkmail-prompt-list{
+        display:flex;
+        gap: 4px;
+    }
+
     .linkmail-prompt{
         background-color:white;
         display:flex;
         justify-content: center;
         align-items: center;
-        flex-direction:row;
+        flex-direction:column;
         border: 1px solid rgba(0, 0, 0, 0.1);
         border-radius:8px;
         padding:12px 8px;
         cursor:pointer;
-        box-shadow: 0px 0px 2px 2px rgba(0, 0, 0, 0.04);
+        box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
+        text-align:center;
+        width:100%;
     }
+
+    .linkmail-prompt:hover{
+        border: 1px solid rgb(30, 131, 255);
+        background-color: rgb(230, 239, 255);
+    }
+
+
     .linkmail-prompt h1{
         font-size:20pt;
         width: fit-content;
         padding:2px 8px;
         margin-right:4px;
+        height:50px;
+        display:flex;
+        align-items: center;
     }
     .linkmail-prompt h2{
-        font-size:12pt;
+        font-size:11pt;
         font-weight:600;
         color:rgba(0, 0, 0, 0.65);
     }
     .linkmail-prompt p {
-        font-size:9.5pt;
-        color:rgba(128, 128, 128, 0.6);
+        font-size:8.5pt;
+        color:rgba(128, 128, 128, 0.7);
         line-height:1.2;
         margin-top:4px;
     }
@@ -89,14 +119,6 @@
         font-weight:600;
         text-align: center;
         margin: 16px 0px;
-    }
-
-    .linkmail-container {
-        background-color:white;
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        padding:24px 12px;
-        margin-bottom:16px;
-        border-radius:8px;
     }
 
     .linkmail-button {

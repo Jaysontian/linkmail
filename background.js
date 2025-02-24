@@ -18,15 +18,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 
-// background.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getAuthToken") {
     chrome.identity.getAuthToken({ interactive: true }, function(token) {
       if (chrome.runtime.lastError) {
-        sendResponse({ error: chrome.runtime.lastError });
-      } else {
-        sendResponse({ token: token });
+        console.error('Auth error:', chrome.runtime.lastError);
+        sendResponse({ 
+          error: { 
+            message: chrome.runtime.lastError.message 
+          }
+        });
+        return;
       }
+      
+      console.log('Token obtained successfully');
+      sendResponse({ token: token });
     });
     return true; // Required for async response
   }

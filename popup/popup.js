@@ -1,6 +1,7 @@
 // popup/popup.js
 let currentToken = null;
 
+
 document.addEventListener("DOMContentLoaded", function() {
   // Attach event listeners only to the elements that exist in popup.html
   const loginButton = document.getElementById('loginButton');
@@ -58,8 +59,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function signIn() {
   chrome.identity.getAuthToken({ interactive: true }, function(token) {
+    console.log('Logging in with token: ', token);
     if (chrome.runtime.lastError) {
-      console.error(chrome.runtime.lastError);
+      console.error("THERE IS AN ERROR W SIGNING: ", chrome.runtime.lastError);
       return;
     }
     currentToken = token;
