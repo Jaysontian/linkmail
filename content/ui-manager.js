@@ -31,12 +31,15 @@ window.UIManager = {
   },
 
   async populateForm() {
-    const email = await EmailFinder.findLinkedInEmail();
+    // Remove the email search from here
+    // const email = await EmailFinder.findLinkedInEmail();
     const recipientInput = document.getElementById('recipientEmailInput');
     const nameElement = document.getElementById('profileName');
     
-    if (recipientInput && email) {
-      recipientInput.value = email;
+    // Instead, get the email from the ProfileScraper's cached data
+    const profileData = await ProfileScraper.scrapeProfileData();
+    if (recipientInput && profileData.email) {
+      recipientInput.value = profileData.email;
     }
     
     if (nameElement) {
@@ -131,9 +134,6 @@ window.UIManager = {
     this.elements.generateButton.addEventListener('click', async () => {
       this.elements.generateButton.disabled = true;
       this.elements.generateButton.innerText = "Generating...";
-      // this.elements.loadingIndicator.style.display = 'block';
-      // this.elements.emailResult.style.display = 'none';
-      // this.elements.copyButton.style.display = 'none';
 
       function adjustHeight(element) {
         element.style.height = 'auto';
@@ -142,14 +142,14 @@ window.UIManager = {
       // Make textarea autoresizable
       emailResult.addEventListener('input', function() {adjustHeight(this);});
 
-
       try {
         const profileData = await ProfileScraper.scrapeProfileData();
-        const recipientEmail = document.getElementById('recipientEmailInput').value;
-        if (recipientEmail) {
-          profileData.email = recipientEmail;
-        }
         
+        // Add this section to update the recipient email field
+        const recipientInput = document.getElementById('recipientEmailInput');
+        if (recipientInput && profileData.email) {
+          recipientInput.value = profileData.email;
+        }
 
         const useTemplate = this.selectedTemplate == undefined ? templates[0] : this.selectedTemplate;
 
@@ -180,6 +180,7 @@ window.UIManager = {
         this.elements.emailResult.value = "An error occurred while generating the email.";
       } finally {
         this.elements.generateButton.disabled = false;
+        this.elements.generateButton.innerText = "Generate";
       }
     });
 

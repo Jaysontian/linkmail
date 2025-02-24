@@ -7,11 +7,6 @@ const BACKEND_URL = 'http://localhost:3000';
   URLObserver.init();
   await UIManager.init();
   
-  // Initial email search
-  setTimeout(() => {
-    UIManager.populateForm();
-  }, 2000); // Give the page time to load
-  
   // Handle extension messages
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "findEmail") {
@@ -19,6 +14,7 @@ const BACKEND_URL = 'http://localhost:3000';
         .then(email => {
           console.log("Found email:", email);
           if (email) {
+            UIManager.populateForm();
             sendResponse({ email: email });
           } else {
             sendResponse({ error: "No Email Found on LinkedIn Page. Please Input Email Manually." });
