@@ -17,6 +17,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// called by Gmail Manager
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getAuthToken") {

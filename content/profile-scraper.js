@@ -1,4 +1,6 @@
+
 window.ProfileScraper = {
+  
   async scrapeProfileData() {
     return {
       name: document.querySelector('h1')?.innerText || '',
@@ -22,7 +24,7 @@ window.ProfileScraper = {
     };
   },
 
-  async generateColdEmail(profileData) {
+  async generateColdEmail(profileData, templateData) {
     try {
       const response = await fetch(`${BACKEND_URL}/generate-email`, {
         method: 'POST',
@@ -30,7 +32,8 @@ window.ProfileScraper = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          profile: profileData
+          profile: profileData,
+          template: templateData
         })
       });
       

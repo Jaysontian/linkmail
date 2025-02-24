@@ -2,6 +2,27 @@ window.UIManager = {
   elements: {},
   userData: null,
 
+  selectedTemplate: {},
+
+  templates: [
+    {
+      icon: "☕",
+      name: "Coffee Chat",
+      description: "Send a friendly request to chat with this person.",
+      purpose: "to schedule a coffee chat to the recipient",
+      content: "Hey [NAME]!\nI bet you get hundreds of cold emails so I'll try to keep this concise: I saw that XXX I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. I have two internships under my belt, have a high GPA, and good communication / leadership development. Let me know if you are down to schedule a time for a chat!\nBest regards,",
+    },
+    {
+      icon: "💼",
+      name: "Job Application",
+      description: "Craft a professional email to a recruiter or manager",
+      purpose: "to inquire if there is internship or job",
+      content: "Hey [name],\nI'm [insert personal info here]. I think it's really cool how *Skiff is building a privacy-first collaboration platform with expiring links, secure workspaces, and password protection.* Would love to connect and learn about any possible internship opportunities!\nBest regards,",
+    }
+  ],
+
+
+
   async loadHTML() {
     const url = chrome.runtime.getURL('/content/linkedin-div.html');
     const response = await fetch(url);
@@ -41,6 +62,45 @@ window.UIManager = {
     const nameElement = injectedDiv.querySelector('#title');
     const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
     nameElement.textContent = `Draft an email to ${firstName}`;
+
+
+
+    // Generate template list dynamically
+    const promptListDiv = injectedDiv.querySelector('.linkmail-prompt-list');
+
+    // Generate template cards from ProfileScraper.templates
+    this.templates.forEach(template => {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'linkmail-prompt';
+        promptDiv.innerHTML = `
+            <h1>${template.icon}</h1>
+            <div>
+                <h2>${template.name}</h2>
+                <p>${template.description}</p>
+            </div>
+        `;
+
+        console.log('generated: ', template.name);
+
+        // Add click handler
+        promptDiv.addEventListener('click', async () => {
+          // Remove 'selected' class from all prompts
+          const allPrompts = promptListDiv.querySelectorAll('.linkmail-prompt');
+          allPrompts.forEach(prompt => {
+              prompt.classList.remove('linkmail-prompt-selected');
+          });
+          
+          // Add 'selected' class to clicked prompt
+          promptDiv.classList.add('linkmail-prompt-selected');
+          
+          // Update the selectedTemplate with the clicked template's data
+          this.selectedTemplate = template;
+
+        });
+
+        promptListDiv.appendChild(promptDiv);
+    });
+
 
     console.log('Injecting this code...');
 
@@ -90,7 +150,12 @@ window.UIManager = {
           profileData.email = recipientEmail;
         }
         
-        const response = await ProfileScraper.generateColdEmail(profileData);
+
+        const useTemplate = this.selectedTemplate == undefined ? templates[0] : this.selectedTemplate;
+
+        console.log(useTemplate);
+
+        const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
 
         console.log(response);
 

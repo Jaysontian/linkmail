@@ -6,7 +6,7 @@
         <h2 id="title" class="linkmail-header"></h2>
 
         <div class="linkmail-prompt-list">
-            <div class="linkmail-prompt">
+            <!-- <div class="linkmail-prompt">
                 <h1>☕</h1>
                 <div>
                     <h2>Coffee Chat</h2>
@@ -20,7 +20,7 @@
                     <h2>Job Application</h2>
                     <p>Craft a professional email to a recruiter or manager.</p>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         
@@ -31,9 +31,12 @@
   <div id="linkmail-editor" style="display: none;">
     <input type="email" id="recipientEmailInput" class="linkmail-input" placeholder="Recipient Email">
     <input id="emailSubject" class="linkmail-input linkmail-subject" placeholder="Empty Subject">
-    <textarea id="emailResult" class="linkmail-textarea" id="auto-resize-textarea"></textarea>
+    <div style="position:relative;">
+        <textarea id="emailResult" class="linkmail-textarea" id="auto-resize-textarea"></textarea>
+        <button id="copyButton" class="linkmail-button linkmail-copy-button">Copy</button>
+    </div>
+    
     <div class="linkmail-button-group">
-        <button id="copyButton" class="linkmail-button linkmail-copy-button">Copy to Clipboard</button>
         <button id="sendGmailButton" class="linkmail-button linkmail-send-button">Send via Gmail</button>
     </div>
   </div>
@@ -47,7 +50,7 @@
 
 <style>
     .linkmail-container {
-        background-color:rgb(245, 245, 240);
+        background-color:white;
         border: 1px solid rgba(0, 0, 0, 0.15);
         padding:24px 12px;
         margin-bottom:16px;
@@ -85,6 +88,10 @@
 
     .linkmail-prompt:hover{
         border: 1px solid rgb(30, 131, 255);
+    }
+
+    .linkmail-prompt-selected {
+        border: 1px solid rgb(30, 131, 255);
         background-color: rgb(230, 239, 255);
     }
 
@@ -114,6 +121,19 @@
         margin: 0px auto;
     }
 
+    #copyButton {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 5px;
+        z-index: 1;
+        font-size:9pt;
+        color:rgba(0, 0, 0, 0.8) !important;
+        background-color:rgba(0, 0, 0, 0.1);
+        border-radius:4px;
+        padding:4px 8px;
+    }
+
     .linkmail-header {
         font-size:14pt;
         font-weight:600;
@@ -122,7 +142,7 @@
     }
 
     .linkmail-button {
-        background-color:rgb(24, 170, 255);
+        background-color:rgb(24, 136, 255);
         color:white !important;
         text-decoration:none;
         padding: 6px 16px;
@@ -131,39 +151,47 @@
         margin: 8px 0px;
     }
 
-    .linkmail-input {
-        font-size:11pt;
-    }
-
-    .linkmail-subject, .linkmail-subject:focus, .linkmail-subject:active, .linkmail-subject:hover {
-        border:0px solid rgba(255, 255, 255, 0);
-        outline:none;
-        box-shadow: none;
-        font-size:12.5pt;
-        font-weight:600;
-        padding:4px;
-        background-color:white;
+    .linkmail-input, .linkmail-input:active, .linkmail-input:hover, .linkmail-input:focus {
+        font-size:11pt !important;
+        outline:0px !important;
+        box-shadow: none !important;
+        padding:6px;
         margin:8px 0px;
         width:100%;
+        border-radius:4px;
+        background-color:white;
+        border:1px solid rgba(0, 0, 0, 0.15) !important;
+        box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
     }
 
-    .linkmail-subject:hover{
+    .linkmail-input:focus {
+        border: 1px solid rgb(30, 131, 255);
+    }
+
+    .linkmail-input:hover{
         background-color:rgba(0, 0, 0, 0.05);
     }
 
-    .linkmail-textarea {
-        border:0px solid rgba(255, 255, 255, 0);
-        padding:4px;
+    .linkmail-subject, .linkmail-subject:focus, .linkmail-subject:active, .linkmail-subject:hover {
+        font-size:12pt !important;
+        font-weight:600;
+    }
+
+    .linkmail-textarea, .linkmail-textarea:focus, .linkmail-textarea:active, .linkmail-textarea:hover {
+        padding:6px;
         outline:none;
-        box-shadow: none;
-        font-size:11pt;
+        font-size:10pt;
         resize: none;
         overflow: hidden;
         min-height: 80px;
         width: 100%;
         resize: none;
+        border-radius:4px;
         overflow: hidden;
         box-sizing: border-box;
+        background-color:white;
+        border:1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
     }
 
 
