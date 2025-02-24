@@ -242,5 +242,32 @@ window.UIManager = {
 
     await this.createUI();
     this.setupEventListeners();
+  },
+
+  async resetUI() {
+    // Hide editor and success views
+    document.querySelector('#linkmail-editor').style.display = "none";
+    document.querySelector('#linkmail-success').style.display = "none";
+    
+    // Show splash view
+    document.querySelector('#linkmail-splash').style.display = "flex";
+    
+    // Reset form fields
+    if (this.elements.emailResult) this.elements.emailResult.value = '';
+    if (this.elements.emailSubject) this.elements.emailSubject.value = '';
+    
+    // Reset selected template
+    const allPrompts = document.querySelectorAll('.linkmail-prompt');
+    allPrompts.forEach(prompt => {
+      prompt.classList.remove('linkmail-prompt-selected');
+    });
+    this.selectedTemplate = {};
+    
+    // Update the title with the new profile name
+    const nameElement = document.getElementById('title');
+    const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
+    if (nameElement) {
+      nameElement.textContent = `Draft an email to ${firstName}`;
+    }
   }
 };
