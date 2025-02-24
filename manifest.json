@@ -30,16 +30,18 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://www.linkedin.com/*"
-      ],
-      "js": [
-        "content/content.js"
-      ]
-    }
-  ],
+  "content_scripts": [{
+    "matches": ["*://www.linkedin.com/*"],
+    "js": [
+      "content/gmail-manager.js",
+      "content/utils.js",
+      "content/email-finder.js",
+      "content/profile-scraper.js",
+      "content/url-observer.js",
+      "content/ui-manager.js",
+      "content/content.js"
+    ]
+  }],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

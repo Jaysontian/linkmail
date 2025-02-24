@@ -100,6 +100,40 @@ function clearComposeForm() {
   document.getElementById('emailBody').value = '';
 }
 
+
+
+
+
+
+
+// Add this at the top of the file, after the DOMContentLoaded listener
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'sendEmail') {
+    const { to, subject, body } = request.data;
+    
+    // Set the form values
+    document.getElementById('recipientEmail').value = to;
+    document.getElementById('emailSubject').value = subject;
+    document.getElementById('emailBody').value = body;
+    
+    // Show the compose form
+    document.getElementById('composeForm').style.display = 'block';
+    document.getElementById('composeButton').style.display = 'none';
+    
+    // Optionally, automatically send the email
+    if (currentToken) {
+      sendEmail();
+    } else {
+      // If not logged in, show login prompt
+      alert('Please log in to Gmail first');
+      document.getElementById('loginContainer').style.display = 'block';
+    }
+  }
+});
+
+
+
+
 function sendEmail() {
   if (!currentToken) return;
 
