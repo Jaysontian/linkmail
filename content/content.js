@@ -36,7 +36,7 @@ const BACKEND_URL = 'http://localhost:3000';
   urlObserver.observe(document.body, { childList: true, subtree: true });
 
   // Add function to scrape profile data
-  async function scrapeProfileData() {
+  async function populateForm() {
     const email = await findLinkedInEmail(); // Get email first
     const recipientInput = document.getElementById('recipientEmailInput');
     const nameElement = document.getElementById('profileName');
@@ -49,18 +49,46 @@ const BACKEND_URL = 'http://localhost:3000';
       nameElement.textContent = `Generate an outreach email to ${document.querySelector('h1')?.innerText || ''} with AI instantly.`;
     }
     
-    return {
-      name: document.querySelector('h1')?.innerText || '',
-      headline: document.querySelector('.pv-text-details__headline')?.innerText || '',
-      about: document.querySelector('.pv-shared-text-with-see-more')?.innerText || '',
-      experience: Array.from(document.querySelectorAll('section#experience-section li')).map(exp => ({
-        title: exp.querySelector('.pv-entity__summary-info h3')?.innerText || '',
-        company: exp.querySelector('.pv-entity__secondary-title')?.innerText || '',
-        duration: exp.querySelector('.pv-entity__date-range span:nth-child(2)')?.innerText || ''
-      })),
-      email: email
-    };
+    // return {
+    //   name: document.querySelector('h1')?.innerText || '',
+    //   headline: document.querySelector('.pv-text-details__headline')?.innerText || '',
+    //   about: document.querySelector('.pv-shared-text-with-see-more')?.innerText || '',
+    //   experience: Array.from(document.querySelectorAll('section#experience-section li')).map(exp => ({
+    //     title: exp.querySelector('.pv-entity__summary-info h3')?.innerText || '',
+    //     company: exp.querySelector('.pv-entity__secondary-title')?.innerText || '',
+    //     duration: exp.querySelector('.pv-entity__date-range span:nth-child(2)')?.innerText || ''
+    //   })),
+    //   email: email
+    // };
   }
+
+
+    // Add function to scrape profile data
+    async function scrapeProfileData() {
+      return {
+          name: document.querySelector('h1')?.innerText || '',
+          headline: document.querySelector('.text-body-medium')?.innerText || '',
+          about: document.querySelector('.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed')?.innerText || '',
+          experience: Array.from((document.querySelector('#experience').parentElement).querySelectorAll('li.artdeco-list__item.DxMUuyXZXlBPznKWrDsYoVwuenfXVWSOuJQ'))
+            .map(li => {
+                const content = [
+                    ...li.querySelectorAll('.t-bold'),
+                    ...li.querySelectorAll('.t-normal'),
+                    ...li.querySelectorAll('.pvs-entity__caption-wrapper')
+                ]
+                .map(el => el.textContent.trim())
+                .filter(text => text)
+                .join(' · ');
+                
+                return {
+                    content
+                };
+            })
+            .filter(item => item !== null),
+          email: await findLinkedInEmail(),
+      };
+  }
+
 
   async function generateColdEmail(profileData) {
     try {
@@ -280,5 +308,5 @@ const BACKEND_URL = 'http://localhost:3000';
   });
 
   // Initial scrape
-  scrapeProfileData();
+  populateForm();
 })();
