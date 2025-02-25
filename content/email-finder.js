@@ -1,3 +1,5 @@
+//email-finder.js
+
 window.EmailFinder = {
   async checkContactInfo() {
     const contactButton = document.querySelector('a[href*="contact-info"]');

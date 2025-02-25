@@ -1,8 +1,24 @@
-<!-- template.html -->
-
-
 <div class="linkmail-container">
-    <div id="linkmail-splash">
+    <!-- New Sign-in View -->
+    <div id="linkmail-signin" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h2 class="linkmail-header">Sign in to use LinkMail</h2>
+        <p style="text-align: center; margin-bottom: 16px;">Connect with Google to generate and send emails directly from LinkedIn</p>
+        <button id="googleSignInButton" class="linkmail-button">
+            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 18px; margin-right: 8px; vertical-align: middle;">
+            Sign in with Google
+        </button>
+    </div>
+
+    <!-- Add this near the top of your editor section or elsewhere in the UI -->
+    <div class="linkmail-account-info" style="display: none; margin-bottom: 10px; text-align: right;">
+        <span id="user-email-display" style="font-size: 12px; color: #666;"></span>
+        <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-left: 8px;">
+        Sign Out
+        </button>
+    </div>
+  
+
+    <div id="linkmail-splash" style="display: none;">
         <h2 id="title" class="linkmail-header"></h2>
 
         <div class="linkmail-prompt-list">
@@ -193,7 +209,4 @@
         border:1px solid rgba(0, 0, 0, 0.1);
         box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
     }
-
-
-
 </style>

@@ -28,7 +28,9 @@
   "oauth2": {
     "client_id": "632205525374-umvqu1g1u4cp632kvbv30j3699fkpnoj.apps.googleusercontent.com",
     "scopes": [
-      "https://www.googleapis.com/auth/gmail.modify"
+      "https://www.googleapis.com/auth/gmail.modify",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
     ]
   },
   "background": {
@@ -45,12 +47,5 @@
       "content/ui-manager.js",
       "content/content.js"
     ]
-  }],
-  "action": {
-    "default_popup": "popup/popup.html",
-    "default_icon": {
-      "16": "assets/logo.png",
-      "48": "assets/logo.png"
-    }
-  }
+  }]
 }

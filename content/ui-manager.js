@@ -1,7 +1,7 @@
 window.UIManager = {
   elements: {},
   userData: null,
-
+  isAuthenticated: false,
   selectedTemplate: {},
 
   templates: [
@@ -21,8 +21,6 @@ window.UIManager = {
     }
   ],
 
-
-
   async loadHTML() {
     const url = chrome.runtime.getURL('/content/linkedin-div.html');
     const response = await fetch(url);
@@ -31,12 +29,9 @@ window.UIManager = {
   },
 
   async populateForm() {
-    // Remove the email search from here
-    // const email = await EmailFinder.findLinkedInEmail();
     const recipientInput = document.getElementById('recipientEmailInput');
     const nameElement = document.getElementById('profileName');
     
-    // Instead, get the email from the ProfileScraper's cached data
     const profileData = await ProfileScraper.scrapeProfileData();
     if (recipientInput && profileData.email) {
       recipientInput.value = profileData.email;
@@ -47,12 +42,88 @@ window.UIManager = {
     }
   },
 
+  async checkAuthStatus() {
+    try {
+      // Check if user is already authenticated
+      const authStatus = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: "checkAuthStatus" }, (response) => {
+          resolve(response);
+        });
+      });
+
+      if (authStatus.isAuthenticated) {
+        this.isAuthenticated = true;
+        this.userData = authStatus.userData;
+        this.showAuthenticatedUI();
+      } else {
+        this.isAuthenticated = false;
+        this.showSignInUI();
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      this.isAuthenticated = false;
+      this.showSignInUI();
+    }
+  },
+
+  showSignInUI() {
+    if (this.elements.signInView) {
+      this.elements.signInView.style.display = 'flex';
+    }
+    if (this.elements.splashView) {
+      this.elements.splashView.style.display = 'none';
+    }
+    
+    // Hide user info
+    const accountInfo = document.querySelector('.linkmail-account-info');
+    if (accountInfo) {
+      accountInfo.style.display = 'none';
+    }
+  },
+
+  showAuthenticatedUI() {
+    if (this.elements.signInView) {
+      this.elements.signInView.style.display = 'none';
+    }
+    if (this.elements.splashView) {
+      this.elements.splashView.style.display = 'flex';
+    }
+    
+    // Display user info if available
+    const accountInfo = document.querySelector('.linkmail-account-info');
+    const userEmailDisplay = document.getElementById('user-email-display');
+    
+    if (accountInfo && this.userData?.email) {
+      accountInfo.style.display = 'block';
+      userEmailDisplay.textContent = this.userData.email;
+    }
+  },
+
   async createUI() {
     const templateHtml = await this.loadHTML();
 
     // Create a temporary container, inject styles
     const temp = document.createElement('div');
     temp.innerHTML = templateHtml;
+    
+    // Add account info section
+    const accountInfoHtml = `
+      <div class="linkmail-account-info" style="display: none; margin-bottom: 10px; text-align: right;">
+        <span id="user-email-display" style="font-size: 12px; color: #666;"></span>
+        <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-left: 8px;">
+          Sign Out
+        </button>
+      </div>
+    `;
+    
+    // Insert account info at the top of the container
+    const container = temp.querySelector('.linkmail-container');
+    if (container) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = accountInfoHtml;
+      container.insertBefore(tempDiv.firstElementChild, container.firstChild);
+    }
+    
     const styleElement = temp.querySelector('style');
     if (styleElement) {
         document.head.appendChild(styleElement);
@@ -65,8 +136,6 @@ window.UIManager = {
     const nameElement = injectedDiv.querySelector('#title');
     const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
     nameElement.textContent = `Draft an email to ${firstName}`;
-
-
 
     // Generate template list dynamically
     const promptListDiv = injectedDiv.querySelector('.linkmail-prompt-list');
@@ -98,18 +167,16 @@ window.UIManager = {
           
           // Update the selectedTemplate with the clicked template's data
           this.selectedTemplate = template;
-
         });
 
         promptListDiv.appendChild(promptDiv);
     });
 
-
     console.log('Injecting this code...');
 
     // Insert into the page
     const asideElement = document.querySelector('aside.scaffold-layout__aside');
-    console.log('Aside element found:', asideElement); // Add this
+    console.log('Aside element found:', asideElement);
     if (asideElement) {
       asideElement.prepend(injectedDiv);
     } else {
@@ -118,20 +185,75 @@ window.UIManager = {
 
     // Store references to elements
     this.elements = {
+      signInButton: injectedDiv.querySelector('#googleSignInButton'),
+      signInView: injectedDiv.querySelector('#linkmail-signin'),
+      splashView: injectedDiv.querySelector('#linkmail-splash'),
       generateButton: injectedDiv.querySelector('#generateButton'),
       loadingIndicator: injectedDiv.querySelector('#loadingIndicator'),
       emailSubject: injectedDiv.querySelector('#emailSubject'),
       emailResult: injectedDiv.querySelector('#emailResult'),
       copyButton: injectedDiv.querySelector('#copyButton'),
-      sendGmailButton: injectedDiv.querySelector('#sendGmailButton')
+      sendGmailButton: injectedDiv.querySelector('#sendGmailButton'),
+      signOutButton: injectedDiv.querySelector('#signOutButton')
     };
 
+    // Check authentication status
+    await this.checkAuthStatus();
   },
 
   setupEventListeners() {
+    // Google Sign-in button
+    this.elements.signInButton.addEventListener('click', async () => {
+      try {
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ action: "signInWithGoogle" }, (response) => {
+            resolve(response);
+          });
+        });
+
+        if (response.success) {
+          this.isAuthenticated = true;
+          this.userData = response.userData;
+          this.showAuthenticatedUI();
+        } else {
+          console.error('Authentication failed:', response.error);
+          alert('Authentication failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error during authentication:', error);
+        alert('Authentication failed. Please try again.');
+      }
+    });
+
+    // Sign out button
+    this.elements.signOutButton.addEventListener('click', async () => {
+      try {
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ action: "logout" }, (response) => {
+            resolve(response);
+          });
+        });
+
+        if (response.success) {
+          this.isAuthenticated = false;
+          this.userData = null;
+          this.showSignInUI();
+        } else {
+          console.error('Logout failed:', response.error);
+        }
+      } catch (error) {
+        console.error('Error during logout:', error);
+      }
+    });
 
     // GENERATE BUTTON UI
     this.elements.generateButton.addEventListener('click', async () => {
+      // Check if authenticated
+      if (!this.isAuthenticated) {
+        this.showSignInUI();
+        return;
+      }
+
       this.elements.generateButton.disabled = true;
       this.elements.generateButton.innerText = "Generating...";
 
@@ -139,8 +261,12 @@ window.UIManager = {
         element.style.height = 'auto';
         element.style.height = element.scrollHeight + 'px';
       }
+      
       // Make textarea autoresizable
-      emailResult.addEventListener('input', function() {adjustHeight(this);});
+      const emailResult = document.getElementById('emailResult');
+      if (emailResult) {
+        emailResult.addEventListener('input', function() {adjustHeight(this);});
+      }
 
       try {
         const profileData = await ProfileScraper.scrapeProfileData();
@@ -151,7 +277,9 @@ window.UIManager = {
           recipientInput.value = profileData.email;
         }
 
-        const useTemplate = this.selectedTemplate == undefined ? templates[0] : this.selectedTemplate;
+        const useTemplate = this.selectedTemplate && Object.keys(this.selectedTemplate).length > 0 
+                          ? this.selectedTemplate 
+                          : this.templates[0];
 
         console.log(useTemplate);
 
@@ -190,13 +318,18 @@ window.UIManager = {
       document.execCommand('copy');
       this.elements.copyButton.textContent = 'Copied!';
       setTimeout(() => {
-        this.elements.copyButton.textContent = 'Copy to Clipboard';
+        this.elements.copyButton.textContent = 'Copy';
       }, 2000);
     });
 
-
     // SEND EMAIL BUTTON
     this.elements.sendGmailButton.addEventListener('click', async () => {
+      // Check if authenticated
+      if (!this.isAuthenticated) {
+        this.showSignInUI();
+        return;
+      }
+
       const email = document.getElementById('recipientEmailInput').value;
       const subject = document.getElementById('emailSubject').value;
       const emailContent = this.elements.emailResult.value;
@@ -211,8 +344,6 @@ window.UIManager = {
         this.elements.sendGmailButton.textContent = 'Sending...';
 
         await GmailManager.sendEmail(email, subject, emailContent);
-        
-        //alert('Email sent successfully!');
         
         // Clear the form
         this.elements.emailResult.value = '';
@@ -233,24 +364,38 @@ window.UIManager = {
   },
 
   async init() {
-    const profile = await GmailManager.getUserProfile();
-    this.userData = {
-      email: profile.emailAddress,
-      // Extract name from email or fetch it from People API if needed
-      name: profile.emailAddress.split('@')[0] // Basic fallback
-    };
-
     await this.createUI();
     this.setupEventListeners();
   },
 
   async resetUI() {
-    // Hide editor and success views
+    // Hide all views
     document.querySelector('#linkmail-editor').style.display = "none";
     document.querySelector('#linkmail-success').style.display = "none";
     
-    // Show splash view
-    document.querySelector('#linkmail-splash').style.display = "flex";
+    // Check authentication status and show appropriate view
+    if (this.isAuthenticated) {
+      document.querySelector('#linkmail-splash').style.display = "flex";
+      document.querySelector('#linkmail-signin').style.display = "none";
+      
+      // Show user info
+      const accountInfo = document.querySelector('.linkmail-account-info');
+      const userEmailDisplay = document.getElementById('user-email-display');
+      
+      if (accountInfo && this.userData?.email) {
+        accountInfo.style.display = 'block';
+        userEmailDisplay.textContent = this.userData.email;
+      }
+    } else {
+      document.querySelector('#linkmail-splash').style.display = "none";
+      document.querySelector('#linkmail-signin').style.display = "flex";
+      
+      // Hide user info
+      const accountInfo = document.querySelector('.linkmail-account-info');
+      if (accountInfo) {
+        accountInfo.style.display = 'none';
+      }
+    }
     
     // Reset form fields
     if (this.elements.emailResult) this.elements.emailResult.value = '';
