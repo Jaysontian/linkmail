@@ -1,4 +1,5 @@
 // background.js
+
 // Add authentication state management
 let authState = {
   isAuthenticated: false,

@@ -4,9 +4,15 @@ const BACKEND_URL = 'http://localhost:3000';
 (async function() {
   console.log("Linkmail Content Script running");
   
-  // Initialize all modules
+  // Initialize URL observer first
   URLObserver.init();
-  await UIManager.init();
+  
+  // Only initialize UI if we're on a profile page
+  if (location.href.includes('/in/')) {
+    await UIManager.init();
+  } else {
+    console.log("Not on a profile page, waiting for navigation");
+  }
   
   // Handle extension messages
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -27,6 +33,5 @@ const BACKEND_URL = 'http://localhost:3000';
         });
       return true; // Required for async response
     }
-    
   });
 })();

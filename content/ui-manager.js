@@ -1,3 +1,4 @@
+//ui-manager.js
 window.UIManager = {
   elements: {},
   userData: null,
@@ -78,6 +79,14 @@ window.UIManager = {
     const accountInfo = document.querySelector('.linkmail-account-info');
     if (accountInfo) {
       accountInfo.style.display = 'none';
+    }
+  },
+
+  cleanupUI() {
+    // Remove any existing UI elements to prevent duplicates
+    const existingUI = document.querySelector('.linkmail-container');
+    if (existingUI) {
+      existingUI.remove();
     }
   },
 
@@ -237,7 +246,19 @@ window.UIManager = {
         if (response.success) {
           this.isAuthenticated = false;
           this.userData = null;
+          
+          // Hide all views first
+          document.querySelector('#linkmail-editor').style.display = "none";
+          document.querySelector('#linkmail-success').style.display = "none";
+          document.querySelector('#linkmail-splash').style.display = "none";
+          
+          // Show sign-in view
           this.showSignInUI();
+          
+          // Clear form fields
+          if (this.elements.emailResult) this.elements.emailResult.value = '';
+          if (this.elements.emailSubject) this.elements.emailSubject.value = '';
+          document.getElementById('recipientEmailInput').value = '';
         } else {
           console.error('Logout failed:', response.error);
         }
@@ -245,6 +266,7 @@ window.UIManager = {
         console.error('Error during logout:', error);
       }
     });
+
 
     // GENERATE BUTTON UI
     this.elements.generateButton.addEventListener('click', async () => {
@@ -364,6 +386,7 @@ window.UIManager = {
   },
 
   async init() {
+    this.cleanupUI(); // Clean up any existing UI first
     await this.createUI();
     this.setupEventListeners();
   },
