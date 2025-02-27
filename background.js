@@ -104,4 +104,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return true; // Required for async response
   }
+
+  // Handle opening the bio setup page
+  else if (request.action === "openBioSetupPage") {
+    chrome.tabs.create({ url: request.url }, (tab) => {
+      sendResponse({ success: true, tabId: tab.id });
+    });
+    return true; // Required for async response
+  }
 });

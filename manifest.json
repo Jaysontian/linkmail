@@ -15,7 +15,11 @@
     "tabs"
   ],
   "web_accessible_resources": [{
-    "resources": ["content/linkedin-div.html"],
+    "resources": [
+      "content/linkedin-div.html",
+      "bio-setup.html",
+      "bio-setup.js"
+    ],
     "matches": ["https://*.linkedin.com/*"]
   }],
   "host_permissions": [

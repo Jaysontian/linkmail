@@ -43,6 +43,57 @@ window.UIManager = {
     }
   },
 
+  // Add this method to check if user exists in storage
+  async checkUserInStorage(email) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([email], (result) => {
+        resolve(result[email] ? true : false);
+      });
+    });
+  },
+
+  // Add this method to get user data from storage
+  async getUserFromStorage(email) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([email], (result) => {
+        resolve(result[email] || null);
+      });
+    });
+  },
+
+  // Add this method to redirect to the bio setup page
+  redirectToBioSetup(email) {
+    const bioSetupUrl = chrome.runtime.getURL(`bio-setup.html?email=${encodeURIComponent(email)}`);
+    
+    // Open the bio setup page in a new tab
+    chrome.runtime.sendMessage({ 
+      action: "openBioSetupPage", 
+      url: bioSetupUrl 
+    });
+    
+    // Show a message in the LinkedIn UI
+    this.showSignInUI();
+    const signInView = document.querySelector('#linkmail-signin');
+    if (signInView) {
+      const header = signInView.querySelector('.linkmail-header');
+      const paragraph = signInView.querySelector('p');
+      
+      if (header) {
+        header.textContent = 'Complete Your Profile';
+      }
+      
+      if (paragraph) {
+        paragraph.textContent = 'Please complete your profile in the new tab that opened. Return here when finished.';
+      }
+      
+      // Hide the sign-in button
+      const signInButton = signInView.querySelector('#googleSignInButton');
+      if (signInButton) {
+        signInButton.style.display = 'none';
+      }
+    }
+  },
+
   async checkAuthStatus() {
     try {
       // Check if user is already authenticated
@@ -55,7 +106,20 @@ window.UIManager = {
       if (authStatus.isAuthenticated) {
         this.isAuthenticated = true;
         this.userData = authStatus.userData;
-        this.showAuthenticatedUI();
+        
+        // Check if user exists in storage
+        const userExists = await this.checkUserInStorage(this.userData.email);
+        
+        if (userExists) {
+          // Get complete user data from storage
+          const storedUserData = await this.getUserFromStorage(this.userData.email);
+          // Merge with existing userData
+          this.userData = { ...this.userData, ...storedUserData };
+          this.showAuthenticatedUI();
+        } else {
+          // Redirect to bio setup page
+          this.redirectToBioSetup(this.userData.email);
+        }
       } else {
         this.isAuthenticated = false;
         this.showSignInUI();
@@ -223,7 +287,20 @@ window.UIManager = {
         if (response.success) {
           this.isAuthenticated = true;
           this.userData = response.userData;
-          this.showAuthenticatedUI();
+          
+          // Check if user exists in storage
+          const userExists = await this.checkUserInStorage(this.userData.email);
+          
+          if (userExists) {
+            // Get complete user data from storage
+            const storedUserData = await this.getUserFromStorage(this.userData.email);
+            // Merge with existing userData
+            this.userData = { ...this.userData, ...storedUserData };
+            this.showAuthenticatedUI();
+          } else {
+            // Redirect to bio setup page
+            this.redirectToBioSetup(this.userData.email);
+          }
         } else {
           console.error('Authentication failed:', response.error);
           alert('Authentication failed. Please try again.');
@@ -267,7 +344,6 @@ window.UIManager = {
       }
     });
 
-
     // GENERATE BUTTON UI
     this.elements.generateButton.addEventListener('click', async () => {
       // Check if authenticated
@@ -304,6 +380,15 @@ window.UIManager = {
                           : this.templates[0];
 
         console.log(useTemplate);
+
+        // Add user data to the template
+        if (this.userData) {
+          useTemplate.userData = {
+            name: this.userData.name,
+            college: this.userData.college,
+            graduationYear: this.userData.graduationYear
+          };
+        }
 
         const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
 
@@ -385,29 +470,57 @@ window.UIManager = {
     });
   },
 
+  // Add this to the init method or setupEventListeners
+  setupStorageListener() {
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
+        // User data has been updated, refresh the UI
+        this.getUserFromStorage(this.userData.email)
+          .then(userData => {
+            if (userData && userData.setupCompleted) {
+              this.userData = { ...this.userData, ...userData };
+              this.showAuthenticatedUI();
+            }
+          });
+      }
+    });
+  },
+
   async init() {
     this.cleanupUI(); // Clean up any existing UI first
     await this.createUI();
     this.setupEventListeners();
+    this.setupStorageListener(); // Add this line
   },
 
-  async resetUI() {
+  async resetUI(forceSignOut = false) {
     // Hide all views
     document.querySelector('#linkmail-editor').style.display = "none";
     document.querySelector('#linkmail-success').style.display = "none";
     
     // Check authentication status and show appropriate view
-    if (this.isAuthenticated) {
-      document.querySelector('#linkmail-splash').style.display = "flex";
-      document.querySelector('#linkmail-signin').style.display = "none";
+    if (this.isAuthenticated && !forceSignOut) {
+      // Check if user exists in storage
+      const userExists = await this.checkUserInStorage(this.userData.email);
       
-      // Show user info
-      const accountInfo = document.querySelector('.linkmail-account-info');
-      const userEmailDisplay = document.getElementById('user-email-display');
-      
-      if (accountInfo && this.userData?.email) {
-        accountInfo.style.display = 'block';
-        userEmailDisplay.textContent = this.userData.email;
+      if (userExists) {
+        document.querySelector('#linkmail-splash').style.display = "flex";
+        document.querySelector('#linkmail-signin').style.display = "none";
+        
+        // Show user info
+        const accountInfo = document.querySelector('.linkmail-account-info');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        
+        if (accountInfo && this.userData?.email) {
+          accountInfo.style.display = 'block';
+          userEmailDisplay.textContent = this.userData.email;
+        }
+      } else {
+        // User needs to complete bio setup
+        document.querySelector('#linkmail-splash').style.display = "none";
+        document.querySelector('#linkmail-signin').style.display = "none";
+        // Redirect to bio setup
+        this.redirectToBioSetup(this.userData.email);
       }
     } else {
       document.querySelector('#linkmail-splash').style.display = "none";
@@ -423,6 +536,8 @@ window.UIManager = {
     // Reset form fields
     if (this.elements.emailResult) this.elements.emailResult.value = '';
     if (this.elements.emailSubject) this.elements.emailSubject.value = '';
+    const recipientInput = document.getElementById('recipientEmailInput');
+    if (recipientInput) recipientInput.value = '';
     
     // Reset selected template
     const allPrompts = document.querySelectorAll('.linkmail-prompt');
@@ -439,3 +554,5 @@ window.UIManager = {
     }
   }
 };
+
+
