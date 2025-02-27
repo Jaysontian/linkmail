@@ -50,6 +50,7 @@
       "content/url-observer.js",
       "content/ui-manager.js",
       "content/content.js"
-    ]
+    ],
+    "run_at": "document_start"
   }]
 }

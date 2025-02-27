@@ -1,56 +1,11 @@
-//url-observer.js
 window.URLObserver = {
-  lastUrl: location.href,
-  initialized: false,
-
   init() {
-    // Run initial setup
-    this.checkForProfilePage();
-    
-    // Set up the observer
-    const urlObserver = new MutationObserver(
-      Utils.debounce(() => {
-        const currentUrl = location.href;
-        if (currentUrl !== this.lastUrl) {
-          this.lastUrl = currentUrl;
-          console.log('LinkedIn page changed, checking if profile page...');
-          this.checkForProfilePage();
-        }
-      }, 250)
-    );
-
-    urlObserver.observe(document, { childList: true, subtree: true });
-    
-    // Also listen for navigation events
-    window.addEventListener('popstate', () => {
-      console.log('Navigation detected via popstate');
-      this.checkForProfilePage();
-    });
+    console.log('URLObserver initialization skipped - using simplified approach in content.js');
+    // This is now handled directly in content.js
   },
   
   checkForProfilePage() {
-    // Check if we're on a profile page
-    if (location.href.includes('/in/')) {
-      console.log('Profile page detected, initializing UI...');
-      
-      // Wait for the profile page to fully render
-      this.waitForProfileElements()
-        .then(() => {
-          console.log('Profile elements found, resetting UI');
-          if (this.initialized) {
-            UIManager.resetUI();
-          } else {
-            // If first time, do full initialization
-            this.initialized = true;
-            UIManager.init();
-          }
-        })
-        .catch(error => {
-          console.error('Error waiting for profile elements:', error);
-        });
-    } else {
-      console.log('Not a profile page, URL:', location.href);
-    }
+    // This is now handled directly in content.js
   },
   
   waitForProfileElements() {
@@ -75,5 +30,9 @@ window.URLObserver = {
       
       checkElements();
     });
+  },
+  
+  cleanup() {
+    // Nothing to clean up in this simplified version
   }
 };

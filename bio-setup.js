@@ -1,3 +1,4 @@
+//bio-setup.js
 document.addEventListener('DOMContentLoaded', function() {
   const bioForm = document.getElementById('bioForm');
   const messageElement = document.getElementById('message');

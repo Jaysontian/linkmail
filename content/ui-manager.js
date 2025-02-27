@@ -5,6 +5,8 @@ window.UIManager = {
   isAuthenticated: false,
   selectedTemplate: {},
   container: null, // Add this line to store the container reference
+  instanceId: Math.random().toString(36).substring(2, 15),
+  
 
   templates: [
     {
@@ -148,11 +150,20 @@ window.UIManager = {
   },
 
   cleanupUI() {
+    console.log('Cleaning up UI elements with instanceId:', this.instanceId);
+    
     // Remove any existing UI elements to prevent duplicates
-    const existingUI = document.querySelector('.linkmail-container');
-    if (existingUI) {
-      existingUI.remove();
-    }
+    const existingUIs = document.querySelectorAll('.linkmail-container');
+    console.log(`Found ${existingUIs.length} existing UI elements to clean up`);
+    
+    existingUIs.forEach(ui => {
+      ui.remove();
+      console.log('Removed UI element');
+    });
+    
+    // Reset internal state
+    this.elements = {};
+    this.container = null;
   },
 
   showAuthenticatedUI() {
@@ -174,6 +185,12 @@ window.UIManager = {
   },
 
   async createUI() {
+    
+    // Check if we've already created the UI
+    if (document.querySelector('.linkmail-container')) {
+      console.log('UI already exists, skipping creation');
+      return;
+    }
     const templateHtml = await this.loadHTML();
 
     // Create a temporary container, inject styles
