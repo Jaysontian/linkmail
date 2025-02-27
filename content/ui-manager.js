@@ -4,6 +4,7 @@ window.UIManager = {
   userData: null,
   isAuthenticated: false,
   selectedTemplate: {},
+  container: null, // Add this line to store the container reference
 
   templates: [
     {
@@ -183,9 +184,14 @@ window.UIManager = {
     const accountInfoHtml = `
       <div class="linkmail-account-info" style="display: none; margin-bottom: 10px; text-align: right;">
         <span id="user-email-display" style="font-size: 12px; color: #666;"></span>
-        <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-left: 8px;">
-          Sign Out
-        </button>
+        <div style="margin-top: 4px;">
+          <button id="editProfileButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-right: 8px;">
+            Edit Profile
+          </button>
+          <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px;">
+            Sign Out
+          </button>
+        </div>
       </div>
     `;
     
@@ -204,6 +210,7 @@ window.UIManager = {
     
     // Get the first element (our container)
     const injectedDiv = temp.firstElementChild;
+    this.container = injectedDiv; // Store the reference to the container
     
     // Set the recipient name
     const nameElement = injectedDiv.querySelector('#title');
@@ -267,7 +274,8 @@ window.UIManager = {
       emailResult: injectedDiv.querySelector('#emailResult'),
       copyButton: injectedDiv.querySelector('#copyButton'),
       sendGmailButton: injectedDiv.querySelector('#sendGmailButton'),
-      signOutButton: injectedDiv.querySelector('#signOutButton')
+      signOutButton: injectedDiv.querySelector('#signOutButton'),
+      editProfileButton: injectedDiv.querySelector('#editProfileButton') // Add this line
     };
 
     // Check authentication status
@@ -275,6 +283,13 @@ window.UIManager = {
   },
 
   setupEventListeners() {
+
+    // Use this.container instead of injectedDiv
+    if (!this.container) {
+      console.error('Container not initialized');
+      return;
+    }
+
     // Google Sign-in button
     this.elements.signInButton.addEventListener('click', async () => {
       try {
@@ -343,6 +358,22 @@ window.UIManager = {
         console.error('Error during logout:', error);
       }
     });
+
+    // Add event listener for edit profile button
+    this.elements.editProfileButton = this.container.querySelector('#editProfileButton');
+    if (this.elements.editProfileButton) {
+      this.elements.editProfileButton.addEventListener('click', () => {
+        if (this.userData && this.userData.email) {
+          // Open the bio setup page with edit mode
+          const bioSetupUrl = chrome.runtime.getURL(`bio-setup.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
+          
+          chrome.runtime.sendMessage({ 
+            action: "openBioSetupPage", 
+            url: bioSetupUrl 
+          });
+        }
+      });
+    }
 
     // GENERATE BUTTON UI
     this.elements.generateButton.addEventListener('click', async () => {
@@ -470,15 +501,22 @@ window.UIManager = {
     });
   },
 
-  // Add this to the init method or setupEventListeners
+  // In UIManager.setupStorageListener method:
   setupStorageListener() {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
-        // User data has been updated, refresh the UI
+        // User data has been updated, refresh the UI and userData
         this.getUserFromStorage(this.userData.email)
           .then(userData => {
-            if (userData && userData.setupCompleted) {
+            if (userData) {
               this.userData = { ...this.userData, ...userData };
+              
+              // Update the UI with new user data if needed
+              const userEmailDisplay = document.getElementById('user-email-display');
+              if (userEmailDisplay && this.userData?.email) {
+                userEmailDisplay.textContent = this.userData.email;
+              }
+              
               this.showAuthenticatedUI();
             }
           });
