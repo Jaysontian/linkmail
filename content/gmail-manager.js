@@ -65,6 +65,55 @@ window.GmailManager = {
     }
   },
 
+  // Add this to gmail-manager.js
+  async sendAndSaveEmail(to, subject, body) {
+    try {
+      // First send the email
+      const result = await this.sendEmail(to, subject, body);
+      
+      // If successful, save to local storage
+      if (result) {
+        // Get current user email
+        const userProfile = await this.getUserProfile();
+        const userEmail = userProfile.emailAddress;
+        
+        // Get current LinkedIn profile URL and name
+        const profileUrl = window.location.href;
+        const recipientName = document.querySelector('h1')?.innerText || '';
+        
+        // Create email record
+        const emailRecord = {
+          recipientEmail: to,
+          recipientName: recipientName,
+          subject: subject,
+          content: body,
+          date: new Date().toISOString(),
+          linkedInUrl: profileUrl
+        };
+        
+        // Get existing user data
+        chrome.storage.local.get([userEmail], (result) => {
+          const userData = result[userEmail] || {};
+          
+          // Add email to sent emails array
+          userData.sentEmails = userData.sentEmails || [];
+          userData.sentEmails.push(emailRecord);
+          
+          // Save back to storage
+          const data = {};
+          data[userEmail] = userData;
+          chrome.storage.local.set(data);
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error sending and saving email:', error);
+      throw error;
+    }
+  },
+
+
   createEmail({ to, subject, message }) {
     const email = [
       'Content-Type: text/plain; charset="UTF-8"\n',

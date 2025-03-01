@@ -498,7 +498,7 @@ window.UIManager = {
         this.elements.sendGmailButton.disabled = true;
         this.elements.sendGmailButton.textContent = 'Sending...';
 
-        await GmailManager.sendEmail(email, subject, emailContent);
+        await GmailManager.sendAndSaveEmail(email, subject, emailContent);
         
         // Clear the form
         this.elements.emailResult.value = '';

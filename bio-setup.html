@@ -89,6 +89,144 @@
       color: #27ae60;
       margin-top: 16px;
     }
+    
+    /* Styles for the tabs and email history */
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      margin-right: 5px;
+      border-radius: 4px 4px 0 0;
+    }
+    
+    .tab.active {
+      background-color: white;
+      border-color: #ddd;
+      border-bottom-color: white;
+      margin-bottom: -1px;
+      font-weight: 500;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .email-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    
+    .email-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    
+    .email-item:hover {
+      background-color: #f9f9f9;
+    }
+    
+    .email-item:last-child {
+      border-bottom: none;
+    }
+    
+    .email-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    
+    .email-recipient {
+      font-weight: 500;
+    }
+    
+    .email-date {
+      color: #888;
+      font-size: 12px;
+    }
+    
+    .email-subject {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .email-preview {
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .email-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+    
+    .email-modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 24px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 600px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .close-button {
+      float: right;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .email-detail-header {
+      margin-bottom: 16px;
+    }
+    
+    .email-detail-body {
+      white-space: pre-wrap;
+      background-color: #f9f9f9;
+      padding: 16px;
+      border-radius: 4px;
+      margin-top: 16px;
+    }
+    
+    .search-container {
+      margin-bottom: 16px;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .no-emails {
+      padding: 20px;
+      text-align: center;
+      color: #888;
+    }
   </style>
 </head>
 <body>
@@ -96,26 +234,54 @@
     <h1 id="pageTitle">Complete Your LinkMail Profile</h1>
     <p class="description">This information helps us personalize your emails for better results</p>
     
-    <form id="bioForm">
-      <div class="form-group">
-        <label for="name">Your Name</label>
-        <input type="text" id="name" placeholder="Full Name" required>
+    <div class="tabs">
+      <div class="tab active" data-tab="profile">Profile</div>
+      <div class="tab" data-tab="emails">Email History</div>
+    </div>
+    
+    <div class="tab-content active" id="profile-tab">
+      <form id="bioForm">
+        <div class="form-group">
+          <label for="name">Your Name</label>
+          <input type="text" id="name" placeholder="Full Name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="college">College/University</label>
+          <input type="text" id="college" placeholder="Your College or University" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="gradYear">Graduation Year</label>
+          <input type="number" id="gradYear" placeholder="Expected Graduation Year" required min="2000" max="2030">
+        </div>
+        
+        <button type="submit" id="submitButton">Save & Continue</button>
+      </form>
+    </div>
+    
+    <div class="tab-content" id="emails-tab">
+      <h2>Your Sent Emails</h2>
+      <div class="search-container">
+        <input type="text" id="emailSearch" class="search-input" placeholder="Search emails by recipient, subject, or content...">
       </div>
-      
-      <div class="form-group">
-        <label for="college">College/University</label>
-        <input type="text" id="college" placeholder="Your College or University" required>
+      <div id="emailList" class="email-list">
+        <!-- Email items will be populated by JavaScript -->
+        <div class="no-emails">No emails found</div>
       </div>
-      
-      <div class="form-group">
-        <label for="gradYear">Graduation Year</label>
-        <input type="number" id="gradYear" placeholder="Expected Graduation Year" required min="2000" max="2030">
-      </div>
-      
-      <button type="submit" id="submitButton">Save & Continue</button>
-    </form>
+    </div>
     
     <p id="message" class="success" style="display: none;"></p>
+  </div>
+  
+  <!-- Email detail modal -->
+  <div id="emailModal" class="email-modal">
+    <div class="email-modal-content">
+      <span class="close-button" id="closeModal">&times;</span>
+      <div id="emailDetail">
+        <!-- Email details will be populated by JavaScript -->
+      </div>
+    </div>
   </div>
   
   <script src="bio-setup.js"></script>
