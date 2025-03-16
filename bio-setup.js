@@ -193,6 +193,90 @@ document.addEventListener('DOMContentLoaded', function() {
     return experiences;
   }
   
+  // Skills management functionality
+  const skillInput = document.getElementById('skillInput');
+  const addSkillButton = document.getElementById('addSkillButton');
+  const skillsTagsContainer = document.getElementById('skillsTagsContainer');
+  const noSkillsMessage = document.getElementById('noSkillsMessage');
+  let skills = [];
+  const MAX_SKILLS = 10;
+
+  // Function to add a skill
+  function addSkill() {
+    const skill = skillInput.value.trim();
+    
+    if (!skill) {
+      return;
+    }
+    
+    // Check for duplicate
+    if (skills.includes(skill)) {
+      showError('This skill has already been added');
+      return;
+    }
+    
+    // Check max skills
+    if (skills.length >= MAX_SKILLS) {
+      showError(`You can only add up to ${MAX_SKILLS} skills`);
+      return;
+    }
+    
+    // Add to array
+    skills.push(skill);
+    
+    // Create tag element
+    const tagElement = document.createElement('div');
+    tagElement.className = 'skill-tag';
+    tagElement.innerHTML = `
+      ${escapeHtml(skill)}
+      <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
+    `;
+    
+    // Add click event to remove button
+    tagElement.querySelector('.remove-skill').addEventListener('click', function() {
+      const skillToRemove = this.getAttribute('data-skill');
+      removeSkill(skillToRemove);
+      tagElement.remove();
+      updateSkillsDisplay();
+    });
+    
+    // Add to container
+    skillsTagsContainer.appendChild(tagElement);
+    
+    // Clear input
+    skillInput.value = '';
+    
+    // Focus input for next entry
+    skillInput.focus();
+    
+    // Update display
+    updateSkillsDisplay();
+  }
+
+  // Function to remove a skill
+  function removeSkill(skillToRemove) {
+    skills = skills.filter(skill => skill !== skillToRemove);
+  }
+
+  // Function to update the skills display
+  function updateSkillsDisplay() {
+    if (skills.length === 0) {
+      noSkillsMessage.style.display = 'block';
+    } else {
+      noSkillsMessage.style.display = 'none';
+    }
+  }
+
+  // Add event listeners for skills
+  addSkillButton.addEventListener('click', addSkill);
+
+  skillInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSkill();
+    }
+  });
+  
   bioForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -201,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const gradYear = document.getElementById('gradYear').value;
     
     if (!name || !college || !gradYear) {
-      showError('Please fill in all fields');
+      showError('Please fill in all required fields');
       return;
     }
     
@@ -214,7 +298,8 @@ document.addEventListener('DOMContentLoaded', function() {
       college: college,
       graduationYear: gradYear,
       email: email,
-      experiences: experiences, // Add experiences array
+      experiences: experiences,
+      skills: skills, // Add skills array
       setupCompleted: true
     };
     
@@ -355,18 +440,49 @@ document.addEventListener('DOMContentLoaded', function() {
   if (isEditMode) {
     chrome.storage.local.get([email], function(result) {
       const userData = result[email];
-      if (userData && userData.experiences && Array.isArray(userData.experiences)) {
-        userData.experiences.forEach((exp, index) => {
+      if (userData) {
+        // Load experiences
+        if (userData.experiences && Array.isArray(userData.experiences)) {
+          userData.experiences.forEach((exp, index) => {
+            experienceCount++;
+            const card = createExperienceCard(experienceCount, exp);
+            experiencesContainer.appendChild(card);
+          });
+          checkExperienceLimit();
+        } else {
+          // Add one empty experience card by default
           experienceCount++;
-          const card = createExperienceCard(experienceCount, exp);
+          const card = createExperienceCard(experienceCount);
           experiencesContainer.appendChild(card);
-        });
-        checkExperienceLimit();
-      } else {
-        // Add one empty experience card by default
-        experienceCount++;
-        const card = createExperienceCard(experienceCount);
-        experiencesContainer.appendChild(card);
+        }
+        
+        // Load skills
+        if (userData.skills && Array.isArray(userData.skills)) {
+          skills = [...userData.skills];
+          
+          // Create skill tags
+          skills.forEach(skill => {
+            const tagElement = document.createElement('div');
+            tagElement.className = 'skill-tag';
+            tagElement.innerHTML = `
+              ${escapeHtml(skill)}
+              <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
+            `;
+            
+            // Add click event to remove button
+            tagElement.querySelector('.remove-skill').addEventListener('click', function() {
+              const skillToRemove = this.getAttribute('data-skill');
+              removeSkill(skillToRemove);
+              tagElement.remove();
+              updateSkillsDisplay();
+            });
+            
+            // Add to container
+            skillsTagsContainer.appendChild(tagElement);
+          });
+          
+          updateSkillsDisplay();
+        }
       }
     });
   } else {

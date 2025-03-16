@@ -308,6 +308,71 @@
     font-style: normal;
     margin-right: 4px;
   }
+
+  .section-description {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+  }
+  
+  .skills-input-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .skill-add-button {
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+  
+  .skills-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 40px;
+    margin-bottom: 16px;
+    padding: 8px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+  }
+  
+  .skill-tag {
+    display: flex;
+    align-items: center;
+    background-color: #0077b5;
+    color: white;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 14px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .remove-skill {
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 18px;
+    height: 18px;
+    width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .remove-skill:hover {
+    color: #f0f0f0;
+  }
+  
+  .placeholder-text {
+    color: #999;
+    font-style: italic;
+    margin: 0;
+  }
   </style>
 </head>
 <body>
@@ -347,6 +412,25 @@
             <i class="plus-icon">+</i> Add More Experience
           </button>
           <p id="experienceLimit" class="error" style="display: none;">Maximum of 5 experiences allowed.</p>
+        </div>
+
+        <div class="form-group">
+          <h3>Skills</h3>
+          <p class="section-description">List skills you're proficient in. These will be used to personalize your outreach emails.</p>
+          
+          <div id="skillsContainer">
+            <div class="skills-input-container">
+              <input type="text" id="skillInput" class="linkmail-input" placeholder="Add a skill (e.g., Python, Data Analysis, Project Management)">
+              <button type="button" id="addSkillButton" class="linkmail-button secondary-button skill-add-button">
+                <i class="plus-icon">+</i> Add
+              </button>
+            </div>
+            
+            <div id="skillsTagsContainer" class="skills-tags-container">
+              <!-- Skills tags will be added here dynamically -->
+              <p id="noSkillsMessage" class="placeholder-text">No skills added yet</p>
+            </div>
+          </div>
         </div>
         
         <button type="submit" id="submitButton">Save & Continue</button>

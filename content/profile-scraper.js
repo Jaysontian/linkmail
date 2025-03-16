@@ -27,31 +27,40 @@ window.ProfileScraper = {
 
   async generateColdEmail(profileData, templateData) {
     try {
-      // Add user experiences to template data if available
-      if (templateData.userData && templateData.userData.experiences) {
-        templateData.userData.experiencesFormatted = templateData.userData.experiences
-          .map(exp => {
-            let text = '';
-            if (exp.jobTitle) text += exp.jobTitle;
-            if (exp.company) text += exp.jobTitle ? ` at ${exp.company}` : exp.company;
-            
-            // Only add description if it exists and isn't too long
-            if (exp.description && exp.description.length > 0) {
-              // Truncate if too long
-              const shortDesc = exp.description.length > 100 
-                ? exp.description.substring(0, 100) + '...' 
-                : exp.description;
-              text += ` (${shortDesc})`;
-            }
-            return text;
-          })
-          .filter(text => text.length > 0) // Remove empty experiences
-          .join('\n- '); // Format as bullet points
+      // Add user experiences and skills to template data if available
+      if (templateData.userData) {
+        // Format experiences
+        if (templateData.userData.experiences) {
+          templateData.userData.experiencesFormatted = templateData.userData.experiences
+            .map(exp => {
+              let text = '';
+              if (exp.jobTitle) text += exp.jobTitle;
+              if (exp.company) text += exp.jobTitle ? ` at ${exp.company}` : exp.company;
+              
+              // Only add description if it exists and isn't too long
+              if (exp.description && exp.description.length > 0) {
+                // Truncate if too long
+                const shortDesc = exp.description.length > 50 
+                  ? exp.description.substring(0, 50) + '...' 
+                  : exp.description;
+                text += ` (${shortDesc})`;
+              }
+              return text;
+            })
+            .filter(text => text.length > 0) // Remove empty experiences
+            .join('\n- '); // Format as bullet points
+          
+          // If we have experiences, add a prefix
+          if (templateData.userData.experiencesFormatted) {
+            templateData.userData.experiencesFormatted = 'My experiences include:\n- ' + 
+              templateData.userData.experiencesFormatted;
+          }
+        }
         
-        // If we have experiences, add a prefix
-        if (templateData.userData.experiencesFormatted) {
-          templateData.userData.experiencesFormatted = 'My experiences include:\n- ' + 
-            templateData.userData.experiencesFormatted;
+        // Format skills
+        if (templateData.userData.skills && templateData.userData.skills.length > 0) {
+          templateData.userData.skillsFormatted = 'My skills include: ' + 
+            templateData.userData.skills.join(', ');
         }
       }
     
