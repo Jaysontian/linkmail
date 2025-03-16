@@ -164,16 +164,24 @@ window.UIManager = {
 
   showAuthenticatedUI() {
     console.log('Showing authenticated UI');
-    this.showView('#linkmail-splash');
+    if (this.elements.signInView) {
+      this.elements.signInView.style.display = 'none';
+    }
+    if (this.elements.splashView) {
+      this.elements.splashView.style.display = 'flex';
+    }
     
     // Display user info if available
-    const accountInfo = this.container.querySelector('.linkmail-account-info');
-    const userEmailDisplay = this.container.querySelector('#user-email-display');
+    const accountInfo = document.querySelector('.linkmail-account-info');
+    const userEmailDisplay = document.getElementById('user-email-display');
     
     if (accountInfo && this.userData?.email) {
       accountInfo.style.display = 'block';
       userEmailDisplay.textContent = this.userData.email;
     }
+    
+    // Check email history after authentication is confirmed
+    this.checkLastEmailSent();
   },
 
   async createUI() {
@@ -590,7 +598,11 @@ window.UIManager = {
     this.cleanupUI(); // Clean up any existing UI first
     await this.createUI();
     this.setupEventListeners();
-    this.setupStorageListener(); // Add this line
+    this.setupStorageListener();
+    this.setupEmailHistoryRefresh(); // Add this new method call
+    
+    // Initial check (might not work if auth not ready)
+    await this.checkLastEmailSent();
   },
 
   async resetUI(forceSignOut = false) {
@@ -676,6 +688,8 @@ window.UIManager = {
       const firstName = profileName.split(' ')[0] || '';
       nameElement.textContent = `Draft an email to ${firstName}`;
     }
+
+    await this.checkLastEmailSent();
     
     // Re-populate the form with the profile's email
     await this.populateForm();
@@ -721,6 +735,114 @@ window.UIManager = {
     } else {
       console.error(`Target view not found: ${viewName}`);
     }
+  },
+
+  // Add this method to the UIManager object in ui-manager.js
+  async checkLastEmailSent() {
+    try {
+      console.log('Checking last email sent...');
+      
+      // Get the current LinkedIn profile URL and name
+      const currentProfileUrl = window.location.href;
+      const profileName = document.querySelector('h1')?.innerText || '';
+      
+      // Get the last email status element
+      const lastEmailStatus = document.getElementById('lastEmailStatus');
+      if (!lastEmailStatus) {
+        console.error('Last email status element not found');
+        return;
+      }
+      
+      // Default state
+      lastEmailStatus.textContent = 'No Email Sent Yet';
+      lastEmailStatus.style.color = '#666';
+      
+      // If not authenticated, we need to check auth status first
+      if (!this.isAuthenticated || !this.userData || !this.userData.email) {
+        console.log('Not authenticated or missing user data, checking auth status first...');
+        await this.checkAuthStatus();
+        
+        // If still not authenticated after checking, return
+        if (!this.isAuthenticated || !this.userData) {
+          console.log('Still not authenticated after check, returning');
+          return;
+        }
+      }
+      
+      console.log('User authenticated, email:', this.userData.email);
+      
+      // Now we're sure we're authenticated and have user data
+      // Get full user data from storage directly
+      chrome.storage.local.get([this.userData.email], (result) => {
+        const storedUserData = result[this.userData.email];
+        
+        if (!storedUserData || !storedUserData.sentEmails || !storedUserData.sentEmails.length) {
+          console.log('No sent emails found in storage');
+          return; // No emails sent yet
+        }
+        
+        console.log(`Found ${storedUserData.sentEmails.length} sent emails in storage`);
+        
+        // Find emails sent to this profile by URL match
+        let emailsToThisProfile = storedUserData.sentEmails.filter(email => 
+          email.linkedInUrl && (
+            // Exact match
+            email.linkedInUrl === currentProfileUrl || 
+            // Handle slight URL variations (trailing slashes, etc)
+            email.linkedInUrl.replace(/\/$/, '') === currentProfileUrl.replace(/\/$/, '') ||
+            // Remove any query parameters for comparison
+            email.linkedInUrl.split('?')[0] === currentProfileUrl.split('?')[0]
+          )
+        );
+        
+        // If no match by URL, try match by name (as a fallback)
+        if (emailsToThisProfile.length === 0 && profileName) {
+          console.log('No URL match, trying name match with:', profileName);
+          emailsToThisProfile = storedUserData.sentEmails.filter(email => 
+            email.recipientName && email.recipientName.trim() === profileName.trim()
+          );
+        }
+        
+        console.log(`Found ${emailsToThisProfile.length} emails to this profile`);
+        
+        if (emailsToThisProfile.length > 0) {
+          // Sort by date, newest first
+          emailsToThisProfile.sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          // Format the date of the most recent email
+          const lastEmailDate = new Date(emailsToThisProfile[0].date);
+          const formattedDate = lastEmailDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          });
+          
+          // Update the status text
+          lastEmailStatus.textContent = `Last Email Sent: ${formattedDate}`;
+          lastEmailStatus.style.color = '#4caf50'; // Green color to indicate success
+          console.log('Updated status with last email date:', formattedDate);
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error checking last email sent:', error);
+    }
+  },
+
+  setupEmailHistoryRefresh() {
+    // Set up a periodic check for email history
+    // This helps with the case when auth isn't immediately ready after page load
+    const refreshInterval = setInterval(() => {
+      if (this.isAuthenticated && this.userData) {
+        this.checkLastEmailSent();
+        clearInterval(refreshInterval);
+      }
+    }, 2000); // Check every 2 seconds up to 10 seconds
+    
+    // Clear the interval after 10 seconds to avoid infinite checking
+    setTimeout(() => {
+      clearInterval(refreshInterval);
+    }, 10000);
   }
 };
 

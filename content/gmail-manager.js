@@ -66,6 +66,7 @@ window.GmailManager = {
   },
 
   // Add this to gmail-manager.js
+  // Update the sendAndSaveEmail method in gmail-manager.js to include a callback to update the status
   async sendAndSaveEmail(to, subject, body) {
     try {
       // First send the email
@@ -102,11 +103,16 @@ window.GmailManager = {
           // Save back to storage
           const data = {};
           data[userEmail] = userData;
-          chrome.storage.local.set(data);
+          chrome.storage.local.set(data, () => {
+            // Update the email status after saving
+            if (window.UIManager) {
+              window.UIManager.checkLastEmailSent();
+            }
+          });
         });
+        
+        return result;
       }
-      
-      return result;
     } catch (error) {
       console.error('Error sending and saving email:', error);
       throw error;

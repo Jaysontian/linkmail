@@ -41,6 +41,10 @@ const BACKEND_URL = 'http://localhost:3000';
           }
         }
       }
+
+      setTimeout(() => {
+        window.UIManager.checkLastEmailSent();
+      }, 1000); // Small delay to ensure DOM is ready
     }
   }
   
