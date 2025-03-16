@@ -92,6 +92,107 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Experience management functionality
+  const experiencesContainer = document.getElementById('experiencesContainer');
+  const addExperienceButton = document.getElementById('addExperienceButton');
+  const experienceLimit = document.getElementById('experienceLimit');
+  let experienceCount = 0;
+  const MAX_EXPERIENCES = 5;
+  
+  // Function to create a new experience card
+  function createExperienceCard(num, data = {}) {
+    const card = document.createElement('div');
+    card.className = 'experience-card';
+    card.dataset.experienceId = num;
+    
+    card.innerHTML = `
+      <div class="experience-header">
+        <h4 class="experience-title">Experience ${num}</h4>
+        ${num > 1 ? '<button type="button" class="experience-remove" title="Remove Experience">&times;</button>' : ''}
+      </div>
+      <div class="experience-fields">
+        <div class="experience-field">
+          <label for="jobTitle${num}">Job Title</label>
+          <input type="text" id="jobTitle${num}" name="jobTitle${num}" placeholder="e.g. Software Engineer Intern" value="${data.jobTitle || ''}">
+        </div>
+        <div class="experience-field">
+          <label for="company${num}">Company Name</label>
+          <input type="text" id="company${num}" name="company${num}" placeholder="e.g. Google" value="${data.company || ''}">
+        </div>
+        <div class="experience-field">
+          <label for="description${num}">Description</label>
+          <textarea id="description${num}" name="description${num}" placeholder="Describe your responsibilities and achievements...">${data.description || ''}</textarea>
+        </div>
+      </div>
+    `;
+    
+    // Add remove event listener
+    const removeButton = card.querySelector('.experience-remove');
+    if (removeButton) {
+      removeButton.addEventListener('click', function() {
+        card.remove();
+        experienceCount--;
+        updateExperienceCounts();
+        checkExperienceLimit();
+      });
+    }
+    
+    return card;
+  }
+  
+  // Function to update the experience numbers after removal
+  function updateExperienceCounts() {
+    const cards = experiencesContainer.querySelectorAll('.experience-card');
+    cards.forEach((card, index) => {
+      const num = index + 1;
+      card.dataset.experienceId = num;
+      card.querySelector('.experience-title').textContent = `Experience ${num}`;
+    });
+  }
+  
+  // Function to check if we've reached the max experiences
+  function checkExperienceLimit() {
+    if (experienceCount >= MAX_EXPERIENCES) {
+      addExperienceButton.disabled = true;
+      experienceLimit.style.display = 'block';
+    } else {
+      addExperienceButton.disabled = false;
+      experienceLimit.style.display = 'none';
+    }
+  }
+  
+  // Add experience button click handler
+  addExperienceButton.addEventListener('click', function() {
+    if (experienceCount < MAX_EXPERIENCES) {
+      experienceCount++;
+      const card = createExperienceCard(experienceCount);
+      experiencesContainer.appendChild(card);
+      checkExperienceLimit();
+    }
+  });
+  
+  // Function to collect all experiences data
+  function collectExperiencesData() {
+    const experiences = [];
+    const cards = experiencesContainer.querySelectorAll('.experience-card');
+    
+    cards.forEach(card => {
+      const id = card.dataset.experienceId;
+      const experience = {
+        jobTitle: document.getElementById(`jobTitle${id}`).value.trim(),
+        company: document.getElementById(`company${id}`).value.trim(),
+        description: document.getElementById(`description${id}`).value.trim()
+      };
+      
+      // Only add if at least one field has data
+      if (experience.jobTitle || experience.company || experience.description) {
+        experiences.push(experience);
+      }
+    });
+    
+    return experiences;
+  }
+  
   bioForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -104,12 +205,16 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // Collect experiences data
+    const experiences = collectExperiencesData();
+    
     // Prepare user data
     const userData = {
       name: name,
       college: college,
       graduationYear: gradYear,
       email: email,
+      experiences: experiences, // Add experiences array
       setupCompleted: true
     };
     
@@ -244,5 +349,30 @@ document.addEventListener('DOMContentLoaded', function() {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+  
+  // Load existing experiences if in edit mode
+  if (isEditMode) {
+    chrome.storage.local.get([email], function(result) {
+      const userData = result[email];
+      if (userData && userData.experiences && Array.isArray(userData.experiences)) {
+        userData.experiences.forEach((exp, index) => {
+          experienceCount++;
+          const card = createExperienceCard(experienceCount, exp);
+          experiencesContainer.appendChild(card);
+        });
+        checkExperienceLimit();
+      } else {
+        // Add one empty experience card by default
+        experienceCount++;
+        const card = createExperienceCard(experienceCount);
+        experiencesContainer.appendChild(card);
+      }
+    });
+  } else {
+    // Add one empty experience card by default for new users
+    experienceCount++;
+    const card = createExperienceCard(experienceCount);
+    experiencesContainer.appendChild(card);
   }
 });

@@ -227,6 +227,87 @@
       text-align: center;
       color: #888;
     }
+
+    .experience-card {
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #eee;
+    position: relative;
+  }
+  
+  .experience-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  
+  .experience-title {
+    font-weight: 600;
+    color: #0077b5;
+    font-size: 14px;
+    margin: 0;
+  }
+  
+  .experience-remove {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+  }
+  
+  .experience-remove:hover {
+    color: #e74c3c;
+  }
+  
+  .experience-fields {
+    display: grid;
+    grid-gap: 10px;
+  }
+  
+  .experience-field {
+    margin-bottom: 8px;
+  }
+  
+  .experience-field label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  
+  .experience-field input, 
+  .experience-field textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .experience-field textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  .secondary-button {
+    background-color: white;
+    color: #0077b5;
+    border: 1px solid #0077b5;
+    margin-top: 8px;
+  }
+  
+  .secondary-button:hover {
+    background-color: #f0f7fb;
+  }
+  
+  .plus-icon {
+    font-style: normal;
+    margin-right: 4px;
+  }
   </style>
 </head>
 <body>
@@ -254,6 +335,18 @@
         <div class="form-group">
           <label for="gradYear">Graduation Year</label>
           <input type="number" id="gradYear" placeholder="Expected Graduation Year" required min="2000" max="2030">
+        </div>
+
+        <div class="form-group">
+          <h3>Experiences</h3>
+          <div id="experiencesContainer">
+            <!-- Experience 1 will be added here by default -->
+          </div>
+          
+          <button type="button" id="addExperienceButton" class="linkmail-button secondary-button">
+            <i class="plus-icon">+</i> Add More Experience
+          </button>
+          <p id="experienceLimit" class="error" style="display: none;">Maximum of 5 experiences allowed.</p>
         </div>
         
         <button type="submit" id="submitButton">Save & Continue</button>

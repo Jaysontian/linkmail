@@ -135,15 +135,11 @@ window.UIManager = {
   },
 
   showSignInUI() {
-    if (this.elements.signInView) {
-      this.elements.signInView.style.display = 'flex';
-    }
-    if (this.elements.splashView) {
-      this.elements.splashView.style.display = 'none';
-    }
+    console.log('Showing sign in UI');
+    this.showView('#linkmail-signin');
     
     // Hide user info
-    const accountInfo = document.querySelector('.linkmail-account-info');
+    const accountInfo = this.container.querySelector('.linkmail-account-info');
     if (accountInfo) {
       accountInfo.style.display = 'none';
     }
@@ -167,16 +163,12 @@ window.UIManager = {
   },
 
   showAuthenticatedUI() {
-    if (this.elements.signInView) {
-      this.elements.signInView.style.display = 'none';
-    }
-    if (this.elements.splashView) {
-      this.elements.splashView.style.display = 'flex';
-    }
+    console.log('Showing authenticated UI');
+    this.showView('#linkmail-splash');
     
     // Display user info if available
-    const accountInfo = document.querySelector('.linkmail-account-info');
-    const userEmailDisplay = document.getElementById('user-email-display');
+    const accountInfo = this.container.querySelector('.linkmail-account-info');
+    const userEmailDisplay = this.container.querySelector('#user-email-display');
     
     if (accountInfo && this.userData?.email) {
       accountInfo.style.display = 'block';
@@ -477,8 +469,10 @@ window.UIManager = {
       }, 2000);
     });
 
-    // SEND EMAIL BUTTON
+    // Replace your current sendGmailButton event listener with this
     this.elements.sendGmailButton.addEventListener('click', async () => {
+      console.log('Send Gmail button clicked');
+      
       // Check if authenticated
       if (!this.isAuthenticated) {
         this.showSignInUI();
@@ -495,33 +489,83 @@ window.UIManager = {
       }
 
       try {
+        // Disable button and update text
         this.elements.sendGmailButton.disabled = true;
         this.elements.sendGmailButton.textContent = 'Sending...';
+        console.log('Sending email...');
 
+        // Send email
         await GmailManager.sendAndSaveEmail(email, subject, emailContent);
+        console.log('Email sent successfully');
         
         // Clear the form
         this.elements.emailResult.value = '';
         this.elements.emailSubject.value = '';
         document.getElementById('recipientEmailInput').value = '';
-
+        
+        console.log('Form cleared, now updating UI');
+        
+        // IMPORTANT: Directly access views within the container
+        // Get direct references to all views
+        const editorView = this.container.querySelector('#linkmail-editor');
+        const splashView = this.container.querySelector('#linkmail-splash');
+        const signinView = this.container.querySelector('#linkmail-signin');
+        const successView = this.container.querySelector('#linkmail-success');
+        
+        console.log('Found views:', {
+          editorView: !!editorView,
+          splashView: !!splashView,
+          signinView: !!signinView,
+          successView: !!successView
+        });
+        
+        // Hide all views first
+        if (editorView) {
+          editorView.style.display = 'none';
+          console.log('Editor view hidden');
+        }
+        
+        if (splashView) {
+          splashView.style.display = 'none';
+          console.log('Splash view hidden');
+        }
+        
+        if (signinView) {
+          signinView.style.display = 'none';
+          console.log('Sign-in view hidden');
+        }
+        
+        // Show success view
+        if (successView) {
+          successView.style.display = 'block';
+          console.log('Success view shown');
+        } else {
+          console.error('Success view not found!');
+        }
+        
       } catch (error) {
         console.error('Failed to send email:', error);
         alert('Failed to send email. Please make sure you are logged into Gmail and try again.');
       } finally {
+        // Re-enable button
         this.elements.sendGmailButton.disabled = false;
         this.elements.sendGmailButton.textContent = 'Send via Gmail';
-
-        document.querySelector('#linkmail-editor').style.display = "none";
-        document.querySelector('#linkmail-success').style.display = "block";
       }
     });
   },
 
-  // In UIManager.setupStorageListener method:
+  // REPLACE the setupStorageListener method in ui-manager.js with this one
   setupStorageListener() {
     chrome.storage.onChanged.addListener((changes, namespace) => {
+      // Skip storage listener updates if we're in the email success state
+      const successView = this.container.querySelector('#linkmail-success');
+      if (successView && successView.style.display === 'block') {
+        console.log('Storage change detected but ignoring because success view is displayed');
+        return;
+      }
+      
       if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
+        console.log('User data updated in storage, refreshing UI');
         // User data has been updated, refresh the UI and userData
         this.getUserFromStorage(this.userData.email)
           .then(userData => {
@@ -534,6 +578,7 @@ window.UIManager = {
                 userEmailDisplay.textContent = this.userData.email;
               }
               
+              // Only update UI if we're not showing the success view
               this.showAuthenticatedUI();
             }
           });
@@ -549,63 +594,132 @@ window.UIManager = {
   },
 
   async resetUI(forceSignOut = false) {
-    // Hide all views
-    document.querySelector('#linkmail-editor').style.display = "none";
-    document.querySelector('#linkmail-success').style.display = "none";
+    console.log('Resetting UI state with forceSignOut:', forceSignOut);
     
-    // Check authentication status and show appropriate view
-    if (this.isAuthenticated && !forceSignOut) {
-      // Check if user exists in storage
-      const userExists = await this.checkUserInStorage(this.userData.email);
-      
-      if (userExists) {
-        document.querySelector('#linkmail-splash').style.display = "flex";
-        document.querySelector('#linkmail-signin').style.display = "none";
-        
-        // Show user info
-        const accountInfo = document.querySelector('.linkmail-account-info');
-        const userEmailDisplay = document.getElementById('user-email-display');
-        
-        if (accountInfo && this.userData?.email) {
-          accountInfo.style.display = 'block';
-          userEmailDisplay.textContent = this.userData.email;
-        }
-      } else {
-        // User needs to complete bio setup
-        document.querySelector('#linkmail-splash').style.display = "none";
-        document.querySelector('#linkmail-signin').style.display = "none";
-        // Redirect to bio setup
-        this.redirectToBioSetup(this.userData.email);
-      }
-    } else {
-      document.querySelector('#linkmail-splash').style.display = "none";
-      document.querySelector('#linkmail-signin').style.display = "flex";
-      
-      // Hide user info
-      const accountInfo = document.querySelector('.linkmail-account-info');
-      if (accountInfo) {
-        accountInfo.style.display = 'none';
-      }
+    if (!this.container) {
+      console.error('Container not initialized, cannot reset UI');
+      return;
     }
     
+    // Explicitly get all UI elements by their IDs
+    const editorView = this.container.querySelector('#linkmail-editor');
+    const successView = this.container.querySelector('#linkmail-success');
+    const splashView = this.container.querySelector('#linkmail-splash');
+    const signInView = this.container.querySelector('#linkmail-signin');
+    
+    // Hide ALL views first
+    [editorView, successView, splashView, signInView].forEach(view => {
+      if (view) view.style.display = 'none';
+    });
+    
     // Reset form fields
-    if (this.elements.emailResult) this.elements.emailResult.value = '';
-    if (this.elements.emailSubject) this.elements.emailSubject.value = '';
-    const recipientInput = document.getElementById('recipientEmailInput');
+    const emailResult = this.container.querySelector('#emailResult');
+    const emailSubject = this.container.querySelector('#emailSubject');
+    const recipientInput = this.container.querySelector('#recipientEmailInput');
+    
+    if (emailResult) emailResult.value = '';
+    if (emailSubject) emailSubject.value = '';
     if (recipientInput) recipientInput.value = '';
     
     // Reset selected template
-    const allPrompts = document.querySelectorAll('.linkmail-prompt');
+    const allPrompts = this.container.querySelectorAll('.linkmail-prompt');
     allPrompts.forEach(prompt => {
       prompt.classList.remove('linkmail-prompt-selected');
     });
     this.selectedTemplate = {};
     
-    // Update the title with the new profile name
-    const nameElement = document.getElementById('title');
-    const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
+    // Update the UI based on authentication status
+    if (this.isAuthenticated && !forceSignOut) {
+      // Check if user exists in storage
+      try {
+        const userExists = await this.checkUserInStorage(this.userData.email);
+        
+        if (userExists) {
+          // Get user data from storage
+          const storedUserData = await this.getUserFromStorage(this.userData.email);
+          this.userData = { ...this.userData, ...storedUserData };
+          
+          // Show splash view
+          if (splashView) splashView.style.display = 'flex';
+          
+          // Show user info
+          const accountInfo = this.container.querySelector('.linkmail-account-info');
+          const userEmailDisplay = this.container.querySelector('#user-email-display');
+          
+          if (accountInfo && this.userData?.email) {
+            accountInfo.style.display = 'block';
+            if (userEmailDisplay) userEmailDisplay.textContent = this.userData.email;
+          }
+        } else {
+          // User needs to complete bio setup
+          if (signInView) signInView.style.display = 'flex';
+          this.redirectToBioSetup(this.userData.email);
+        }
+      } catch (error) {
+        console.error('Error checking user in storage:', error);
+        if (signInView) signInView.style.display = 'flex';
+      }
+    } else {
+      // Not authenticated, show sign in view
+      if (signInView) signInView.style.display = 'flex';
+      
+      // Hide user info
+      const accountInfo = this.container.querySelector('.linkmail-account-info');
+      if (accountInfo) accountInfo.style.display = 'none';
+    }
+    
+    // Update the title with the current profile name
+    const nameElement = this.container.querySelector('#title');
     if (nameElement) {
+      const h1Element = document.querySelector('h1');
+      const profileName = h1Element ? h1Element.innerText : '';
+      const firstName = profileName.split(' ')[0] || '';
       nameElement.textContent = `Draft an email to ${firstName}`;
+    }
+    
+    // Re-populate the form with the profile's email
+    await this.populateForm();
+  },
+
+  // Add this new method to help manage view transitions
+  showView(viewName) {
+    console.log(`Showing view: ${viewName}`);
+    
+    if (!this.container) {
+      console.error('Container not initialized, cannot show view');
+      return;
+    }
+    
+    // Define all possible views
+    const allViews = [
+      '#linkmail-signin',
+      '#linkmail-splash',
+      '#linkmail-editor',
+      '#linkmail-success'
+    ];
+    
+    // Hide all views first
+    allViews.forEach(selector => {
+      const view = this.container.querySelector(selector);
+      if (view) {
+        view.style.display = 'none';
+        console.log(`Hidden view: ${selector}`);
+      } else {
+        console.warn(`View not found: ${selector}`);
+      }
+    });
+    
+    // Show the requested view
+    const targetView = this.container.querySelector(viewName);
+    if (targetView) {
+      if (viewName === '#linkmail-splash') {
+        targetView.style.display = 'flex';
+      } else {
+        targetView.style.display = 'block';
+      }
+      console.log(`Displayed view: ${viewName}`);
+    } else {
+      console.error(`Target view not found: ${viewName}`);
     }
   }
 };
