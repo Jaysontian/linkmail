@@ -383,6 +383,7 @@
     <div class="tabs">
       <div class="tab active" data-tab="profile">Profile</div>
       <div class="tab" data-tab="emails">Email History</div>
+      <div class="tab" data-tab="templates">Templates</div>
     </div>
     
     <div class="tab-content active" id="profile-tab">
@@ -445,6 +446,44 @@
       <div id="emailList" class="email-list">
         <!-- Email items will be populated by JavaScript -->
         <div class="no-emails">No emails found</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="templates-tab">
+      <h2>Email Templates</h2>
+      <p class="section-description">Create custom email templates to use when reaching out to LinkedIn connections. Use [bracketed text] to indicate variables that should be filled by AI.</p>
+      
+      <div id="templates-container">
+        <!-- Templates will be listed here -->
+        <p id="no-templates-message" class="placeholder-text">No templates added yet</p>
+      </div>
+      
+      <div class="template-form" style="margin-top: 20px; border: 1px solid #eee; padding: 16px; border-radius: 6px; background-color: #f9f9f9;">
+        <h3 style="margin-top: 0;">Add New Template</h3>
+        
+        <div class="form-group">
+          <label for="templateName">Template Name</label>
+          <input type="text" id="templateName" placeholder="e.g., Startup Coffee Chat Email" class="linkmail-input">
+        </div>
+        
+        <div class="form-group">
+          <label for="templateContent">Template Content</label>
+          <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a [User Year] student at [User College].&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;[Your Name]" class="linkmail-input" style="min-height: 200px;"></textarea>
+        </div>
+        
+        <div class="help-text" style="margin-bottom: 16px; font-size: 13px; color: #666;">
+          <p><strong>Template Variables:</strong></p>
+          <ul style="margin-top: 5px; padding-left: 20px;">
+            <li>[Recipient Name] - The LinkedIn user's name</li>
+            <li>[Recipient Company] - The LinkedIn user's company</li>
+            <li>[Your Name] - Your name from your profile</li>
+            <li>[User College] - Your college/university</li>
+            <li>[User Year] - Your year based on graduation date</li>
+          </ul>
+          <p>Use brackets [like this] for any text you want the AI to replace with personalized content.</p>
+        </div>
+        
+        <button type="button" id="addTemplateButton" class="linkmail-button">Add Template</button>
       </div>
     </div>
     

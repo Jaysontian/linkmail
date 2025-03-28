@@ -17,32 +17,25 @@
         </button>
     </div>
   
-
     <div id="linkmail-splash" style="display: none;">
         <h2 id="title" class="linkmail-header"></h2>
 
         <div id="lastEmailStatus" class="linkmail-last-email-status">No Email Sent Yet</div>
 
-        <div class="linkmail-prompt-list">
-            <!-- <div class="linkmail-prompt">
-                <h1>☕</h1>
-                <div>
-                    <h2>Coffee Chat</h2>
-                    <p>Send a friendly request to chat with this person.</p>
-                </div>
-            </div>
-            <br>
-            <div class="linkmail-prompt">
-                <h1>💼</h1>
-                <div>
-                    <h2>Job Application</h2>
-                    <p>Craft a professional email to a recruiter or manager.</p>
-                </div>
-            </div> -->
+        <!-- Template Selection Dropdown -->
+        <div class="linkmail-template-select" style="margin-bottom: 20px; width: 100%;">
+          <label for="template-dropdown" style="font-size: 14px; margin-bottom: 8px; display: block; color: #555;">
+            Select an email template:
+          </label>
+          <select id="template-dropdown" class="linkmail-input" style="font-size: 14px; padding: 8px; width: 100%;">
+            <option value="" disabled selected>Choose a template</option>
+            <!-- Default templates -->
+            <option value="coffee-chat">Coffee Chat</option>
+            <option value="job-application">Job Application</option>
+            <!-- Custom templates will be added here dynamically -->
+          </select>
         </div>
-
         
-        <br>
         <button id="generateButton" class="linkmail-button">Generate</button>
     </div>
 
@@ -82,7 +75,6 @@
         align-items: center;
         justify-content: space-around;
     }
-
 
     .linkmail-prompt-list{
         display:flex;

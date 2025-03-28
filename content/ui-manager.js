@@ -180,123 +180,281 @@ window.UIManager = {
       userEmailDisplay.textContent = this.userData.email;
     }
     
-    // Check email history after authentication is confirmed
-    this.checkLastEmailSent();
+    // Refresh user data from storage to get latest templates
+    this.refreshUserData().then(() => {
+      // Populate template dropdown with user's custom templates
+      this.populateTemplateDropdown();
+      
+      // Check email history after authentication is confirmed
+      this.checkLastEmailSent();
+    });
   },
 
-  async createUI() {
-    
-    // Check if we've already created the UI
-    if (document.querySelector('.linkmail-container')) {
-      console.log('UI already exists, skipping creation');
+  // Add this new method to UIManager to refresh user data
+  async refreshUserData() {
+    if (!this.isAuthenticated || !this.userData || !this.userData.email) {
+      console.log('Not authenticated or missing user data, cannot refresh');
       return;
     }
-    const templateHtml = await this.loadHTML();
-
-    // Create a temporary container, inject styles
-    const temp = document.createElement('div');
-    temp.innerHTML = templateHtml;
     
-    // Add account info section
-    const accountInfoHtml = `
-      <div class="linkmail-account-info" style="display: none; margin-bottom: 10px; text-align: right;">
-        <span id="user-email-display" style="font-size: 12px; color: #666;"></span>
-        <div style="margin-top: 4px;">
-          <button id="editProfileButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-right: 8px;">
-            Edit Profile
-          </button>
-          <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px;">
-            Sign Out
-          </button>
-        </div>
-      </div>
-    `;
+    console.log('Refreshing user data from storage');
     
-    // Insert account info at the top of the container
-    const container = temp.querySelector('.linkmail-container');
-    if (container) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = accountInfoHtml;
-      container.insertBefore(tempDiv.firstElementChild, container.firstChild);
-    }
-    
-    const styleElement = temp.querySelector('style');
-    if (styleElement) {
-        document.head.appendChild(styleElement);
-    }
-    
-    // Get the first element (our container)
-    const injectedDiv = temp.firstElementChild;
-    this.container = injectedDiv; // Store the reference to the container
-    
-    // Set the recipient name
-    const nameElement = injectedDiv.querySelector('#title');
-    const firstName = document.querySelector('h1')?.innerText.split(' ')[0]?.charAt(0).toUpperCase() + document.querySelector('h1')?.innerText.split(' ')[0]?.slice(1) || '';
-    nameElement.textContent = `Draft an email to ${firstName}`;
-
-    // Generate template list dynamically
-    const promptListDiv = injectedDiv.querySelector('.linkmail-prompt-list');
-
-    // Generate template cards from ProfileScraper.templates
-    this.templates.forEach(template => {
-        const promptDiv = document.createElement('div');
-        promptDiv.className = 'linkmail-prompt';
-        promptDiv.innerHTML = `
-            <h1>${template.icon}</h1>
-            <div>
-                <h2>${template.name}</h2>
-                <p>${template.description}</p>
-            </div>
-        `;
-
-        console.log('generated: ', template.name);
-
-        // Add click handler
-        promptDiv.addEventListener('click', async () => {
-          // Remove 'selected' class from all prompts
-          const allPrompts = promptListDiv.querySelectorAll('.linkmail-prompt');
-          allPrompts.forEach(prompt => {
-              prompt.classList.remove('linkmail-prompt-selected');
-          });
-          
-          // Add 'selected' class to clicked prompt
-          promptDiv.classList.add('linkmail-prompt-selected');
-          
-          // Update the selectedTemplate with the clicked template's data
-          this.selectedTemplate = template;
-        });
-
-        promptListDiv.appendChild(promptDiv);
+    return new Promise((resolve) => {
+      chrome.storage.local.get([this.userData.email], (result) => {
+        const storedUserData = result[this.userData.email];
+        
+        if (storedUserData) {
+          console.log('Found stored user data, updating local copy');
+          this.userData = storedUserData;
+        } else {
+          console.log('No stored user data found');
+        }
+        
+        resolve();
+      });
     });
+  },
 
-    console.log('Injecting this code...');
+  // First, let's modify the UIManager's createUI method to add better error handling and logging
 
-    // Insert into the page
-    const asideElement = document.querySelector('aside.scaffold-layout__aside');
-    console.log('Aside element found:', asideElement);
-    if (asideElement) {
-      asideElement.prepend(injectedDiv);
-    } else {
-      console.error('Target aside element not found.');
+  async createUI() {
+    try {
+      console.log('Starting createUI method...');
+      
+      // Check if we've already created the UI
+      if (document.querySelector('.linkmail-container')) {
+        console.log('UI already exists, skipping creation');
+        return;
+      }
+      
+      console.log('Loading HTML template...');
+      const templateHtml = await this.loadHTML();
+      console.log('HTML template loaded successfully');
+
+      // Create a temporary container, inject styles
+      const temp = document.createElement('div');
+      temp.innerHTML = templateHtml;
+      
+      // Add account info section
+      const accountInfoHtml = `
+        <div class="linkmail-account-info" style="display: none; margin-bottom: 10px; text-align: right;">
+          <span id="user-email-display" style="font-size: 12px; color: #666;"></span>
+          <div style="margin-top: 4px;">
+            <button id="editProfileButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-right: 8px;">
+              Edit Profile
+            </button>
+            <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px;">
+              Sign Out
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Insert account info at the top of the container
+      const container = temp.querySelector('.linkmail-container');
+      if (container) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = accountInfoHtml;
+        container.insertBefore(tempDiv.firstElementChild, container.firstChild);
+      } else {
+        console.error('Container element not found in template HTML');
+        return;
+      }
+      
+      const styleElement = temp.querySelector('style');
+      if (styleElement) {
+        document.head.appendChild(styleElement);
+      }
+      
+      // Get the first element (our container)
+      const injectedDiv = temp.firstElementChild;
+      if (!injectedDiv) {
+        console.error('No first element found in template');
+        return;
+      }
+      
+      this.container = injectedDiv; // Store the reference to the container
+      
+      // Set the recipient name
+      const nameElement = injectedDiv.querySelector('#title');
+      if (nameElement) {
+        const h1Element = document.querySelector('h1');
+        const fullName = h1Element?.innerText || '';
+        const firstName = fullName.split(' ')[0]?.charAt(0).toUpperCase() + fullName.split(' ')[0]?.slice(1) || '';
+        nameElement.textContent = `Draft an email to ${firstName}`;
+      }
+
+      // Find the dropdown container
+      const templateDropdown = injectedDiv.querySelector('#template-dropdown');
+      if (!templateDropdown) {
+        console.error('Template dropdown not found in HTML');
+        // If dropdown doesn't exist, add default options
+        const splashDiv = injectedDiv.querySelector('#linkmail-splash');
+        if (splashDiv) {
+          // Add some fallback UI if the dropdown is missing
+          const promptListDiv = document.createElement('div');
+          promptListDiv.className = 'linkmail-prompt-list';
+          splashDiv.appendChild(promptListDiv);
+          
+          // Generate template cards from default templates as fallback
+          this.templates.forEach(template => {
+            const promptDiv = document.createElement('div');
+            promptDiv.className = 'linkmail-prompt';
+            promptDiv.innerHTML = `
+                <h1>${template.icon}</h1>
+                <div>
+                    <h2>${template.name}</h2>
+                    <p>${template.description}</p>
+                </div>
+            `;
+            
+            promptDiv.addEventListener('click', () => {
+              // Remove 'selected' class from all prompts
+              const allPrompts = promptListDiv.querySelectorAll('.linkmail-prompt');
+              allPrompts.forEach(prompt => {
+                  prompt.classList.remove('linkmail-prompt-selected');
+              });
+              
+              // Add 'selected' class to clicked prompt
+              promptDiv.classList.add('linkmail-prompt-selected');
+              
+              // Update the selectedTemplate with the clicked template's data
+              this.selectedTemplate = template;
+            });
+            
+            promptListDiv.appendChild(promptDiv);
+          });
+        }
+      } else {
+        console.log('Template dropdown found, populating with default options');
+        // Make sure dropdown has at least default options
+        if (templateDropdown.options.length < 2) {
+          templateDropdown.innerHTML = `
+            <option value="" disabled selected>Choose a template</option>
+            <option value="coffee-chat">Coffee Chat</option>
+            <option value="job-application">Job Application</option>
+          `;
+        }
+      }
+
+      console.log('Injecting UI into page...');
+      // Insert into the page
+      const asideElement = document.querySelector('aside.scaffold-layout__aside');
+      console.log('Aside element found:', asideElement);
+      if (asideElement) {
+        asideElement.prepend(injectedDiv);
+        console.log('UI successfully injected');
+      } else {
+        console.error('Target aside element not found.');
+        return;
+      }
+
+      // Store references to elements
+      this.elements = {
+        signInButton: injectedDiv.querySelector('#googleSignInButton'),
+        signInView: injectedDiv.querySelector('#linkmail-signin'),
+        splashView: injectedDiv.querySelector('#linkmail-splash'),
+        generateButton: injectedDiv.querySelector('#generateButton'),
+        loadingIndicator: injectedDiv.querySelector('#loadingIndicator'),
+        emailSubject: injectedDiv.querySelector('#emailSubject'),
+        emailResult: injectedDiv.querySelector('#emailResult'),
+        copyButton: injectedDiv.querySelector('#copyButton'),
+        sendGmailButton: injectedDiv.querySelector('#sendGmailButton'),
+        signOutButton: injectedDiv.querySelector('#signOutButton'),
+        editProfileButton: injectedDiv.querySelector('#editProfileButton'),
+        templateDropdown: injectedDiv.querySelector('#template-dropdown')
+      };
+
+      // Check that required elements exist
+      if (!this.elements.signInButton || !this.elements.splashView || !this.elements.generateButton) {
+        console.error('Required UI elements not found:', {
+          signInButton: !!this.elements.signInButton,
+          splashView: !!this.elements.splashView,
+          generateButton: !!this.elements.generateButton
+        });
+        return;
+      }
+
+      // Check authentication status
+      console.log('Checking authentication status...');
+      await this.checkAuthStatus();
+      console.log('UI creation complete');
+    } catch (error) {
+      console.error('Error creating UI:', error);
+      // Try to recover by reverting to original UI
+      try {
+        const asideElement = document.querySelector('aside.scaffold-layout__aside');
+        if (asideElement) {
+          // Create a minimal UI if all else fails
+          const fallbackDiv = document.createElement('div');
+          fallbackDiv.className = 'linkmail-container';
+          fallbackDiv.innerHTML = `
+            <div id="linkmail-signin" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <h2 class="linkmail-header">Sign in to use LinkMail</h2>
+              <p style="text-align: center; margin-bottom: 16px;">Connect with Google to generate and send emails directly from LinkedIn</p>
+              <button id="googleSignInButton" class="linkmail-button">
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 18px; margin-right: 8px; vertical-align: middle;">
+                Sign in with Google
+              </button>
+            </div>
+          `;
+          
+          // Add minimal styles
+          const style = document.createElement('style');
+          style.textContent = `
+            .linkmail-container {
+              background-color: white;
+              border: 1px solid rgba(0, 0, 0, 0.15);
+              padding: 24px 12px;
+              margin-bottom: 16px;
+              border-radius: 8px;
+            }
+            .linkmail-header {
+              font-size: 14pt;
+              font-weight: 600;
+              text-align: center;
+              margin: 16px 0px;
+            }
+            .linkmail-button {
+              background-color: rgb(24, 136, 255);
+              color: white !important;
+              text-decoration: none;
+              padding: 6px 16px;
+              border-radius: 8px;
+              font-size: 11pt;
+              margin: 8px 0px;
+            }
+          `;
+          document.head.appendChild(style);
+          
+          asideElement.prepend(fallbackDiv);
+          console.log('Fallback UI created');
+          
+          // Set up minimal auth button
+          const signInButton = fallbackDiv.querySelector('#googleSignInButton');
+          if (signInButton) {
+            signInButton.addEventListener('click', async () => {
+              try {
+                const response = await new Promise((resolve) => {
+                  chrome.runtime.sendMessage({ action: "signInWithGoogle" }, (response) => {
+                    resolve(response);
+                  });
+                });
+                
+                if (response.success) {
+                  // Reload page to restart the UI
+                  window.location.reload();
+                }
+              } catch (error) {
+                console.error('Error during authentication:', error);
+              }
+            });
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Failed to create fallback UI:', fallbackError);
+      }
     }
-
-    // Store references to elements
-    this.elements = {
-      signInButton: injectedDiv.querySelector('#googleSignInButton'),
-      signInView: injectedDiv.querySelector('#linkmail-signin'),
-      splashView: injectedDiv.querySelector('#linkmail-splash'),
-      generateButton: injectedDiv.querySelector('#generateButton'),
-      loadingIndicator: injectedDiv.querySelector('#loadingIndicator'),
-      emailSubject: injectedDiv.querySelector('#emailSubject'),
-      emailResult: injectedDiv.querySelector('#emailResult'),
-      copyButton: injectedDiv.querySelector('#copyButton'),
-      sendGmailButton: injectedDiv.querySelector('#sendGmailButton'),
-      signOutButton: injectedDiv.querySelector('#signOutButton'),
-      editProfileButton: injectedDiv.querySelector('#editProfileButton') // Add this line
-    };
-
-    // Check authentication status
-    await this.checkAuthStatus();
   },
 
   setupEventListeners() {
@@ -376,21 +534,36 @@ window.UIManager = {
       }
     });
 
-    // Add event listener for edit profile button
-    this.elements.editProfileButton = this.container.querySelector('#editProfileButton');
-    if (this.elements.editProfileButton) {
-      this.elements.editProfileButton.addEventListener('click', () => {
-        if (this.userData && this.userData.email) {
-          // Open the bio setup page with edit mode
-          const bioSetupUrl = chrome.runtime.getURL(`bio-setup.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
-          
-          chrome.runtime.sendMessage({ 
-            action: "openBioSetupPage", 
-            url: bioSetupUrl 
-          });
-        }
-      });
-    }
+    // Add this improvement to the editProfileButton click handler
+    // Find this in setupEventListeners
+    this.elements.editProfileButton.addEventListener('click', () => {
+      if (this.userData && this.userData.email) {
+        // Open the bio setup page with edit mode
+        const bioSetupUrl = chrome.runtime.getURL(`bio-setup.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
+        
+        chrome.runtime.sendMessage({ 
+          action: "openBioSetupPage", 
+          url: bioSetupUrl 
+        }, (response) => {
+          // If the bio setup page was opened successfully, set up a timer to refresh templates
+          if (response && response.success) {
+            console.log('Bio setup page opened, setting up refresh timer');
+            
+            // Check for template updates every 5 seconds while the bio page might be open
+            const refreshInterval = setInterval(() => {
+              this.refreshUserData().then(() => {
+                this.populateTemplateDropdown();
+              });
+            }, 5000);
+            
+            // Stop checking after 10 minutes (600000 ms)
+            setTimeout(() => {
+              clearInterval(refreshInterval);
+            }, 600000);
+          }
+        });
+      }
+    });
 
     // GENERATE BUTTON UI
     this.elements.generateButton.addEventListener('click', async () => {
@@ -422,26 +595,52 @@ window.UIManager = {
         if (recipientInput && profileData.email) {
           recipientInput.value = profileData.email;
         }
-
-        const useTemplate = this.selectedTemplate && Object.keys(this.selectedTemplate).length > 0 
-                          ? this.selectedTemplate 
-                          : this.templates[0];
-
+  
+        // Get selected template from dropdown
+        const templateDropdown = document.getElementById('template-dropdown');
+        const selectedValue = templateDropdown.value;
+        let useTemplate;
+        
+        if (selectedValue.startsWith('custom-')) {
+          // Get custom template by index
+          const index = parseInt(selectedValue.split('-')[1]);
+          if (this.userData && this.userData.templates && this.userData.templates[index]) {
+            useTemplate = {
+              name: this.userData.templates[index].name,
+              content: this.userData.templates[index].content,
+              // Still need to use a purpose for the API
+              purpose: `to send a ${this.userData.templates[index].name} email`
+            };
+          } else {
+            // Fallback to default if template not found
+            useTemplate = this.templates[0];
+          }
+        } else if (selectedValue === 'coffee-chat') {
+          useTemplate = this.templates[0];
+        } else if (selectedValue === 'job-application') {
+          useTemplate = this.templates[1];
+        } else {
+          // Default to first template if nothing selected
+          useTemplate = this.templates[0];
+        }
+  
         console.log(useTemplate);
-
+  
         // Add user data to the template
         if (this.userData) {
           useTemplate.userData = {
             name: this.userData.name,
             college: this.userData.college,
-            graduationYear: this.userData.graduationYear
+            graduationYear: this.userData.graduationYear,
+            experiences: this.userData.experiences,
+            skills: this.userData.skills
           };
         }
-
+  
         const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
-
+  
         console.log(response);
-
+  
         document.querySelector('#linkmail-splash').style.display = "none";
         document.querySelector('#linkmail-editor').style.display = "block";
         
@@ -450,7 +649,7 @@ window.UIManager = {
           if (this.userData && this.userData.name) {
             emailContent = emailContent.replace('[Your Name]', this.userData.name);
           }
-
+  
           this.elements.emailResult.value = emailContent;
           this.elements.emailSubject.value = response.subject;
           
@@ -600,6 +799,8 @@ window.UIManager = {
     this.setupEventListeners();
     this.setupStorageListener();
     this.setupEmailHistoryRefresh(); // Add this new method call
+    this.setupTemplateRefreshListener(); // Add this line
+    this.setupFocusRefresh(); // Add this line
     
     // Initial check (might not work if auth not ready)
     await this.checkLastEmailSent();
@@ -738,6 +939,118 @@ window.UIManager = {
   },
 
   // Add this method to the UIManager object in ui-manager.js
+  populateTemplateDropdown() {
+    console.log('Populating template dropdown');
+    const templateDropdown = document.getElementById('template-dropdown');
+    
+    if (!templateDropdown) {
+      console.error('Template dropdown not found');
+      return;
+    }
+    
+    // Store the currently selected value if any
+    const currentSelection = templateDropdown.value;
+    
+    // Clear existing options except the default first option
+    while (templateDropdown.options.length > 1) {
+      templateDropdown.remove(1);
+    }
+    
+    // Add default templates
+    const defaultOptions = [
+      { value: 'coffee-chat', text: 'Coffee Chat' },
+      { value: 'job-application', text: 'Job Application' }
+    ];
+    
+    defaultOptions.forEach(option => {
+      const optionElement = document.createElement('option');
+      optionElement.value = option.value;
+      optionElement.textContent = option.text;
+      templateDropdown.appendChild(optionElement);
+    });
+    
+    // If no user data, we can't add custom templates
+    if (!this.userData || !this.userData.templates) {
+      console.log('No user data or templates found');
+      
+      // Try to restore previous selection if it was a default option
+      if (currentSelection && defaultOptions.some(opt => opt.value === currentSelection)) {
+        templateDropdown.value = currentSelection;
+      } else {
+        templateDropdown.selectedIndex = 0;
+      }
+      
+      return;
+    }
+    
+    // Add custom templates from user data
+    if (Array.isArray(this.userData.templates) && this.userData.templates.length > 0) {
+      console.log(`Found ${this.userData.templates.length} custom templates`);
+      
+      // Add separator
+      const separator = document.createElement('option');
+      separator.disabled = true;
+      separator.textContent = '──────────';
+      templateDropdown.appendChild(separator);
+      
+      // Add each custom template
+      this.userData.templates.forEach((template, index) => {
+        if (template && template.name) {
+          const option = document.createElement('option');
+          option.value = `custom-${index}`;
+          option.textContent = template.name;
+          templateDropdown.appendChild(option);
+        }
+      });
+      
+      // Try to restore previous selection
+      if (currentSelection && templateDropdown.querySelector(`option[value="${currentSelection}"]`)) {
+        templateDropdown.value = currentSelection;
+      } else {
+        templateDropdown.selectedIndex = 0;
+      }
+    } else {
+      console.log('No custom templates found');
+    }
+  },
+
+  // Also add this method to actively pull the latest templates when a user returns to LinkedIn
+  checkForTemplateUpdates() {
+    if (this.isAuthenticated && this.userData && this.userData.email) {
+      console.log('Actively checking for template updates');
+      
+      chrome.storage.local.get([this.userData.email], (result) => {
+        const storedData = result[this.userData.email];
+        
+        if (storedData && storedData.templates) {
+          // Check if templates have changed by comparing lengths first (quick check)
+          const currentTemplatesLength = this.userData.templates ? this.userData.templates.length : 0;
+          const newTemplatesLength = storedData.templates.length;
+          
+          if (newTemplatesLength !== currentTemplatesLength) {
+            console.log(`Template count changed: ${currentTemplatesLength} -> ${newTemplatesLength}`);
+            this.userData = storedData;
+            this.populateTemplateDropdown();
+            return;
+          }
+          
+          // If lengths match, do a deeper comparison
+          if (currentTemplatesLength > 0) {
+            const currentTemplatesJSON = JSON.stringify(this.userData.templates);
+            const newTemplatesJSON = JSON.stringify(storedData.templates);
+            
+            if (currentTemplatesJSON !== newTemplatesJSON) {
+              console.log('Template content changed, updating dropdown');
+              this.userData = storedData;
+              this.populateTemplateDropdown();
+            }
+          }
+        }
+      });
+    }
+  },
+
+  // Add this method to the UIManager object in ui-manager.js
   async checkLastEmailSent() {
     try {
       console.log('Checking last email sent...');
@@ -828,6 +1141,42 @@ window.UIManager = {
       console.error('Error checking last email sent:', error);
     }
   },
+
+  setupTemplateRefreshListener() {
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
+        const newValue = changes[this.userData.email].newValue;
+        const oldValue = changes[this.userData.email].oldValue;
+        
+        // Check if templates have changed
+        if (newValue && oldValue && 
+            JSON.stringify(newValue.templates) !== JSON.stringify(oldValue.templates)) {
+          console.log('Templates have changed, updating user data and dropdown');
+          
+          // Update local userData
+          this.userData = newValue;
+          
+          // Update the dropdown
+          this.populateTemplateDropdown();
+        }
+      }
+    });
+  },
+
+  // Add this method to UIManager
+  setupFocusRefresh() {
+    // Set up a handler to refresh templates when the window regains focus
+    window.addEventListener('focus', () => {
+      console.log('Window focused, checking for template updates');
+      
+      if (this.isAuthenticated && this.userData && this.userData.email) {
+        this.refreshUserData().then(() => {
+          this.populateTemplateDropdown();
+        });
+      }
+    });
+  },
+  
 
   setupEmailHistoryRefresh() {
     // Set up a periodic check for email history

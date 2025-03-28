@@ -277,6 +277,273 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Templates management functionality
+  function initializeTemplatesManagement() {
+    const templatesContainer = document.getElementById('templates-container');
+    const templateNameInput = document.getElementById('templateName');
+    const templateContentInput = document.getElementById('templateContent');
+    const addTemplateButton = document.getElementById('addTemplateButton');
+    const noTemplatesMessage = document.getElementById('no-templates-message');
+    
+    // Skip initialization if elements don't exist
+    if (!templatesContainer || !templateNameInput || !templateContentInput || !addTemplateButton || !noTemplatesMessage) {
+      console.error('Template management elements not found');
+      return;
+    }
+    
+    let templates = [];
+    const MAX_TEMPLATES = 10;
+
+    // Function to reset the add form to its default state
+    function resetTemplateForm() {
+      templateNameInput.value = '';
+      templateContentInput.value = '';
+      addTemplateButton.textContent = 'Add Template';
+      addTemplateButton.dataset.mode = 'add';
+      delete addTemplateButton.dataset.index;
+    }
+
+    // Function to render template cards - fixed to prevent infinite loops
+    function renderTemplates() {
+      console.log('Rendering templates:', templates.length);
+      
+      // Clear container first (carefully, preserving the no-templates message)
+      const childNodes = Array.from(templatesContainer.childNodes);
+      for (const child of childNodes) {
+        if (child !== noTemplatesMessage) {
+          templatesContainer.removeChild(child);
+        }
+      }
+      
+      // Show or hide "no templates" message
+      if (!templates || templates.length === 0) {
+        noTemplatesMessage.style.display = 'block';
+        
+        // If there are no templates, make sure the form is reset to add mode
+        resetTemplateForm();
+      } else {
+        noTemplatesMessage.style.display = 'none';
+        
+        // Create and append each template card
+        templates.forEach((template, index) => {
+          try {
+            const templateCard = createTemplateCard(template, index);
+            if (templateCard) {
+              templatesContainer.insertBefore(templateCard, noTemplatesMessage);
+            }
+          } catch (error) {
+            console.error('Error creating template card:', error);
+          }
+        });
+      }
+    }
+
+    // Function to create a template card - error handling added
+    function createTemplateCard(template, index) {
+      if (!template || typeof template !== 'object') {
+        console.error('Invalid template data:', template);
+        return null;
+      }
+      
+      try {
+        const card = document.createElement('div');
+        card.className = 'experience-card';
+        card.dataset.templateId = index;
+        
+        card.innerHTML = `
+          <div class="experience-header">
+            <h4 class="experience-title">${escapeHtml(template.name || '')}</h4>
+            <div>
+              <button type="button" class="template-edit" title="Edit Template" style="background: none; border: none; color: #0077b5; margin-right: 8px; cursor: pointer;">✏️</button>
+              <button type="button" class="template-remove" title="Remove Template" style="background: none; border: none; color: #999; cursor: pointer;">&times;</button>
+            </div>
+          </div>
+          <div class="template-content" style="margin-top: 8px; white-space: pre-wrap; background-color: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 13px; max-height: 150px; overflow-y: auto;">
+            ${escapeHtml(template.content || '')}
+          </div>
+        `;
+        
+        // Add edit event listener
+        const editButton = card.querySelector('.template-edit');
+        if (editButton) {
+          editButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Populate form with template data for editing
+            templateNameInput.value = template.name || '';
+            templateContentInput.value = template.content || '';
+            
+            // Change add button to update button
+            addTemplateButton.textContent = 'Update Template';
+            addTemplateButton.dataset.mode = 'edit';
+            addTemplateButton.dataset.index = index;
+            
+            // Scroll to the form
+            templateNameInput.scrollIntoView({ behavior: 'smooth' });
+            templateNameInput.focus();
+          });
+        }
+        
+        // Add remove event listener
+        const removeButton = card.querySelector('.template-remove');
+        if (removeButton) {
+          removeButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Check if we're currently editing this template
+            const currentEditIndex = parseInt(addTemplateButton.dataset.index);
+            if (!isNaN(currentEditIndex) && currentEditIndex === index) {
+              // Reset form if we're deleting the template we're currently editing
+              resetTemplateForm();
+            }
+            
+            // Remove the template
+            templates.splice(index, 1);
+            renderTemplates();
+          });
+        }
+        
+        return card;
+      } catch (error) {
+        console.error('Error in createTemplateCard:', error);
+        return null;
+      }
+    }
+
+    // Add template button click handler - fixed and with better error handling
+    addTemplateButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      try {
+        const name = templateNameInput.value.trim();
+        const content = templateContentInput.value.trim();
+        
+        if (!name) {
+          showError('Please enter a template name');
+          return;
+        }
+        
+        if (!content) {
+          showError('Please enter template content');
+          return;
+        }
+        
+        const mode = addTemplateButton.dataset.mode || 'add';
+        
+        if (mode === 'add') {
+          // Check max templates
+          if (templates.length >= MAX_TEMPLATES) {
+            showError(`You can only add up to ${MAX_TEMPLATES} templates`);
+            return;
+          }
+          
+          // Check for duplicate name
+          if (templates.some(t => t && t.name === name)) {
+            showError('A template with this name already exists');
+            return;
+          }
+          
+          // Add new template
+          templates.push({ name, content });
+          console.log('Added new template:', name);
+          
+          // Save templates immediately after adding
+          saveTemplates();
+        } else if (mode === 'edit') {
+          // Update existing template
+          const index = parseInt(addTemplateButton.dataset.index);
+          if (isNaN(index) || index < 0 || index >= templates.length) {
+            console.error('Invalid template index for edit:', index);
+            showError('Error updating template');
+            resetTemplateForm();
+            return;
+          }
+          
+          templates[index] = { name, content };
+          console.log('Updated template at index', index);
+          
+          // Save templates immediately after updating
+          saveTemplates();
+        }
+        
+        // Clear form and reset to add mode
+        resetTemplateForm();
+        
+        // Re-render templates
+        renderTemplates();
+        
+        showSuccess('Template saved successfully!');
+      } catch (error) {
+        console.error('Error handling template save:', error);
+        showError('An error occurred while saving the template');
+        resetTemplateForm();
+      }
+    });
+
+    // Add a cancel button next to Add Template
+    const formContainer = addTemplateButton.parentElement;
+    if (formContainer) {
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'linkmail-button secondary-button';
+      cancelButton.textContent = 'Cancel';
+      cancelButton.style.marginLeft = '10px';
+      
+      cancelButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        resetTemplateForm();
+      });
+      
+      formContainer.appendChild(cancelButton);
+    }
+
+    // Function to save templates to storage immediately
+    function saveTemplates() {
+      if (!email) {
+        console.error('Email is not available, cannot save templates');
+        return;
+      }
+      
+      console.log('Saving templates to storage:', templates.length);
+      
+      chrome.storage.local.get([email], function(result) {
+        const userData = result[email] || {};
+        
+        // Update templates in user data
+        userData.templates = templates;
+        
+        // Save back to storage
+        const data = {};
+        data[email] = userData;
+        
+        chrome.storage.local.set(data, function() {
+          console.log('Templates saved successfully');
+        });
+      });
+    }
+
+    // Function to collect all templates data
+    function collectTemplatesData() {
+      return Array.isArray(templates) ? templates : [];
+    }
+
+    // Load existing templates if in edit mode
+    console.log('Loading templates for email:', email);
+    chrome.storage.local.get([email], function(result) {
+      const userData = result[email];
+      if (userData && userData.templates && Array.isArray(userData.templates)) {
+        templates = JSON.parse(JSON.stringify(userData.templates)); // Deep clone to avoid reference issues
+        console.log('Loaded', templates.length, 'templates');
+        renderTemplates();
+      } else {
+        console.log('No existing templates found');
+      }
+    });
+    
+    // Expose the collectTemplatesData function
+    window.collectTemplatesData = collectTemplatesData;
+  }
+  
+  // Form submission handler
   bioForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -289,26 +556,52 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    // Collect experiences data
-    const experiences = collectExperiencesData();
-    
-    // Prepare user data
-    const userData = {
-      name: name,
-      college: college,
-      graduationYear: gradYear,
-      email: email,
-      experiences: experiences,
-      skills: skills, // Add skills array
-      setupCompleted: true
-    };
-    
     try {
-      // Get existing data to preserve sent emails
+      // Collect experiences data
+      const experiences = collectExperiencesData();
+      
+      // Collect skills data
+      const skillsData = typeof window.skills !== 'undefined' ? window.skills : skills;
+      
+      // Get existing user data first to ensure we don't lose templates
       chrome.storage.local.get([email], function(result) {
         const existingData = result[email] || {};
         
-        // Merge new data with existing data
+        // Collect templates data safely
+        let templatesData = [];
+        if (typeof window.collectTemplatesData === 'function') {
+          try {
+            templatesData = window.collectTemplatesData();
+            console.log('Collected templates from form:', templatesData.length);
+          } catch (templateError) {
+            console.error('Error collecting templates from form:', templateError);
+            // Fall back to existing templates if available
+            if (existingData.templates && Array.isArray(existingData.templates)) {
+              templatesData = existingData.templates;
+              console.log('Using existing templates from storage:', templatesData.length);
+            }
+          }
+        } else if (existingData.templates && Array.isArray(existingData.templates)) {
+          // If collectTemplatesData isn't available, use existing templates
+          templatesData = existingData.templates;
+          console.log('Using existing templates from storage:', templatesData.length);
+        }
+        
+        // Prepare user data
+        const userData = {
+          name: name,
+          college: college,
+          graduationYear: gradYear,
+          email: email,
+          experiences: experiences,
+          skills: skillsData,
+          templates: templatesData,
+          setupCompleted: true
+        };
+        
+        console.log('Saving user data with templates:', templatesData.length);
+        
+        // Merge with other existing data (like sent emails)
         const mergedData = {
           ...existingData,
           ...userData
@@ -331,6 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       });
     } catch (error) {
+      console.error('Error saving profile:', error);
       const actionText = isEditMode ? 'updating' : 'saving';
       showError(`Error ${actionText} profile: ${error.message}`);
     }
@@ -491,4 +785,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const card = createExperienceCard(experienceCount);
     experiencesContainer.appendChild(card);
   }
+  
+  // Initialize templates management with a slight delay to ensure DOM is ready
+  setTimeout(initializeTemplatesManagement, 500);
 });
