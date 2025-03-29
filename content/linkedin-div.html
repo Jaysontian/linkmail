@@ -1,69 +1,85 @@
 <div class="linkmail-container">
-    <!-- New Sign-in View -->
-    <div id="linkmail-signin" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <h2 class="linkmail-header">Sign in to use LinkMail</h2>
-        <p style="text-align: center; margin-bottom: 16px;">Connect with Google to generate and send emails directly from LinkedIn</p>
-        <button id="googleSignInButton" class="linkmail-button">
-            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 18px; margin-right: 8px; vertical-align: middle;">
-            Sign in with Google
-        </button>
+
+    <div style="display:flex;">
+        <img src="https://i.imgur.com/LtIDUzZ.png" style="width:50px; margin:20px auto;"/>
     </div>
 
-    <!-- Add this near the top of your editor section or elsewhere in the UI -->
-    <div class="linkmail-account-info" style="display: none; margin-bottom: 10px; text-align: right;">
-        <span id="user-email-display" style="font-size: 12px; color: #666;"></span>
-        <button id="signOutButton" class="linkmail-button" style="font-size: 10px; padding: 2px 6px; margin-left: 8px;">
-        Sign Out
-        </button>
+    <!-- New Sign-in View -->
+    <div id="linkmail-signin">
+        <div style="display:flex; flex-direction:column;">
+            <div style="display:flex; flex-direction:column; gap:8px; margin:20px 0px;">
+                <h2 class="linkmail-header">Personalized Emails with AI</h2>
+                <p>Connect with Google to generate and send emails directly from LinkedIn</p>
+            </div>
+            <button id="googleSignInButton" class="linkmail-button">
+                <img src="https://ragsdalemartin.com/wp-content/uploads/2020/07/white-google-logo.png" alt="Google logo" style="height: 18px; margin-right: 8px; vertical-align: middle;">
+                Sign in with Google
+            </button>
+            <br>
+        </div>
     </div>
+
   
     <div id="linkmail-splash" style="display: none;">
         <h2 id="title" class="linkmail-header"></h2>
-
         <div id="lastEmailStatus" class="linkmail-last-email-status">No Email Sent Yet</div>
-
-        <!-- Template Selection Dropdown -->
-        <div class="linkmail-template-select" style="margin-bottom: 20px; width: 100%;">
-          <label for="template-dropdown" style="font-size: 14px; margin-bottom: 8px; display: block; color: #555;">
-            Select an email template:
-          </label>
-          <select id="template-dropdown" class="linkmail-input" style="font-size: 14px; padding: 8px; width: 100%;">
-            <option value="" disabled selected>Choose a template</option>
-            <!-- Default templates -->
-            <option value="coffee-chat">Coffee Chat</option>
-            <option value="job-application">Job Application</option>
-            <!-- Custom templates will be added here dynamically -->
-          </select>
-        </div>
         
+        <div class="linkmail-template-select" style="margin-bottom: 20px; width: 100%;">
+            <div id="template-dropdown" class="template-dropdown">
+                <!-- <div class="template-dropdown-card">
+                    <p class="template-dropdown-icon">💼</p>
+                    <div>
+                        <h2>Example Template</h2>
+                        <p>Example template description this will be overwritten.</p>
+                    </div>
+                </div> -->
+                <!-- Templates will be added here dynamically -->
+            </div>
+        </div>
+
+
         <button id="generateButton" class="linkmail-button">Generate</button>
     </div>
 
-  <div id="linkmail-editor" style="display: none;">
-    <input type="email" id="recipientEmailInput" class="linkmail-input" placeholder="Recipient Email">
-    <input id="emailSubject" class="linkmail-input linkmail-subject" placeholder="Empty Subject">
-    <div style="position:relative;">
-        <textarea id="emailResult" class="linkmail-textarea" id="auto-resize-textarea"></textarea>
-        <button id="copyButton" class="linkmail-button linkmail-copy-button">Copy</button>
+    <div id="linkmail-editor" style="display: none;">
+        <input type="email" id="recipientEmailInput" class="linkmail-input" placeholder="Recipient Email">
+        <input id="emailSubject" class="linkmail-input linkmail-subject" placeholder="Empty Subject">
+        <div style="position:relative;">
+            <textarea id="emailResult" class="linkmail-textarea" id="auto-resize-textarea"></textarea>
+            <button id="copyButton" class="linkmail-button linkmail-copy-button">Copy</button>
+        </div>
+        
+        <div class="linkmail-button-group">
+            <button id="sendGmailButton" class="linkmail-button linkmail-send-button">Send via Gmail</button>
+        </div>
     </div>
-    
-    <div class="linkmail-button-group">
-        <button id="sendGmailButton" class="linkmail-button linkmail-send-button">Send via Gmail</button>
-    </div>
-  </div>
 
-  <div id="linkmail-success" style="display:none;">
-    <h2 class="linkmail-header">Email sent successfully!</h2>
-    <a href="https://mail.google.com/mail/u/0/#sent" target="_blank" class="linkmail-button">Check in Gmail</a>
-  </div>
-  
+    <div id="linkmail-success" style="display:none;">
+        <h2 class="linkmail-header">Email sent successfully!</h2>
+        <a href="https://mail.google.com/mail/u/0/#sent" target="_blank" class="linkmail-button">Check in Gmail</a>
+    </div>
+
+   <div class="account-dropdown linkmail-account-info">
+        <div class="account-dropdown-con">
+            <p id="user-email-display" class="account-email">example@gmail.com</p>
+            <div class="dropdown-container">
+                <button id="menuToggle" class="menu-toggle-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                <div id="menuContent" class="dropdown-menu">
+                    <div href="#" id="editProfileButton" class="dropdown-item">Edit Profile</div>
+                    <div href="#" id="signOutButton" class="dropdown-item">Sign Out</div>
+                    <div href="#" id="settingsButton" class="dropdown-item">Settings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <style>
     .linkmail-container {
         background-color:white;
         border: 1px solid rgba(0, 0, 0, 0.15);
-        padding:24px 12px;
+        padding:12px 12px;
         margin-bottom:16px;
         border-radius:8px;
     }
@@ -76,55 +92,68 @@
         justify-content: space-around;
     }
 
-    .linkmail-prompt-list{
-        display:flex;
-        gap: 4px;
+    #linkemail-signin{
+        display:flex !important;
+        justify-content: center;
+        justify-items: center;
     }
 
-    .linkmail-prompt{
-        background-color:white;
+    #linkmail-signin p{
+        text-align: center; 
+        font-size:10.5pt;
+        font-weight:400;
+        color:#787878;
+    }
+
+    .linkmail-header {
+        font-size:14pt;
+        font-weight:600;
+        text-align: center;
+    }
+
+    /*  Template Styles */
+
+    #template-dropdown{
+        display:flex;
+        flex-direction:column;
+        gap: 8px;
+    }
+
+    .template-dropdown-card{
+        background-color:rgb(247, 247, 247);
+        border-radius: 8px;
         display:flex;
         justify-content: center;
         align-items: center;
-        flex-direction:column;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius:8px;
-        padding:12px 8px;
+        min-height:60px;
+        padding:8px 4px;
         cursor:pointer;
-        box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0);
+        transition: 0.1s ease-in-out all;
+    }
+    .template-dropdown-icon {
+        font-size:20pt !important;
+        width:20%;
         text-align:center;
-        width:100%;
     }
-
-    .linkmail-prompt:hover{
-        border: 1px solid rgb(30, 131, 255);
+    .template-dropdown-card div {
+        width:80%;
+        padding: 8px 0px;
     }
-
-    .linkmail-prompt-selected {
-        border: 1px solid rgb(30, 131, 255);
-        background-color: rgb(230, 239, 255);
-    }
-
-
-    .linkmail-prompt h1{
-        font-size:20pt;
-        width: fit-content;
-        padding:2px 8px;
-        margin-right:4px;
-        height:50px;
-        display:flex;
-        align-items: center;
-    }
-    .linkmail-prompt h2{
+    .template-dropdown-card h2{
         font-size:11pt;
-        font-weight:600;
-        color:rgba(0, 0, 0, 0.65);
+        font-weight:500;
     }
-    .linkmail-prompt p {
-        font-size:8.5pt;
-        color:rgba(128, 128, 128, 0.7);
+    .template-dropdown-card p{
+        font-size:9pt;
         line-height:1.2;
         margin-top:4px;
+        color: rgb(161, 161, 161);
+    }
+
+    .template-dropdown-card.selected {
+        border: 1px solid rgb(30, 131, 255);
+        background-color: rgb(230, 239, 255);
     }
 
     #generateButton {
@@ -144,21 +173,18 @@
         padding:4px 8px;
     }
 
-    .linkmail-header {
-        font-size:14pt;
-        font-weight:600;
-        text-align: center;
-        margin: 16px 0px;
-    }
-
     .linkmail-button {
-        background-color:rgb(24, 136, 255);
+        display:flex;
+        justify-content: center;
+        width:fit-content;
+        background-color:#0B66C2;
         color:white !important;
         text-decoration:none;
-        padding: 6px 16px;
-        border-radius:8px;
+        padding: 8px 16px;
+        border-radius:100px;
         font-size:11pt;
-        margin: 8px 0px;
+        font-weight:550;
+        margin: 0px auto;
     }
 
     .linkmail-input, .linkmail-input:active, .linkmail-input:hover, .linkmail-input:focus {
@@ -205,10 +231,93 @@
     }
 
     .linkmail-last-email-status {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 12px;
-    text-align: center;
-    font-style: italic;
-  }
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 12px;
+        text-align: center;
+        font-style: italic;
+    }
+
+
+
+
+
+    /*  Menu and Account Styles */
+
+    /* Account dropdown container */
+
+    .account-dropdown-con {
+        display:flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top:16px;
+    }
+
+    .account-dropdown p{
+        width:fit-content;
+    }
+
+    /* User email display */
+    .account-email {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* Dropdown container positioning */
+    .dropdown-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Three dots menu button */
+    .menu-toggle-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        overflow:visible;
+        width:fit-content;
+        width:20px;
+        height:20px;
+        border-radius:4px;
+    }
+    .menu-toggle-btn:hover {
+        background-color:rgb(240, 240, 240);
+    }
+
+    /* Dropdown menu styling */
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        background-color: #f9f9f9;
+        min-width: 150px;
+        box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+        border-radius: 8px;
+        border: 1px solid rgb(211, 211, 211);
+        transition:all 0.1 ease-in-out;
+    }
+
+    /* Dropdown menu items */
+    .dropdown-item {
+        color: #434343;
+        padding: 4px 8px;
+        margin: 4px;
+        text-decoration: none;
+        display: block;
+        font-size: 10.5pt;
+        cursor: pointer;
+        border-radius:4px;
+    }
+
+    /* Hover effect for dropdown items */
+    .dropdown-item:hover {
+        background-color: #f1f1f1;
+    }
+
+    /* Show dropdown menu when active */
+    .dropdown-menu.active {
+        display: block;
+    }
+
 </style>

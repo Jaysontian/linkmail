@@ -18,7 +18,8 @@
     "resources": [
       "content/linkedin-div.html",
       "bio-setup.html",
-      "bio-setup.js"
+      "bio-setup.js",
+      "assets/*"
     ],
     "matches": ["https://*.linkedin.com/*"]
   }],
