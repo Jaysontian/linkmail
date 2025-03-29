@@ -491,28 +491,30 @@ window.UIManager = {
         const selectedValue = templateDropdown.value;
         let useTemplate;
         
-        if (selectedValue.startsWith('custom-')) {
-          // Get custom template by index
-          const index = parseInt(selectedValue.split('-')[1]);
-          if (this.userData && this.userData.templates && this.userData.templates[index]) {
-            useTemplate = {
-              name: this.userData.templates[index].name,
-              content: this.userData.templates[index].content,
-              // Still need to use a purpose for the API
-              purpose: `to send a ${this.userData.templates[index].name} email`
-            };
-          } else {
-            // Fallback to default if template not found
-            useTemplate = this.templates[0];
-          }
-        } else if (selectedValue === 'coffee-chat') {
-          useTemplate = this.templates[0];
-        } else if (selectedValue === 'job-application') {
-          useTemplate = this.templates[1];
-        } else {
-          // Default to first template if nothing selected
-          useTemplate = this.templates[0];
-        }
+        // if (selectedValue.startsWith('custom-')) {
+        //   // Get custom template by index
+        //   const index = parseInt(selectedValue.split('-')[1]);
+        //   if (this.userData && this.userData.templates && this.userData.templates[index]) {
+        //     useTemplate = {
+        //       name: this.userData.templates[index].name,
+        //       content: this.userData.templates[index].content,
+        //       // Still need to use a purpose for the API
+        //       purpose: `to send a ${this.userData.templates[index].name} email`
+        //     };
+        //   } else {
+        //     // Fallback to default if template not found
+        //     useTemplate = this.templates[0];
+        //   }
+        // } else if (selectedValue === 'coffee-chat') {
+        //   useTemplate = this.templates[0];
+        // } else if (selectedValue === 'job-application') {
+        //   useTemplate = this.templates[1];
+        // } else {
+        //   // Default to first template if nothing selected
+        //   useTemplate = this.templates[0];
+        // }
+
+        useTemplate = this.selectedTemplate;
   
         console.log(useTemplate);
   
