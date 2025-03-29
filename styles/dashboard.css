@@ -1,0 +1,488 @@
+  
+  .container {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 550px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    min-height: 100vh;
+  }
+  
+  
+  
+  .secondary-button {
+    background-color: white;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+  }
+  
+  .secondary-button:hover {
+    background-color: rgba(11, 102, 194, 0.1);
+  }
+  
+  /* Message styles */
+  .error {
+    color: #e74c3c;
+    font-size: 10pt;
+    margin-top: 4px;
+  }
+  
+  .success {
+    text-align: center;
+    color: #27ae60;
+    margin-top: 16px;
+    font-size: 11pt;
+  }
+  
+  .placeholder-text {
+    color: #999;
+    font-style: italic;
+    margin: 0;
+    font-size: 10.5pt;
+  }
+  
+  /* Tabs */
+  .tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-right: 5px;
+    font-size: 11pt;
+    font-weight: 500;
+    color: var(--text-light);
+    transition: var(--transition);
+  }
+  
+  .tab:hover {
+    color: var(--primary-color);
+  }
+  
+  .tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+  }
+  
+  .tab-content {
+    display: none;
+    animation: lm-fadeIn 0.3s ease;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  /* Email list */
+  .email-list {
+    max-height: 800px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: white;
+  }
+  
+  .email-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .email-item:hover {
+    background-color: var(--bg-light);
+  }
+  
+  .email-item:last-child {
+    border-bottom: none;
+  }
+  
+  .email-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  
+  .email-recipient {
+    font-weight: 500;
+    font-size: 11pt;
+  }
+  
+  .email-date {
+    color: var(--text-light);
+    font-size: 10pt;
+  }
+  
+  .email-subject {
+    font-weight: 500;
+    margin-bottom: 4px;
+    font-size: 11pt;
+  }
+  
+  .email-preview {
+    color: var(--text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10pt;
+  }
+  
+  /* Email modal */
+  .email-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .email-modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 24px;
+    border-radius: var(--border-radius);
+    width: 80%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease;
+  }
+  
+  .close-button {
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: var(--transition);
+  }
+  
+  .close-button:hover {
+    color: var(--text-color);
+  }
+  
+  .email-detail-body {
+    white-space: pre-wrap;
+    background-color: var(--bg-light);
+    padding: 16px;
+    border-radius: 4px;
+    margin-top: 16px;
+    font-size: 10.5pt;
+    border: 1px solid var(--border-color);
+  }
+  
+  /* Search */
+  .search-container {
+    margin-bottom: 16px;
+  }
+  
+  .no-emails {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
+    font-size: 10.5pt;
+  }
+
+  /* Experience cards */
+  .experience-card {
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    transition: var(--transition);
+    animation: fadeIn 0.3s ease;
+  }
+
+  .experience-card input, .experience-card textarea {
+    background-color:white;
+  }
+  
+  .experience-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .experience-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+
+  
+  .experience-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 12pt;
+    margin: 0;
+  }
+  
+  .experience-remove {
+    width:20px;
+    height:20px;
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    transition: var(--transition);
+    margin:0px 0px;
+  }
+  
+  .experience-remove:hover {
+    background-color:rgb(218, 218, 218);
+  }
+  
+  /* Skills section */
+  .skills-input-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .skill-add-button {
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+  
+  .skills-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 40px;
+    margin-bottom: 16px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-light);
+    transition: var(--transition);
+  }
+  
+  .skills-tags-container:hover {
+    border-color: rgba(0, 0, 0, 0.3);
+  }
+  
+  .skill-tag {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: var(--button-radius);
+    padding: 4px 12px;
+    font-size: 10.5pt;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    animation: tagAppear 0.3s ease;
+    transition: var(--transition);
+  }
+  
+  .remove-skill {
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 18px;
+    height: 18px;
+    width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+  }
+  
+  .remove-skill:hover {
+    transform: scale(1.2);
+    color: #f0f0f0;
+  }
+  
+
+
+
+
+
+  
+  /* Templates section */
+  .template-form {
+    margin-top: 40px;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+  }
+
+
+  .template-list {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow:hidden;
+  }
+
+  /* Template cards */
+  .template-card {
+    padding: 16px;
+    background-color: white;
+    transition: var(--transition);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+.template-card:nth-last-child(1) {
+    border-bottom: 0px solid var(--border-color);
+}
+  
+  
+
+  .template-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 12pt;
+    margin: 0;
+  }
+
+.template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  
+  .template-btn-group {
+    display:flex;
+    gap:4px;
+  }
+
+  .template-btn {
+    background-color:transparent;
+    color:gray;
+    padding:8px;
+  }
+
+  .template-btn:hover {
+    background-color:var(--bg-light-hover);
+    color:gray;
+    padding:8px;
+  }
+
+  .template-btn svg{
+    width:16px;
+    height:16px;
+  }
+  
+  .template-content {
+    font-size: 10.5pt;
+    color: var(--text-color);
+    white-space: pre-line;
+    max-height: 100px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  
+  .help-text {
+    margin-bottom: 16px;
+    font-size: 10.5pt;
+    color: var(--text-light);
+  }
+  
+  .help-text ul {
+    margin-top: 5px;
+    padding-left: 20px;
+  }
+  
+  .help-text p {
+    margin: 5px 0;
+  }
+  
+  
+  #submitButton {
+    animation: lm-pulse 2s infinite;
+  }
+  
+  #submitButton:hover {
+    animation: none;
+  }
+  
+  /* Utility classes */
+  .plus-icon {
+    font-style: normal;
+    margin-right: 4px;
+  }
+  
+  /* Account dropdown */
+  .account-dropdown-con {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+  
+  .account-email {
+    font-size: 12px;
+    color: var(--text-light);
+  }
+  
+  .dropdown-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .menu-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    overflow: visible;
+    width: fit-content;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+  
+  .menu-toggle-btn:hover {
+    background-color: var(--bg-light);
+  }
+  
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 150px;
+    box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+  }
+  
+  .dropdown-item {
+    color: var(--text-color);
+    padding: 4px 8px;
+    margin: 4px;
+    text-decoration: none;
+    display: block;
+    font-size: 10.5pt;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .dropdown-item:hover {
+    background-color: var(--bg-light);
+  }
+  
+  .dropdown-menu.active {
+    display: block;
+  }

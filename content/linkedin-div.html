@@ -9,9 +9,9 @@
         <div style="display:flex; flex-direction:column;">
             <div style="display:flex; flex-direction:column; gap:8px; margin:20px 0px;">
                 <h2 class="linkmail-header">Personalized Emails with AI</h2>
-                <p>Connect with Google to generate and send emails directly from LinkedIn</p>
+                <p>Connect your Gmail to generate and send personalized emails straight from LinkedIn</p>
             </div>
-            <button id="googleSignInButton" class="linkmail-button">
+            <button id="googleSignInButton" class="lm-btn">
                 <img src="https://ragsdalemartin.com/wp-content/uploads/2020/07/white-google-logo.png" alt="Google logo" style="height: 18px; margin-right: 8px; vertical-align: middle;">
                 Sign in with Google
             </button>
@@ -19,11 +19,10 @@
         </div>
     </div>
 
-  
     <div id="linkmail-splash" style="display: none;">
         <h2 id="title" class="linkmail-header"></h2>
         <div id="lastEmailStatus" class="linkmail-last-email-status">No Email Sent Yet</div>
-        
+        <br>
         <div class="linkmail-template-select" style="margin-bottom: 20px; width: 100%;">
             <div id="template-dropdown" class="template-dropdown">
                 <!-- <div class="template-dropdown-card">
@@ -38,32 +37,44 @@
         </div>
 
 
-        <button id="generateButton" class="linkmail-button">Generate</button>
+        <button id="generateButton" class="lm-btn">
+            Generate
+            <svg xmlns="http://www.w3.org/2000/svg" style="margin-left:8px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal-icon lucide-send-horizontal"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
+        </button>
     </div>
 
     <div id="linkmail-editor" style="display: none;">
-        <input type="email" id="recipientEmailInput" class="linkmail-input" placeholder="Recipient Email">
-        <input id="emailSubject" class="linkmail-input linkmail-subject" placeholder="Empty Subject">
-        <div style="position:relative;">
-            <textarea id="emailResult" class="linkmail-textarea" id="auto-resize-textarea"></textarea>
-            <button id="copyButton" class="linkmail-button linkmail-copy-button">Copy</button>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt;">
+            <input id="emailSubject" class="lm-input linkmail-subject" placeholder="Empty Subject" style="font-size:10pt;">
+            <div style="position:relative;">
+                <textarea id="emailResult" class="lm-textarea" id="auto-resize-textarea" style="font-size:10pt;"></textarea>
+                
+            </div>
+            
+            <div style="display:flex; gap:4px; justify-content: space-between; padding:0px 0px;">
+                <button id="copyButton" class="lm-btn-2 linkmail-copy-button" style="margin:0px 0px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:8px; color:gray;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    Copy
+                </button>
+                <button id="sendGmailButton" class="lm-btn linkmail-send-button" style="margin:0px 0px;">Send Email</button>
+            </div>
+
         </div>
         
-        <div class="linkmail-button-group">
-            <button id="sendGmailButton" class="linkmail-button linkmail-send-button">Send via Gmail</button>
-        </div>
     </div>
 
     <div id="linkmail-success" style="display:none;">
         <h2 class="linkmail-header">Email sent successfully!</h2>
-        <a href="https://mail.google.com/mail/u/0/#sent" target="_blank" class="linkmail-button">Check in Gmail</a>
+        <br>
+        <a class="lm-btn" href="https://mail.google.com/mail/u/0/#sent" target="_blank" style="width:fit-content">Check in Gmail</a>
     </div>
 
    <div class="account-dropdown linkmail-account-info">
         <div class="account-dropdown-con">
             <p id="user-email-display" class="account-email">example@gmail.com</p>
             <div class="dropdown-container">
-                <button id="menuToggle" class="menu-toggle-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                <button id="menuToggle" class="menu-toggle-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="black" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
                 <div id="menuContent" class="dropdown-menu">
                     <div href="#" id="editProfileButton" class="dropdown-item">Edit Profile</div>
                     <div href="#" id="signOutButton" class="dropdown-item">Sign Out</div>
@@ -72,262 +83,10 @@
             </div>
         </div>
     </div>
-
 </div>
 
-<style>
-    .linkmail-container {
-        background-color:white;
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        padding:12px 12px;
-        margin-bottom:16px;
-        border-radius:8px;
-    }
+<link rel="stylesheet" href="styles/main.css">
+<link rel="stylesheet" href="styles/anim.css">
+<link rel="stylesheet" href="styles/linkedin-div.css">
 
-    #linkmail-splash {
-        display:flex;
-        flex-direction: column;
-        justify-items: center;
-        align-items: center;
-        justify-content: space-around;
-    }
-
-    #linkemail-signin{
-        display:flex !important;
-        justify-content: center;
-        justify-items: center;
-    }
-
-    #linkmail-signin p{
-        text-align: center; 
-        font-size:10.5pt;
-        font-weight:400;
-        color:#787878;
-    }
-
-    .linkmail-header {
-        font-size:14pt;
-        font-weight:600;
-        text-align: center;
-    }
-
-    .linkmail-last-email-status{
-        border: 1px solid rgb(0, 94, 255);
-        color: rgb(0, 94, 255) !important;
-        text-decoration: none !important;
-        font-style:normal;
-        margin-top:6px;
-        padding: 2px 8px;
-        border-radius:100px;
-    }
-
-    /*  Template Styles */
-
-    #template-dropdown{
-        display:flex;
-        flex-direction:column;
-        gap: 8px;
-    }
-
-    .template-dropdown-card{
-        background-color:rgb(247, 247, 247);
-        border-radius: 8px;
-        display:flex;
-        justify-content: center;
-        align-items: center;
-        min-height:60px;
-        padding:8px 4px;
-        cursor:pointer;
-        border: 1px solid rgba(255, 255, 255, 0);
-        transition: 0.1s ease-in-out all;
-    }
-    .template-dropdown-icon {
-        font-size:20pt !important;
-        width:20%;
-        text-align:center;
-    }
-    .template-dropdown-card div {
-        width:80%;
-        padding: 8px 0px;
-    }
-    .template-dropdown-card h2{
-        font-size:11pt;
-        font-weight:500;
-    }
-    .template-dropdown-card p{
-        font-size:9pt;
-        line-height:1.2;
-        margin-top:4px;
-        color: rgb(161, 161, 161);
-    }
-
-    .template-dropdown-card.selected {
-        border: 1px solid rgb(30, 131, 255);
-        background-color: rgb(230, 239, 255);
-    }
-
-    #generateButton {
-        margin: 0px auto;
-    }
-
-    #copyButton {
-        position: absolute;
-        top: 0;
-        right: 0;
-        margin: 5px;
-        z-index: 1;
-        font-size:9pt;
-        color:rgba(0, 0, 0, 0.8) !important;
-        background-color:rgba(0, 0, 0, 0.1);
-        border-radius:4px;
-        padding:4px 8px;
-    }
-
-    .linkmail-button {
-        display:flex;
-        justify-content: center;
-        width:fit-content;
-        background-color:#0B66C2;
-        color:white !important;
-        text-decoration:none;
-        padding: 8px 16px;
-        border-radius:100px;
-        font-size:11pt;
-        font-weight:550;
-        margin: 0px auto;
-    }
-
-    .linkmail-input, .linkmail-input:active, .linkmail-input:hover, .linkmail-input:focus {
-        font-size:11pt !important;
-        outline:0px !important;
-        box-shadow: none !important;
-        padding:6px;
-        margin:8px 0px;
-        width:100%;
-        border-radius:4px;
-        background-color:white;
-        border:1px solid rgba(0, 0, 0, 0.15) !important;
-        box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
-    }
-
-    .linkmail-input:focus {
-        border: 1px solid rgb(30, 131, 255);
-    }
-
-    .linkmail-input:hover{
-        background-color:rgba(0, 0, 0, 0.05);
-    }
-
-    .linkmail-subject, .linkmail-subject:focus, .linkmail-subject:active, .linkmail-subject:hover {
-        font-size:12pt !important;
-        font-weight:600;
-    }
-
-    .linkmail-textarea, .linkmail-textarea:focus, .linkmail-textarea:active, .linkmail-textarea:hover {
-        padding:6px;
-        outline:none;
-        font-size:10pt;
-        resize: none;
-        overflow: hidden;
-        min-height: 80px;
-        width: 100%;
-        resize: none;
-        border-radius:4px;
-        overflow: hidden;
-        box-sizing: border-box;
-        background-color:white;
-        border:1px solid rgba(0, 0, 0, 0.1);
-        box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
-    }
-
-    .linkmail-last-email-status {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 12px;
-        text-align: center;
-        font-style: italic;
-    }
-
-
-
-
-
-    /*  Menu and Account Styles */
-
-    /* Account dropdown container */
-
-    .account-dropdown-con {
-        display:flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top:16px;
-    }
-
-    .account-dropdown p{
-        width:fit-content;
-    }
-
-    /* User email display */
-    .account-email {
-        font-size: 12px;
-        color: #666;
-    }
-
-    /* Dropdown container positioning */
-    .dropdown-container {
-        position: relative;
-        display: inline-block;
-    }
-
-    /* Three dots menu button */
-    .menu-toggle-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        overflow:visible;
-        width:fit-content;
-        width:20px;
-        height:20px;
-        border-radius:4px;
-    }
-    .menu-toggle-btn:hover {
-        background-color:rgb(240, 240, 240);
-    }
-
-    /* Dropdown menu styling */
-    .dropdown-menu {
-        display: none;
-        position: absolute;
-        right: 0;
-        background-color: #f9f9f9;
-        min-width: 150px;
-        box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
-        z-index: 1;
-        border-radius: 8px;
-        border: 1px solid rgb(211, 211, 211);
-        transition:all 0.1 ease-in-out;
-    }
-
-    /* Dropdown menu items */
-    .dropdown-item {
-        color: #434343;
-        padding: 4px 8px;
-        margin: 4px;
-        text-decoration: none;
-        display: block;
-        font-size: 10.5pt;
-        cursor: pointer;
-        border-radius:4px;
-    }
-
-    /* Hover effect for dropdown items */
-    .dropdown-item:hover {
-        background-color: #f1f1f1;
-    }
-
-    /* Show dropdown menu when active */
-    .dropdown-menu.active {
-        display: block;
-    }
-
-</style>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>

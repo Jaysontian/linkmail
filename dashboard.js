@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Update UI based on mode
   if (isEditMode) {
-    pageTitle.textContent = 'Your LinkMail Profile';
+    pageTitle.textContent = 'LinkMail';
     submitButton.textContent = 'Save Changes';
     
     // Load existing data
@@ -347,18 +347,22 @@ document.addEventListener('DOMContentLoaded', function() {
       
       try {
         const card = document.createElement('div');
-        card.className = 'experience-card';
+        card.className = 'template-card';
         card.dataset.templateId = index;
         
         card.innerHTML = `
-          <div class="experience-header">
-            <h4 class="experience-title">${escapeHtml(template.name || '')}</h4>
-            <div>
-              <button type="button" class="template-edit" title="Edit Template" style="background: none; border: none; color: #0077b5; margin-right: 8px; cursor: pointer;">✏️</button>
-              <button type="button" class="template-remove" title="Remove Template" style="background: none; border: none; color: #999; cursor: pointer;">&times;</button>
+          <div class="template-header">
+            <h3 class="template-title">${escapeHtml(template.name || '')}</h3>
+            <div class="template-btn-group">
+              <button class="template-btn template-edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-icon lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+              </button>
+              <button class="template-btn template-remove">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
             </div>
           </div>
-          <div class="template-content" style="margin-top: 8px; white-space: pre-wrap; background-color: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 13px; max-height: 150px; overflow-y: auto;">
+          <div class="template-content">
             ${escapeHtml(template.content || '')}
           </div>
         `;
@@ -408,6 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
       }
     }
+
 
     // Add template button click handler - fixed and with better error handling
     addTemplateButton.addEventListener('click', function(e) {

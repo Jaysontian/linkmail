@@ -66,7 +66,7 @@ window.UIManager = {
 
   // Add this method to redirect to the bio setup page
   redirectToBioSetup(email) {
-    const bioSetupUrl = chrome.runtime.getURL(`bio-setup.html?email=${encodeURIComponent(email)}`);
+    const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(email)}`);
     
     // Open the bio setup page in a new tab
     chrome.runtime.sendMessage({ 
@@ -429,7 +429,7 @@ window.UIManager = {
     this.elements.editProfileButton.addEventListener('click', () => {
       if (this.userData && this.userData.email) {
         // Open the bio setup page with edit mode
-        const bioSetupUrl = chrome.runtime.getURL(`bio-setup.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
+        const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
         
         chrome.runtime.sendMessage({ 
           action: "openBioSetupPage", 

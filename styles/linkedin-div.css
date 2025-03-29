@@ -1,0 +1,245 @@
+
+
+.linkmail-container {
+    background-color:white;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    padding:12px 12px;
+    margin-bottom:16px;
+    border-radius:8px;
+}
+
+#googleSignInButton, #generateButton{
+    animation: lm-pulse 2s infinite;
+}
+
+#linkmail-splash {
+    display:flex;
+    flex-direction: column;
+    justify-items: center;
+    align-items: center;
+    justify-content: space-around;
+    animation: lm-fadeIn 0.3s ease;
+}
+
+#linkemail-signin{
+    display:flex !important;
+    justify-content: center;
+    justify-items: center;
+    animation: lm-fadeIn 0.3s ease;
+}
+
+#linkmail-editor{
+    animation: lm-fadeIn 0.3s ease;
+}
+
+#linkmail-signin p{
+    text-align: center; 
+    font-size:10.5pt;
+    font-weight:400;
+    color:#787878;
+}
+
+.linkmail-header {
+    font-size:14pt;
+    font-weight:600;
+    text-align: center;
+}
+
+.linkmail-last-email-status{
+    border: 1px solid rgb(0, 94, 255);
+    color: rgb(0, 94, 255) !important;
+    text-decoration: none !important;
+    font-style:normal;
+    margin-top:6px;
+    padding: 2px 8px;
+    border-radius:100px;
+}
+
+
+
+
+
+/*  Templates and Picker */
+
+#template-dropdown{
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+}
+
+.template-dropdown-card{
+    background-color:rgb(247, 247, 247);
+    border-radius: 8px;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    min-height:60px;
+    padding:8px 4px;
+    cursor:pointer;
+    border: 1px solid rgba(255, 255, 255, 0);
+    transition: 0.1s ease-in-out all;
+}
+.template-dropdown-icon {
+    font-size:20pt !important;
+    width:20%;
+    text-align:center;
+}
+.template-dropdown-card div {
+    width:80%;
+    padding: 8px 0px;
+}
+.template-dropdown-card h2{
+    font-size:11pt;
+    font-weight:500;
+}
+.template-dropdown-card p{
+    font-size:9pt;
+    line-height:1.2;
+    margin-top:4px;
+    color: rgb(161, 161, 161);
+}
+
+.template-dropdown-card.selected {
+    border: 1px solid var(--primary-color);
+    background-color: rgb(230, 239, 255);
+}
+
+
+
+
+
+/* Editor Styles */
+/* 
+.linkmail-input, .linkmail-input:active, .linkmail-input:hover, .linkmail-input:focus {
+    font-size:11pt !important;
+    outline:0px !important;
+    box-shadow: none !important;
+    padding:6px;
+    margin:8px 0px;
+    width:100%;
+    border-radius:4px;
+    background-color:white;
+    border:1px solid rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
+}
+
+.linkmail-input:focus {
+    border: 1px solid rgb(30, 131, 255);
+}
+
+.linkmail-input:hover{
+    background-color:rgba(0, 0, 0, 0.05);
+}
+
+.linkmail-subject, .linkmail-subject:focus, .linkmail-subject:active, .linkmail-subject:hover {
+    font-size:12pt !important;
+    font-weight:600;
+}
+
+.linkmail-textarea, .linkmail-textarea:focus, .linkmail-textarea:active, .linkmail-textarea:hover {
+    padding:6px;
+    outline:none;
+    font-size:10pt;
+    resize: none;
+    overflow: hidden;
+    min-height: 80px;
+    width: 100%;
+    resize: none;
+    border-radius:4px;
+    overflow: hidden;
+    box-sizing: border-box;
+    background-color:white;
+    border:1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
+} */
+
+.linkmail-last-email-status {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+    text-align: center;
+    font-style: italic;
+}
+
+
+
+
+
+/*  Menu and Account Styles */
+
+/* Account dropdown container */
+
+.account-dropdown-con {
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top:16px;
+}
+
+.account-dropdown p{
+    width:fit-content;
+}
+
+/* User email display */
+.account-email {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Dropdown container positioning */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Three dots menu button */
+.menu-toggle-btn {
+    background: none;
+    color:black;
+    border: none;
+    cursor: pointer;
+    overflow:visible;
+    width:fit-content;
+    width:20px;
+    height:20px;
+    border-radius:4px;
+}
+.menu-toggle-btn:hover {
+    background-color:rgb(240, 240, 240);
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #f9f9f9;
+    min-width: 150px;
+    box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 8px;
+    border: 1px solid rgb(211, 211, 211);
+    transition:all 0.1 ease-in-out;
+}
+
+/* Dropdown menu items */
+.dropdown-item {
+    color: #434343;
+    padding: 4px 8px;
+    margin: 4px;
+    text-decoration: none;
+    display: block;
+    font-size: 10.5pt;
+    cursor: pointer;
+    border-radius:4px;
+}
+
+/* Hover effect for dropdown items */
+.dropdown-item:hover {
+    background-color: #f1f1f1;
+}
+
+/* Show dropdown menu when active */
+.dropdown-menu.active {
+    display: block;
+}

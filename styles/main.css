@@ -1,0 +1,166 @@
+
+/* declared for all the main CSS and root variables */
+
+
+
+/* Base styles */
+:root {
+    --primary-color: #0B66C2;
+    --primary-hover: #084e96;
+    --text-color: #333;
+    --text-light: #787878;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --bg-light: #f7f7f7;
+    --bg-light-hover: #f2f2f2;
+    --border-radius: 8px;
+    --button-radius: 100px;
+    --transition: all 0.2s ease;
+    --shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f3f2ef;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+p {
+    font-size:10.5pt;
+    font-weight:400;
+    color:var(--text-light);
+    line-height:20px;
+}
+
+/* Typography */
+h1, h2, h3 {
+    color: var(--text-color);
+    margin-bottom: 12px;
+}
+
+h1 {
+    color: var(--primary-color);
+    text-align: center;
+    font-size: 20pt;
+    font-weight: 600;
+}
+
+h2, h3 {
+    font-size: 16pt;
+    font-weight: 600;
+    margin-top: 20px;
+}
+
+.description {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+/* Form elements */
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    margin: 12px 0px;
+    font-weight: 400;
+    color: var(--text-color);
+    font-size: 10.5pt;
+}
+
+/* Common styles for inputs and textareas */
+input, textarea, .search-input, .lm-input, .lm-textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 11pt;
+    box-sizing: border-box;
+    background-color: var(--bg-light);
+    box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.04) !important;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.1s ease-in-out;
+}
+
+
+.lm-input:hover, .lm-textarea:hover, .lm-input:hover:not(:focus), .lm-textarea:hover:not(:focus) {
+    border: 1px solid var(--border-color) !important;
+    outline:none !important;
+    background-color: var(--bg-light-hover);
+    box-shadow: 0 0 0 0px rgba(11, 102, 194, 0.2) !important;
+}
+
+.lm-textarea:focus, .lm-input:focus, 
+.lm-textarea:active, .lm-textarea:active, 
+.lm-input:focus-visible, .lm-textarea:focus-visible {
+    border: 1px solid var(--primary-color) !important;
+    outline:none !important;
+    box-shadow: 0 0 0 0px rgba(11, 102, 194, 0.2) !important;
+}
+
+input::placeholder,
+textarea::placeholder, .lm-textarea::placeholder, .lm-input::placeholder {
+    color: #bbb;
+    opacity: 1;
+}
+
+
+textarea, .lm-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Button styles */
+button, .lm-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--button-radius);
+    padding: 8px 16px;
+    font-size: 11pt;
+    font-weight: 550;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+button:hover, .lm-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+/* secondary button styles */
+.lm-btn-2 { 
+    background-color: var(--bg-light-hover);
+    color: rgb(84, 84, 84);
+    border: rgb(193, 193, 193);
+    border-radius: var(--button-radius);
+    padding: 8px 16px;
+    font-size: 11pt;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.lm-btn-2 svg {
+    width: 16px;
+    height: 16px;
+    margin-right:8px;
+    color:rgb(114, 114, 114);
+}
+
+.lm-btn-2:hover {
+    background-color: #dddddd !important;
+}
