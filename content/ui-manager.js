@@ -981,8 +981,7 @@ window.UIManager = {
       }
       
       // Default state
-      lastEmailStatus.textContent = 'No Email Sent Yet';
-      lastEmailStatus.style.color = '#666';
+      lastEmailStatus.style.display = 'none';
       
       // If not authenticated, we need to check auth status first
       if (!this.isAuthenticated || !this.userData || !this.userData.email) {
@@ -1045,8 +1044,9 @@ window.UIManager = {
           });
           
           // Update the status text
-          lastEmailStatus.textContent = `Last Email Sent: ${formattedDate}`;
-          lastEmailStatus.style.color = '#4caf50'; // Green color to indicate success
+          lastEmailStatus.textContent = `Last Sent on ${formattedDate}`;
+          lastEmailStatus.style.display = 'block';
+          // lastEmailStatus.style.color = '#4caf50'; // Green color to indicate success
           console.log('Updated status with last email date:', formattedDate);
         }
       });

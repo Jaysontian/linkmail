@@ -5,11 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LinkMail - Profile Setup</title>
   <style>
+    /* Base styles */
+    :root {
+      --primary-color: #0B66C2;
+      --primary-hover: #084e96;
+      --text-color: #333;
+      --text-light: #787878;
+      --border-color: rgba(0, 0, 0, 0.15);
+      --bg-light: #f7f7f7;
+      --border-radius: 8px;
+      --button-radius: 100px;
+      --transition: all 0.2s ease;
+      --shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      background-color: #f5f5f5;
+      background-color: #f3f2ef;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -18,69 +32,125 @@
     
     .container {
       background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      padding: 32px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 24px;
       width: 100%;
-      max-width: 500px;
+      max-width: 550px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      min-height: 100vh;
+    }
+    
+    /* Typography */
+    h1, h2, h3 {
+      color: var(--text-color);
+      margin-bottom: 12px;
     }
     
     h1 {
-      color: #0077b5;
+      color: var(--primary-color);
       text-align: center;
-      margin-bottom: 24px;
+      font-size: 20pt;
+      font-weight: 600;
+    }
+    
+    h2, h3 {
+      font-size: 16pt;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+    
+    .description, .section-description {
+      color: var(--text-light);
+      font-size: 10.5pt;
+      font-weight: 400;
     }
     
     .description {
       text-align: center;
-      color: #666;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
     
+    /* Form elements */
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     
     label {
       display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #333;
+      margin: 12px 0px;
+      font-weight: 400;
+      color: var(--text-color);
+      font-size: 10.5pt;
     }
     
-    input {
+    /* Common styles for inputs and textareas */
+    input, textarea, .search-input {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 16px;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 11pt;
       box-sizing: border-box;
-    }
-    
-    input:focus {
-      border-color: #0077b5;
+      background-color: var(--bg-light);
+      box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.04);
+      font-family: inherit;
       outline: none;
+      transition: border-color 0.1s ease-in-out;
     }
     
+    input:focus, textarea:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px rgba(11, 102, 194, 0.2);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: #bbb;
+        opacity: 1;
+    }
+    
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    /* Button styles */
     button {
-      background-color: #0077b5;
+      background-color: var(--primary-color);
       color: white;
       border: none;
-      border-radius: 4px;
-      padding: 12px 24px;
-      font-size: 16px;
+      border-radius: var(--button-radius);
+      padding: 8px 16px;
+      font-size: 11pt;
+      font-weight: 550;
       cursor: pointer;
-      width: 100%;
-      margin-top: 16px;
+      transition: var(--transition);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto;
     }
     
     button:hover {
-      background-color: #005e93;
+      background-color: var(--primary-hover);
     }
     
+    .secondary-button {
+      background-color: white;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+    }
+    
+    .secondary-button:hover {
+      background-color: rgba(11, 102, 194, 0.1);
+    }
+    
+    /* Message styles */
     .error {
       color: #e74c3c;
-      font-size: 14px;
+      font-size: 10pt;
       margin-top: 4px;
     }
     
@@ -88,55 +158,71 @@
       text-align: center;
       color: #27ae60;
       margin-top: 16px;
+      font-size: 11pt;
     }
     
-    /* Styles for the tabs and email history */
+    .placeholder-text {
+      color: #999;
+      font-style: italic;
+      margin: 0;
+      font-size: 10.5pt;
+    }
+    
+    /* Tabs */
     .tabs {
       display: flex;
       margin-bottom: 20px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid var(--border-color);
     }
     
     .tab {
       padding: 10px 20px;
       cursor: pointer;
-      border: 1px solid transparent;
-      border-bottom: none;
+      border-bottom: 2px solid transparent;
       margin-right: 5px;
-      border-radius: 4px 4px 0 0;
+      font-size: 11pt;
+      font-weight: 500;
+      color: var(--text-light);
+      transition: var(--transition);
+    }
+    
+    .tab:hover {
+      color: var(--primary-color);
     }
     
     .tab.active {
-      background-color: white;
-      border-color: #ddd;
-      border-bottom-color: white;
-      margin-bottom: -1px;
-      font-weight: 500;
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+      font-weight: 600;
     }
     
     .tab-content {
       display: none;
+      animation: fadeIn 0.3s ease;
     }
     
     .tab-content.active {
       display: block;
     }
     
+    /* Email list */
     .email-list {
       max-height: 400px;
       overflow-y: auto;
-      border: 1px solid #eee;
-      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      background-color: white;
     }
     
     .email-item {
       padding: 12px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border-color);
       cursor: pointer;
+      transition: var(--transition);
     }
     
     .email-item:hover {
-      background-color: #f9f9f9;
+      background-color: var(--bg-light);
     }
     
     .email-item:last-child {
@@ -151,25 +237,29 @@
     
     .email-recipient {
       font-weight: 500;
+      font-size: 11pt;
     }
     
     .email-date {
-      color: #888;
-      font-size: 12px;
+      color: var(--text-light);
+      font-size: 10pt;
     }
     
     .email-subject {
       font-weight: 500;
       margin-bottom: 4px;
+      font-size: 11pt;
     }
     
     .email-preview {
-      color: #666;
+      color: var(--text-light);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-size: 10pt;
     }
     
+    /* Email modal */
     .email-modal {
       display: none;
       position: fixed;
@@ -179,16 +269,18 @@
       height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
       z-index: 1000;
+      animation: fadeIn 0.3s ease;
     }
     
     .email-modal-content {
       background-color: white;
       margin: 10% auto;
       padding: 24px;
-      border-radius: 8px;
+      border-radius: var(--border-radius);
       width: 80%;
       max-width: 600px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      animation: slideIn 0.3s ease;
     }
     
     .close-button {
@@ -196,187 +288,345 @@
       font-size: 24px;
       font-weight: bold;
       cursor: pointer;
+      color: var(--text-light);
+      transition: var(--transition);
     }
     
-    .email-detail-header {
-      margin-bottom: 16px;
+    .close-button:hover {
+      color: var(--text-color);
     }
     
     .email-detail-body {
       white-space: pre-wrap;
-      background-color: #f9f9f9;
+      background-color: var(--bg-light);
       padding: 16px;
       border-radius: 4px;
       margin-top: 16px;
+      font-size: 10.5pt;
+      border: 1px solid var(--border-color);
     }
     
+    /* Search */
     .search-container {
       margin-bottom: 16px;
-    }
-    
-    .search-input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
     }
     
     .no-emails {
       padding: 20px;
       text-align: center;
-      color: #888;
+      color: var(--text-light);
+      font-style: italic;
+      font-size: 10.5pt;
     }
 
+    /* Experience cards */
     .experience-card {
-    background-color: #f9f9f9;
-    border-radius: 6px;
-    padding: 16px;
-    margin-bottom: 16px;
-    border: 1px solid #eee;
-    position: relative;
-  }
-  
-  .experience-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-  
-  .experience-title {
-    font-weight: 600;
-    color: #0077b5;
-    font-size: 14px;
-    margin: 0;
-  }
-  
-  .experience-remove {
-    background: none;
-    border: none;
-    color: #999;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 0;
-  }
-  
-  .experience-remove:hover {
-    color: #e74c3c;
-  }
-  
-  .experience-fields {
-    display: grid;
-    grid-gap: 10px;
-  }
-  
-  .experience-field {
-    margin-bottom: 8px;
-  }
-  
-  .experience-field label {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 13px;
-  }
-  
-  .experience-field input, 
-  .experience-field textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .experience-field textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-  
-  .secondary-button {
-    background-color: white;
-    color: #0077b5;
-    border: 1px solid #0077b5;
-    margin-top: 8px;
-  }
-  
-  .secondary-button:hover {
-    background-color: #f0f7fb;
-  }
-  
-  .plus-icon {
-    font-style: normal;
-    margin-right: 4px;
-  }
+      background-color: var(--bg-light);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-color);
+      position: relative;
+      transition: var(--transition);
+      animation: fadeIn 0.3s ease;
+    }
 
-  .section-description {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 12px;
-  }
-  
-  .skills-input-container {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  
-  .skill-add-button {
-    padding: 8px 12px;
-    white-space: nowrap;
-  }
-  
-  .skills-tags-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 40px;
-    margin-bottom: 16px;
-    padding: 8px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-  }
-  
-  .skill-tag {
-    display: flex;
-    align-items: center;
-    background-color: #0077b5;
-    color: white;
-    border-radius: 16px;
-    padding: 4px 12px;
-    font-size: 14px;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  .remove-skill {
-    margin-left: 6px;
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 18px;
-    height: 18px;
-    width: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .remove-skill:hover {
-    color: #f0f0f0;
-  }
-  
-  .placeholder-text {
-    color: #999;
-    font-style: italic;
-    margin: 0;
-  }
+    .experience-card input, .experience-card textarea {
+      background-color:white;
+    }
+    
+    .experience-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .experience-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+
+    
+    .experience-title {
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 12pt;
+      margin: 0;
+    }
+    
+    .experience-remove {
+      width:20px;
+      height:20px;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      transition: var(--transition);
+      margin:0px 0px;
+    }
+    
+    .experience-remove:hover {
+      background-color:rgb(218, 218, 218);
+    }
+    
+    /* Skills section */
+    .skills-input-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .skill-add-button {
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+    
+    .skills-tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 40px;
+      margin-bottom: 16px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      background-color: var(--bg-light);
+      transition: var(--transition);
+    }
+    
+    .skills-tags-container:hover {
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    .skill-tag {
+      display: flex;
+      align-items: center;
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: var(--button-radius);
+      padding: 4px 12px;
+      font-size: 10.5pt;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      animation: tagAppear 0.3s ease;
+      transition: var(--transition);
+    }
+    
+    .remove-skill {
+      margin-left: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 18px;
+      height: 18px;
+      width: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+    
+    .remove-skill:hover {
+      transform: scale(1.2);
+      color: #f0f0f0;
+    }
+    
+    /* Templates section */
+    .template-form {
+      margin-top: 20px;
+      border: 1px solid var(--border-color);
+      padding: 16px;
+      border-radius: var(--border-radius);
+      background-color: var(--bg-light);
+      transition: var(--transition);
+    }
+    
+    .template-form:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Template cards */
+    .template-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      background-color: white;
+      transition: var(--transition);
+    }
+    
+    .template-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .template-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .template-title {
+      color: var(--primary-color);
+      font-weight: 600;
+      font-size: 14pt;
+      margin: 0;
+    }
+    
+    .template-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .template-action {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: var(--transition);
+    }
+    
+    .template-action:hover {
+      color: var(--text-color);
+    }
+    
+    .template-content {
+      font-size: 10.5pt;
+      color: var(--text-color);
+      white-space: pre-line;
+      max-height: 100px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    
+    .help-text {
+      margin-bottom: 16px;
+      font-size: 10.5pt;
+      color: var(--text-light);
+    }
+    
+    .help-text ul {
+      margin-top: 5px;
+      padding-left: 20px;
+    }
+    
+    .help-text p {
+      margin: 5px 0;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes tagAppear {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(11, 102, 194, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(11, 102, 194, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(11, 102, 194, 0); }
+    }
+    
+    #submitButton {
+      animation: pulse 2s infinite;
+    }
+    
+    #submitButton:hover {
+      animation: none;
+    }
+    
+    /* Utility classes */
+    .plus-icon {
+      font-style: normal;
+      margin-right: 4px;
+    }
+    
+    /* Account dropdown */
+    .account-dropdown-con {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+    
+    .account-email {
+      font-size: 12px;
+      color: var(--text-light);
+    }
+    
+    .dropdown-container {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .menu-toggle-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      overflow: visible;
+      width: fit-content;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+    
+    .menu-toggle-btn:hover {
+      background-color: var(--bg-light);
+    }
+    
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 150px;
+      box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
+      z-index: 1;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      transition: var(--transition);
+    }
+    
+    .dropdown-item {
+      color: var(--text-color);
+      padding: 4px 8px;
+      margin: 4px;
+      text-decoration: none;
+      display: block;
+      font-size: 10.5pt;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .dropdown-item:hover {
+      background-color: var(--bg-light);
+    }
+    
+    .dropdown-menu.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <div style="display:flex;">
+      <img src="https://i.imgur.com/LtIDUzZ.png" style="width:50px; margin:20px auto;"/>
+    </div>
+    
     <h1 id="pageTitle">Complete Your LinkMail Profile</h1>
     <p class="description">This information helps us personalize your emails for better results</p>
     
@@ -405,12 +655,13 @@
 
         <div class="form-group">
           <h3>Experiences</h3>
+          <p class="section-description">Add your work and project experiences to help personalize your outreach emails.</p>
           <div id="experiencesContainer">
-            <!-- Experience 1 will be added here by default -->
+            <!-- Experience cards will be added here dynamically -->
           </div>
           
-          <button type="button" id="addExperienceButton" class="linkmail-button secondary-button">
-            <i class="plus-icon">+</i> Add More Experience
+          <button type="button" id="addExperienceButton" class="secondary-button">
+            <i class="plus-icon">+</i> Add Experience
           </button>
           <p id="experienceLimit" class="error" style="display: none;">Maximum of 5 experiences allowed.</p>
         </div>
@@ -421,9 +672,9 @@
           
           <div id="skillsContainer">
             <div class="skills-input-container">
-              <input type="text" id="skillInput" class="linkmail-input" placeholder="Add a skill (e.g., Python, Data Analysis, Project Management)">
-              <button type="button" id="addSkillButton" class="linkmail-button secondary-button skill-add-button">
-                <i class="plus-icon">+</i> Add
+              <input type="text" id="skillInput" placeholder="Add a skill (e.g., Python, Data Analysis, Project Management)">
+              <button type="button" id="addSkillButton" class="secondary-button skill-add-button">
+                <i class="plus-icon">+</i> Add Skill
               </button>
             </div>
             
@@ -454,26 +705,53 @@
       <p class="section-description">Create custom email templates to use when reaching out to LinkedIn connections. Use [bracketed text] to indicate variables that should be filled by AI.</p>
       
       <div id="templates-container">
-        <!-- Templates will be listed here -->
-        <p id="no-templates-message" class="placeholder-text">No templates added yet</p>
+        <!-- Example template cards for visualization -->
+        <div class="template-card">
+          <div class="template-header">
+            <h3 class="template-title">Startup Coffee Chat Email</h3>
+            <div class="template-actions">
+              <button class="template-action">✏️</button>
+              <button class="template-action">✖️</button>
+            </div>
+          </div>
+          <div class="template-content">
+            Hi person
+          </div>
+        </div>
+        
+        <div class="template-card">
+          <div class="template-header">
+            <h3 class="template-title">Research Opportunities</h3>
+            <div class="template-actions">
+              <button class="template-action">✏️</button>
+              <button class="template-action">✖️</button>
+            </div>
+          </div>
+          <div class="template-content">
+            Hi lab research stuff
+          </div>
+        </div>
+        
+        <!-- Placeholder message shown when no templates exist -->
+        <p id="no-templates-message" class="placeholder-text" style="display: none;">No templates added yet</p>
       </div>
       
-      <div class="template-form" style="margin-top: 20px; border: 1px solid #eee; padding: 16px; border-radius: 6px; background-color: #f9f9f9;">
+      <div class="template-form">
         <h3 style="margin-top: 0;">Add New Template</h3>
         
         <div class="form-group">
           <label for="templateName">Template Name</label>
-          <input type="text" id="templateName" placeholder="e.g., Startup Coffee Chat Email" class="linkmail-input">
+          <input type="text" id="templateName" placeholder="e.g., Startup Coffee Chat Email">
         </div>
         
         <div class="form-group">
           <label for="templateContent">Template Content</label>
-          <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a [User Year] student at [User College].&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;[Your Name]" class="linkmail-input" style="min-height: 200px;"></textarea>
+          <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a [User Year] student at [User College].&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;[Your Name]" style="min-height: 200px;"></textarea>
         </div>
         
-        <div class="help-text" style="margin-bottom: 16px; font-size: 13px; color: #666;">
+        <div class="help-text">
           <p><strong>Template Variables:</strong></p>
-          <ul style="margin-top: 5px; padding-left: 20px;">
+          <ul>
             <li>[Recipient Name] - The LinkedIn user's name</li>
             <li>[Recipient Company] - The LinkedIn user's company</li>
             <li>[Your Name] - Your name from your profile</li>
@@ -483,11 +761,31 @@
           <p>Use brackets [like this] for any text you want the AI to replace with personalized content.</p>
         </div>
         
-        <button type="button" id="addTemplateButton" class="linkmail-button">Add Template</button>
+        <button type="button" id="addTemplateButton">Add Template</button>
       </div>
     </div>
     
     <p id="message" class="success" style="display: none;"></p>
+    
+    <div class="account-dropdown linkmail-account-info" style="display: none;">
+      <div class="account-dropdown-con">
+        <p id="user-email-display" class="account-email">example@gmail.com</p>
+        <div class="dropdown-container">
+          <button id="menuToggle" class="menu-toggle-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="19" cy="12" r="1"/>
+              <circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+          <div id="menuContent" class="dropdown-menu">
+            <div href="#" id="editProfileButton" class="dropdown-item">Edit Profile</div>
+            <div href="#" id="signOutButton" class="dropdown-item">Sign Out</div>
+            <div href="#" id="settingsButton" class="dropdown-item">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   
   <!-- Email detail modal -->
