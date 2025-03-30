@@ -46,11 +46,11 @@
 }
 
 .linkmail-last-email-status{
-    border: 1px solid rgb(0, 94, 255);
-    color: rgb(0, 94, 255) !important;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color) !important;
     text-decoration: none !important;
-    font-style:normal;
-    margin-top:6px;
+    font-style:normal !important;
+    margin-top:12px !important;
     padding: 2px 8px;
     border-radius:100px;
 }
@@ -77,8 +77,15 @@
     padding:8px 4px;
     cursor:pointer;
     border: 1px solid rgba(255, 255, 255, 0);
-    transition: 0.1s ease-in-out all;
+    transition: 0.05s ease-in-out all;
 }
+
+.template-dropdown-card.selected, .template-dropdown-card.selected:hover {
+    border: 1px solid var(--primary-color);
+    background-color: rgb(230, 239, 255) !important;
+}
+
+
 .template-dropdown-icon {
     font-size:20pt !important;
     width:20%;
@@ -98,12 +105,6 @@
     margin-top:4px;
     color: rgb(161, 161, 161);
 }
-
-.template-dropdown-card.selected {
-    border: 1px solid var(--primary-color);
-    background-color: rgb(230, 239, 255);
-}
-
 
 
 

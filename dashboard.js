@@ -1,3 +1,28 @@
+
+
+function formatDate(emailDate) {
+  const now = new Date();
+  const emailDateTime = new Date(emailDate);
+
+  const isToday = now.toDateString() === emailDateTime.toDateString();
+  const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === emailDateTime.toDateString();
+  const isTomorrow = new Date(now.setDate(now.getDate() + 2)).toDateString() === emailDateTime.toDateString();
+
+  if (isToday) {
+    return `Today at ${emailDateTime.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+  } else if (isYesterday) {
+    return `Yesterday at ${emailDateTime.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+  } else if (isTomorrow) {
+    return `Tomorrow at ${emailDateTime.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+  } else {
+    return emailDateTime.toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' }) +
+           ` at ${emailDateTime.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+  }
+}
+
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
   const bioForm = document.getElementById('bioForm');
   const messageElement = document.getElementById('message');
@@ -667,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let emailListHTML = '';
     
     sortedEmails.forEach((email, index) => {
-      const date = new Date(email.date).toLocaleString();
+      const date = formatDate(email.date);
       const preview = email.content.substring(0, 100) + (email.content.length > 100 ? '...' : '');
       
       emailListHTML += `
@@ -694,17 +719,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   function showEmailDetails(email) {
-    const date = new Date(email.date).toLocaleString();
+
+    const date = formatDate(email.date);
     
     let detailsHTML = `
       <div class="email-detail-header">
-        <h3>Email to: ${escapeHtml(email.recipientName || email.recipientEmail)}</h3>
-        <p><strong>Recipient:</strong> ${escapeHtml(email.recipientEmail)}</p>
-        <p><strong>Subject:</strong> ${escapeHtml(email.subject)}</p>
+        <h3>${escapeHtml(email.subject)}</h3>
+        <p><b>Recipient:</b> ${escapeHtml(email.recipientName)} (${escapeHtml(email.recipientEmail)})</p>
         <p><strong>Sent on:</strong> ${date}</p>
-        ${email.linkedInUrl ? `<p><strong>LinkedIn Profile:</strong> <a href="${escapeHtml(email.linkedInUrl)}" target="_blank">View Profile</a></p>` : ''}
+        ${email.linkedInUrl ? `<a href="${escapeHtml(email.linkedInUrl)}" target="_blank"><button class="lm-btn" style="margin:8px 0px;">View LinkedIn</button></a>` : ''}
       </div>
-      <h4>Email Content:</h4>
+
       <div class="email-detail-body">${escapeHtml(email.content)}</div>
     `;
     
