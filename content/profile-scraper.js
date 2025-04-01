@@ -3,10 +3,17 @@
 window.ProfileScraper = {
   
   async scrapeProfileData() {
+    const name = document.querySelector('h1')?.innerText || '';
+    const nameParts = name.split(' ');
+    
     return {
-      name: document.querySelector('h1')?.innerText || '',
+      name: name,
+      firstName: nameParts[0] || '',
+      lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
       headline: document.querySelector('.text-body-medium')?.innerText || '',
       about: document.querySelector('.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed')?.innerText || '',
+      company: this.extractCompany(),
+      location: this.extractLocation(),
       experience: Array.from((document.querySelector('#experience')?.parentElement || document.createElement('div')).querySelectorAll('li.artdeco-list__item'))
         .map(li => {
           const content = [
@@ -23,6 +30,36 @@ window.ProfileScraper = {
         .filter(item => item !== null),
       email: await EmailFinder.findLinkedInEmail(),
     };
+  },
+  
+  // Extract company from the profile
+  extractCompany() {
+    // Try to find current company in the experience section
+    const experienceSection = document.querySelector('#experience')?.parentElement;
+    if (experienceSection) {
+      const firstExperience = experienceSection.querySelector('li.artdeco-list__item');
+      if (firstExperience) {
+        // Look for company name in the first experience item
+        const companyElement = firstExperience.querySelector('.t-normal');
+        if (companyElement) {
+          return companyElement.textContent.trim();
+        }
+      }
+    }
+    
+    // Fallback: Try to extract from headline
+    const headline = document.querySelector('.text-body-medium')?.innerText || '';
+    if (headline.includes(' at ')) {
+      return headline.split(' at ')[1].trim();
+    }
+    
+    return '';
+  },
+  
+  // Extract location from the profile
+  extractLocation() {
+    const locationElement = document.querySelector('.pv-text-details__left-panel .text-body-small:not(.inline)');
+    return locationElement ? locationElement.textContent.trim() : '';
   },
 
   async generateColdEmail(profileData, templateData) {

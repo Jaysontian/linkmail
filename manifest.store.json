@@ -17,9 +17,8 @@
   "web_accessible_resources": [{
     "resources": [
       "content/linkedin-div.html",
-      "dashboard.html",
-      "dashboard.js",
-      "assets/*"
+      "bio-setup.html",
+      "bio-setup.js"
     ],
     "matches": ["https://*.linkedin.com/*"]
   }],
@@ -27,11 +26,8 @@
     "https://*.googleapis.com/*",
     "https://gmail.googleapis.com/*",
     "https://www.googleapis.com/*",
-    "https://igupta1.github.io/*",
-    "*://*.linkedin.com/*",
-    "https://*.apollo.io/*"
+    "*://*.linkedin.com/*"
   ],
-  "key": "ahoknlaefjlpnadehdjimbhikbilcick",
   "oauth2": {
     "client_id": "632205525374-umvqu1g1u4cp632kvbv30j3699fkpnoj.apps.googleusercontent.com",
     "scopes": [
@@ -45,13 +41,6 @@
   },
   "content_scripts": [{
     "matches": ["*://www.linkedin.com/*"],
-    "css": [
-      "styles/main.css",
-      "styles/ui.css",
-      "styles/linkedin-div.css",
-      "styles/dashboard.css",
-      "styles/anim.css"
-    ],
     "js": [
       "content/gmail-manager.js",
       "content/utils.js",
@@ -59,7 +48,6 @@
       "content/profile-scraper.js",
       "content/url-observer.js",
       "content/ui-manager.js",
-      "content/apollo-client.js",
       "content/content.js"
     ],
     "run_at": "document_start"

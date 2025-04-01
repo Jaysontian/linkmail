@@ -54,5 +54,55 @@ window.EmailFinder = {
     if (aboutEmail) return aboutEmail;
 
     return null;
+  },
+  
+  // New method to find email using Apollo
+  async findEmailWithApollo() {
+    try {
+      // Check if Apollo is authenticated
+      if (!window.ApolloClient || !window.ApolloClient.isAuthenticated()) {
+        return { success: false, error: "Apollo not authenticated" };
+      }
+      
+      // Get profile data for Apollo search
+      const profileData = await window.ProfileScraper.scrapeProfileData();
+      if (!profileData || !profileData.name) {
+        return { success: false, error: "Couldn't retrieve profile data" };
+      }
+      
+      // Extract first and last name
+      const nameParts = profileData.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      
+      // Format data for Apollo API
+      const apolloSearchData = {
+        firstName: firstName,
+        lastName: lastName,
+        name: profileData.name,
+        linkedinUrl: window.location.href
+      };
+      
+      // Use Apollo client to search for email
+      const email = await window.ApolloClient.findEmail(apolloSearchData);
+      
+      if (email) {
+        return { 
+          success: true, 
+          email: email 
+        };
+      } else {
+        return { 
+          success: false, 
+          error: "No email found with Apollo" 
+        };
+      }
+    } catch (error) {
+      console.error('Error finding email with Apollo:', error);
+      return { 
+        success: false, 
+        error: error.message || "Error using Apollo to find email" 
+      };
+    }
   }
 };
