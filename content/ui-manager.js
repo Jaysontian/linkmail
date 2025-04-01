@@ -37,9 +37,15 @@ window.UIManager = {
     const nameElement = document.getElementById('profileName');
     const apolloSearchContainer = document.getElementById('apolloSearchContainer');
     
-    const profileData = await ProfileScraper.scrapeProfileData();
-    if (recipientInput && profileData.email) {
-      recipientInput.value = profileData.email;
+    // Get basic profile data without opening contact info overlay
+    const profileData = await ProfileScraper.scrapeBasicProfileData();
+    
+    // Check if we already have a cached email
+    const cachedEmail = EmailFinder._lastFoundEmail;
+    
+    if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
+      // Use the cached email if available
+      recipientInput.value = cachedEmail;
       
       // Hide Apollo search button if we already have an email
       if (apolloSearchContainer) {
@@ -51,7 +57,7 @@ window.UIManager = {
     }
     
     if (nameElement) {
-      nameElement.textContent = `Generate an outreach email to ${document.querySelector('h1')?.innerText || ''} with AI instantly.`;
+      nameElement.textContent = `Generate an outreach email to ${profileData.name || ''} with AI instantly.`;
     }
   },
 
@@ -271,12 +277,21 @@ window.UIManager = {
             apolloSearchStatus.style.display = 'block';
           }
           
+          // Use Apollo to find email without opening contact overlay
           const result = await window.EmailFinder.findEmailWithApollo();
           
           if (result.success && result.email) {
             const recipientInput = document.getElementById('recipientEmailInput');
             if (recipientInput) {
               recipientInput.value = result.email;
+              
+              // Hide the Apollo search container since we now have an email
+              const apolloSearchContainer = document.getElementById('apolloSearchContainer');
+              if (apolloSearchContainer) {
+                setTimeout(() => {
+                  apolloSearchContainer.style.display = 'none';
+                }, 3000); // Hide after 3 seconds so user can see the success message
+              }
             }
             
             if (apolloSearchStatus) {
@@ -661,42 +676,35 @@ window.UIManager = {
       }
 
       try {
-        const profileData = await ProfileScraper.scrapeProfileData();
+        // First get basic profile data (no contact info overlay)
+        const basicProfileData = await ProfileScraper.scrapeBasicProfileData();
         
-        // Add this section to update the recipient email field
+        // Now explicitly look for email only at this point (will open contact info overlay)
+        const email = await EmailFinder.getEmail();
+        
+        // Add the email to the profile data
+        const profileData = {
+          ...basicProfileData,
+          email: email
+        };
+        
+        // Update the recipient email field
         const recipientInput = document.getElementById('recipientEmailInput');
-        if (recipientInput && profileData.email) {
-          recipientInput.value = profileData.email;
+        const apolloSearchContainer = document.getElementById('apolloSearchContainer');
+        
+        if (recipientInput && email) {
+          recipientInput.value = email;
+          
+          // Hide Apollo search button if we found an email
+          if (apolloSearchContainer) {
+            apolloSearchContainer.style.display = 'none';
+          }
+        } else if (apolloSearchContainer && window.ApolloClient && window.ApolloClient.isAuthenticated()) {
+          // Show Apollo search button if we didn't find an email but Apollo is connected
+          apolloSearchContainer.style.display = 'block';
         }
   
-        // Get selected template from dropdown
-        const templateDropdown = document.getElementById('template-dropdown');
-        const selectedValue = templateDropdown.value;
-        let useTemplate;
-        
-        // if (selectedValue.startsWith('custom-')) {
-        //   // Get custom template by index
-        //   const index = parseInt(selectedValue.split('-')[1]);
-        //   if (this.userData && this.userData.templates && this.userData.templates[index]) {
-        //     useTemplate = {
-        //       name: this.userData.templates[index].name,
-        //       content: this.userData.templates[index].content,
-        //       // Still need to use a purpose for the API
-        //       purpose: `to send a ${this.userData.templates[index].name} email`
-        //     };
-        //   } else {
-        //     // Fallback to default if template not found
-        //     useTemplate = this.templates[0];
-        //   }
-        // } else if (selectedValue === 'coffee-chat') {
-        //   useTemplate = this.templates[0];
-        // } else if (selectedValue === 'job-application') {
-        //   useTemplate = this.templates[1];
-        // } else {
-        //   // Default to first template if nothing selected
-        //   useTemplate = this.templates[0];
-        // }
-
+        // Get selected template
         useTemplate = this.selectedTemplate;
   
         console.log(useTemplate);

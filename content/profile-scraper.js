@@ -2,7 +2,8 @@
 
 window.ProfileScraper = {
   
-  async scrapeProfileData() {
+  // Scrape basic profile data without opening contact info overlay
+  async scrapeBasicProfileData() {
     const name = document.querySelector('h1')?.innerText || '';
     const nameParts = name.split(' ');
     
@@ -14,22 +15,43 @@ window.ProfileScraper = {
       about: document.querySelector('.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed')?.innerText || '',
       company: this.extractCompany(),
       location: this.extractLocation(),
-      experience: Array.from((document.querySelector('#experience')?.parentElement || document.createElement('div')).querySelectorAll('li.artdeco-list__item'))
-        .map(li => {
-          const content = [
-            ...li.querySelectorAll('.t-bold'),
-            ...li.querySelectorAll('.t-normal'),
-            ...li.querySelectorAll('.pvs-entity__caption-wrapper')
-          ]
-          .map(el => el.textContent.trim())
-          .filter(text => text)
-          .join(' · ');
-          
-          return { content };
-        })
-        .filter(item => item !== null),
-      email: await EmailFinder.findLinkedInEmail(),
+      experience: this.extractExperience()
     };
+  },
+  
+  // Full profile scrape including email (which requires contact info overlay)
+  async scrapeProfileData(forceEmailLookup = false) {
+    // Get basic data first
+    const basicData = await this.scrapeBasicProfileData();
+    
+    // Only try to find email if explicitly requested
+    let email = null;
+    if (forceEmailLookup) {
+      email = await EmailFinder.findLinkedInEmail();
+    }
+    
+    return {
+      ...basicData,
+      email: email
+    };
+  },
+  
+  // Extract experience data
+  extractExperience() {
+    return Array.from((document.querySelector('#experience')?.parentElement || document.createElement('div')).querySelectorAll('li.artdeco-list__item'))
+      .map(li => {
+        const content = [
+          ...li.querySelectorAll('.t-bold'),
+          ...li.querySelectorAll('.t-normal'),
+          ...li.querySelectorAll('.pvs-entity__caption-wrapper')
+        ]
+        .map(el => el.textContent.trim())
+        .filter(text => text)
+        .join(' · ');
+        
+        return { content };
+      })
+      .filter(item => item !== null);
   },
   
   // Extract company from the profile

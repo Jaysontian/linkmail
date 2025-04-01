@@ -73,11 +73,17 @@ const BACKEND_URL = 'http://localhost:3000';
     // Wait a bit more to ensure LinkedIn's dynamic content is loaded
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // If profile changed, clear the cached email
+    if (isNewProfile && window.EmailFinder) {
+      console.log("New profile detected, clearing cached email");
+      window.EmailFinder.clearCachedEmail();
+    }
+    
     // If UI exists but profile changed, reset UI
     const existingUI = document.querySelector('.linkmail-container');
     if (existingUI && isNewProfile) {
       console.log("Detected navigation to a new profile, resetting UI");
-      forceResetUIState(); // Add this line
+      forceResetUIState();
       window.UIManager.resetUI();
       return;
     }

@@ -1,6 +1,10 @@
 //email-finder.js
 
 window.EmailFinder = {
+  // Last found email is cached to avoid opening the overlay multiple times
+  _lastFoundEmail: null,
+  _lastProfileUrl: null,
+  
   async checkContactInfo() {
     const contactButton = document.querySelector('a[href*="contact-info"]');
     if (!contactButton) return null;
@@ -35,6 +39,10 @@ window.EmailFinder = {
       
       if (closeButton) closeButton.click();
       
+      // Cache the found email
+      this._lastFoundEmail = email;
+      this._lastProfileUrl = window.location.href;
+      
       return email;
     }
     return null;
@@ -46,14 +54,39 @@ window.EmailFinder = {
     return Utils.extractEmail(aboutSection.textContent);
   },
 
-  async findLinkedInEmail() {
-    const contactInfoEmail = await this.checkContactInfo();
-    if (contactInfoEmail) return contactInfoEmail;
-
+  async findLinkedInEmail(useCache = true) {
+    // Check if we have a cached email for this profile
+    if (useCache && this._lastFoundEmail && this._lastProfileUrl === window.location.href) {
+      console.log('Using cached email:', this._lastFoundEmail);
+      return this._lastFoundEmail;
+    }
+    
+    // Try to find email in the about section first (no overlay needed)
     const aboutEmail = this.checkAboutSection();
-    if (aboutEmail) return aboutEmail;
-
-    return null;
+    if (aboutEmail) {
+      this._lastFoundEmail = aboutEmail;
+      this._lastProfileUrl = window.location.href;
+      return aboutEmail;
+    }
+    
+    // If not found, check contact info (opens overlay)
+    const contactInfoEmail = await this.checkContactInfo();
+    return contactInfoEmail;
+  },
+  
+  // Get email - will only open the overlay if no cached email is available
+  async getEmail(forceRefresh = false) {
+    if (!forceRefresh && this._lastFoundEmail && this._lastProfileUrl === window.location.href) {
+      return this._lastFoundEmail;
+    }
+    
+    return await this.findLinkedInEmail(false);
+  },
+  
+  // Clear the cached email
+  clearCachedEmail() {
+    this._lastFoundEmail = null;
+    this._lastProfileUrl = null;
   },
   
   // New method to find email using Apollo
@@ -65,7 +98,8 @@ window.EmailFinder = {
       }
       
       // Get profile data for Apollo search
-      const profileData = await window.ProfileScraper.scrapeProfileData();
+      // Don't open contact overlay again if we already have basic profile data
+      const profileData = await window.ProfileScraper.scrapeBasicProfileData();
       if (!profileData || !profileData.name) {
         return { success: false, error: "Couldn't retrieve profile data" };
       }
@@ -87,6 +121,10 @@ window.EmailFinder = {
       const email = await window.ApolloClient.findEmail(apolloSearchData);
       
       if (email) {
+        // Cache the found email from Apollo
+        this._lastFoundEmail = email;
+        this._lastProfileUrl = window.location.href;
+        
         return { 
           success: true, 
           email: email 
