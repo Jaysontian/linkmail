@@ -9,6 +9,22 @@ window.EmailFinder = {
     const contactButton = document.querySelector('a[href*="contact-info"]');
     if (!contactButton) return null;
 
+    // Create and append a style element to hide the modal
+    const hideModalStyle = document.createElement('style');
+    hideModalStyle.id = 'linkmail-hide-modal-style';
+    hideModalStyle.textContent = `
+      .artdeco-modal__overlay {
+        opacity: 0 !important;
+        pointer-events: auto !important; /* Keep pointer events to allow interaction */
+      }
+      .artdeco-modal {
+        opacity: 0 !important;
+        pointer-events: auto !important;
+      }
+    `;
+    document.head.appendChild(hideModalStyle);
+
+    // Click the contact button to open the overlay (now invisible)
     contactButton.click();
     
     let modalContent = null;
@@ -24,11 +40,12 @@ window.EmailFinder = {
       if (modalContent) break;
     }
 
+    let email = null;
     if (modalContent) {
       const allText = modalContent.innerText || modalContent.textContent;
       console.log('Modal content found:', allText);
       
-      const email = Utils.extractEmail(allText);
+      email = Utils.extractEmail(allText);
       console.log('Email found:', email);
       
       const closeButton = document.querySelector([
@@ -38,14 +55,21 @@ window.EmailFinder = {
       ].join(','));
       
       if (closeButton) closeButton.click();
-      
-      // Cache the found email
+    }
+    
+    // Remove the style that was hiding the modal
+    const styleElement = document.getElementById('linkmail-hide-modal-style');
+    if (styleElement) {
+      styleElement.remove();
+    }
+
+    // Cache the found email
+    if (email) {
       this._lastFoundEmail = email;
       this._lastProfileUrl = window.location.href;
-      
-      return email;
     }
-    return null;
+    
+    return email;
   },
 
   checkAboutSection() {
