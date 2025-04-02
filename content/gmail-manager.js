@@ -65,7 +65,6 @@ window.GmailManager = {
     }
   },
 
-  // Add this to gmail-manager.js
   // Update the sendAndSaveEmail method in gmail-manager.js to include a callback to update the status
   async sendAndSaveEmail(to, subject, body) {
     try {
@@ -119,21 +118,78 @@ window.GmailManager = {
     }
   },
 
-
   createEmail({ to, subject, message }) {
+    // Process the message to ensure proper line breaks
+    const processedMessage = this.processMessageContent(message);
+    
+    // Create email in MIME format
     const email = [
-      'Content-Type: text/plain; charset="UTF-8"\n',
-      'MIME-Version: 1.0\n',
-      'Content-Transfer-Encoding: 7bit\n',
-      'to: ', to, '\n',
-      'subject: ', subject, '\n\n',
-      message
-    ].join('');
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: 8bit',
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      '',  // Empty line separates headers from body
+      processedMessage
+    ].join('\r\n');  // Use CRLF line endings for email standards
 
     return btoa(unescape(encodeURIComponent(email)))
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
+  },
+  
+  processMessageContent(message) {
+    // Group text into paragraphs
+    const paragraphs = message.split('\n\n').map(p => p.trim()).filter(p => p);
+    
+    // Process each paragraph - handle line breaks within paragraphs
+    const processedParagraphs = paragraphs.map(paragraph => {
+      // Replace single line breaks with spaces if they're within a paragraph
+      const processedParagraph = paragraph
+        .replace(/\n/g, ' ')
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .trim();
+      
+      // Escape HTML special characters
+      return processedParagraph
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    });
+    
+    // Join paragraphs with proper spacing
+    const htmlContent = processedParagraphs
+      .map(p => `<p>${p}</p>`)
+      .join('');
+    
+    // Wrap the content in HTML structure
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            color: #333;
+          }
+          p {
+            margin: 0 0 10px 0;
+            padding: 0;
+            line-height: 1.4;
+          }
+        </style>
+      </head>
+      <body>
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          ${htmlContent}
+        </div>
+      </body>
+      </html>
+    `;
   },
   
   async getUserProfile() {
@@ -167,5 +223,4 @@ window.GmailManager = {
       throw error;
     }
   }
-
 };
