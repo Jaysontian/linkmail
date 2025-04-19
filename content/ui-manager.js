@@ -14,6 +14,7 @@ window.UIManager = {
       name: "Coffee Chat",
       description: "Send a friendly request to chat with this person.",
       purpose: "to schedule a coffee chat to the recipient",
+      subjectLine: "Coffee Chat Request",
       content: "Hey [NAME]!\nI bet you get hundreds of cold emails so I'll try to keep this concise: I saw that XXX I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. I have two internships under my belt, have a high GPA, and good communication / leadership development. Let me know if you are down to schedule a time for a chat!\nBest regards,",
     },
     {
@@ -21,6 +22,7 @@ window.UIManager = {
       name: "Job Application",
       description: "Craft a professional email to a recruiter or manager",
       purpose: "to inquire if there is internship or job",
+      subjectLine: "Job Application Request",
       content: "Hey [name],\nI'm [insert personal info here]. I think it's really cool how *Skiff is building a privacy-first collaboration platform with expiring links, secure workspaces, and password protection.* Would love to connect and learn about any possible internship opportunities!\nBest regards,",
     }
   ],
@@ -1023,6 +1025,8 @@ window.UIManager = {
     }
   },
 
+  // Update the populateTemplateDropdown method in UI-manager.js
+
   populateTemplateDropdown() {
     console.log('Populating template container');
     const templateContainer = this.elements.templateDropdown;
@@ -1043,6 +1047,7 @@ window.UIManager = {
         name: 'Coffee Chat',
         description: 'A friendly intro to chat',
         content: this.templates[0].content,
+        subjectLine: this.templates[0].subjectLine || "Coffee Chat with [Recipient Name]",
         purpose: 'to send a coffee chat request'
       },
       { 
@@ -1051,6 +1056,7 @@ window.UIManager = {
         name: 'Job Application',
         description: 'A professional email for recruiting',
         content: this.templates[1].content,
+        subjectLine: this.templates[1].subjectLine || "Job Application - [Your Name] ([User College])",
         purpose: 'to send a job application'
       }
     ];
@@ -1068,17 +1074,17 @@ window.UIManager = {
           name: template.name,
           description: template.description || 'Custom email template',
           content: template.content,
+          subjectLine: template.subjectLine || `${template.name} with [Recipient Name]`,
           purpose: `to send a ${template.name} email`
         }));
       
       allTemplates = [...allTemplates, ...customTemplates];
     } else {
       console.log('No custom templates found');
-    };
+    }
 
     
-    // Render each template from the concatenated array! 🤩
-    
+    // Render each template from the concatenated array
     allTemplates.forEach(template => {
       const card = document.createElement('div');
       card.className = 'template-dropdown-card';
@@ -1112,12 +1118,12 @@ window.UIManager = {
         this.selectedTemplate = {
           name: template.name,
           content: template.content,
+          subjectLine: template.subjectLine,
           purpose: template.purpose
         };
       });
       
       templateContainer.appendChild(card);
-
     });
   },
 

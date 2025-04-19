@@ -129,6 +129,12 @@
         <div class="form-group">
           <input type="text" id="templateName" placeholder="Template Name">
         </div>
+
+        <div class="form-group">
+          <label for="templateSubjectLine">Subject Line Template</label>
+          <input type="text" id="templateSubjectLine" placeholder="Would Love to Intern at [Recipient Company]">
+          <p class="help-text small">Use [brackets] for content to be replaced by AI</p>
+        </div>
         
         <div class="form-group">
           <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a [User Year] student at [User College].&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;[Your Name]" style="min-height: 200px;"></textarea>
@@ -137,11 +143,8 @@
         <div class="help-text">
           <p><strong>Template Variables:</strong></p>
           <ul>
-            <li>[Recipient Name] - The LinkedIn user's name</li>
+            <li>[Recipient First Name] - The LinkedIn user's name</li>
             <li>[Recipient Company] - The LinkedIn user's company</li>
-            <li>[Your Name] - Your name from your profile</li>
-            <li>[User College] - Your college/university</li>
-            <li>[User Year] - Your year based on graduation date</li>
           </ul>
           <p>Use brackets [like this] for any text you want the AI to replace with personalized content.</p>
         </div>
