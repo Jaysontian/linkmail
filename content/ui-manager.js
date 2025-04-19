@@ -1094,7 +1094,6 @@ window.UIManager = {
         <h1 class="template-dropdown-icon">${template.icon}</h1>
         <div>
           <h2>${template.name}</h2>
-          <p>${template.description}</p>
         </div>
       `;
       
@@ -1301,5 +1300,3 @@ window.UIManager = {
     }, 10000);
   }
 };
-
-

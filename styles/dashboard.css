@@ -482,8 +482,8 @@ line-height: 1.5;
   display: inline-block;
 }
 
-.menu-toggle-btn {
-  background: none;
+#menuToggle {
+  background: rgba(255, 255, 255, 0);
   border: none;
   cursor: pointer;
   overflow: visible;
@@ -493,8 +493,13 @@ line-height: 1.5;
   border-radius: 4px;
 }
 
-.menu-toggle-btn:hover {
+#menuToggle:hover {
   background-color: var(--bg-light);
+}
+
+#menuToggle svg{
+  color:rgba(0, 0, 0, 0.75);
+  fill: black;
 }
 
 .dropdown-menu {
