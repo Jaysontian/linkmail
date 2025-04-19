@@ -1,6 +1,9 @@
 
 
 .linkmail-container {
+    display:flex;
+    flex-direction:column !important;
+    height:fit-content;
     background-color:white;
     border: 1px solid rgba(0, 0, 0, 0.15);
     padding:12px 12px;
@@ -22,7 +25,8 @@
 }
 
 #linkemail-signin{
-    display:flex !important;
+    display:flex;
+    flex-direction: row;
     justify-content: center;
     justify-items: center;
     animation: lm-fadeIn 0.3s ease;
