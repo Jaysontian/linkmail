@@ -123,7 +123,7 @@ window.ProfileScraper = {
         }
       }
     
-      const response = await fetch(`${BACKEND_URL}/generate-email`, {
+       const response = await fetch('https://linkmail-api.vercel.app/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,6 +133,7 @@ window.ProfileScraper = {
           template: templateData
         })
       });
+
       
       return await response.json();
     } catch (error) {
