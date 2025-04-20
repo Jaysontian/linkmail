@@ -144,60 +144,88 @@ window.ProfileScraper = {
   },
 
   async generateColdEmail(profileData, templateData) {
-    try {
-      // Add user experiences and skills to template data if available
-      if (templateData.userData) {
-        // Format experiences
-        if (templateData.userData.experiences) {
-          templateData.userData.experiencesFormatted = templateData.userData.experiences
-            .map(exp => {
-              let text = '';
-              if (exp.jobTitle) text += exp.jobTitle;
-              if (exp.company) text += exp.jobTitle ? ` at ${exp.company}` : exp.company;
-              
-              // Only add description if it exists and isn't too long
-              if (exp.description && exp.description.length > 0) {
-                // Truncate if too long
-                const shortDesc = exp.description.length > 50 
-                  ? exp.description.substring(0, 50) + '...' 
-                  : exp.description;
-                text += ` (${shortDesc})`;
-              }
-              return text;
-            })
-            .filter(text => text.length > 0) // Remove empty experiences
-            .join('\n- '); // Format as bullet points
-          
-          // If we have experiences, add a prefix
-          if (templateData.userData.experiencesFormatted) {
-            templateData.userData.experiencesFormatted = 'My experiences include:\n- ' + 
-              templateData.userData.experiencesFormatted;
-          }
-        }
-        
-        // Format skills
-        if (templateData.userData.skills && templateData.userData.skills.length > 0) {
-          templateData.userData.skillsFormatted = 'My skills include: ' + 
-            templateData.userData.skills.join(', ');
-        }
-      }
-    
-       const response = await fetch('https://linkmail-api.vercel.app/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          profile: profileData,
-          template: templateData
-        })
-      });
+    try {
+      // Build system prompt and user prompt here
+      // ---- SYSTEM PROMPT ----
+      const systemPrompt = `You are an expert email writer who crafts concise, personalized outreach emails on behalf of a sender.
 
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error generating email:', error);
-      return null;
-    }
-  }
+Your response MUST be formatted as follows:
+[Subject Line]$$$[Email Body]
+-  Place the subject line first.
+-  Use three dollar signs ($$$) as a delimiter.
+-  Follow with the email body.
+-  Do NOT include any extra text, explanations, or formatting—just the subject and body separated by $$$.
+
+Guidelines:
+-  The subject line must use the provided subject line template, replacing any [bracketed text] with relevant content.
+-  The email body must be brief (ideally 80–100 words, maximum 100).
+-  Use a warm, professional tone suitable for outreach.
+-  Highlight ONE specific, meaningful connection between the sender and recipient.
+-  Make the reason for connecting clear and specific.
+-  End with a short, punchy call-to-action.
+
+Example format:
+Subject line here$$$Email body here
+`;
+
+      // ---- USER PROMPT ----
+      // You can further customize this as needed!
+      let userPrompt = `Write a short, personalized email from me to ${profileData.name}${profileData.company ? ` who works at ${profileData.company}` : ""}.
+
+  Recipient information:
+-  Name: ${profileData.name}
+-  Headline: ${profileData.headline || "Not provided"}
+-  Company: ${profileData.company || "Not provided"}
+-  About: ${profileData.about || "Not provided"}
+-  Location: ${profileData.location || "Not provided"}
+-  Experiences: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join("; ") : "Not provided"}
+
+My information:
+-  Name: ${templateData.userData?.name || "[Your Name]"}
+-  College/University: ${templateData.userData?.college || ""}
+-  Graduation year: ${templateData.userData?.graduationYear || ""}
+-  Experiences: ${templateData.userData?.experiences && templateData.userData.experiences.length > 0 ? templateData.userData.experiences.map(e => `${e.jobTitle || ""}${e.company ? ` at ${e.company}` : ""}${e.description ? ` (${e.description.length > 50 ? e.description.substring(0, 50) + "..." : ""})` : ""}`).join("; ") : "Not provided"}
+-  Skills: ${templateData.userData?.skills && templateData.userData.skills.length > 0 ? templateData.userData.skills.join(", ") : "Not provided"}
+
+Purpose of the email: ${templateData.purpose || "to schedule a coffee chat"}
+
+Subject line template:
+${templateData.subjectLine || "Coffee Chat with [Recipient Name]"}
+
+Email body template:
+${templateData.content || "Hey [NAME], I saw that XXX. I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,"}
+
+IMPORTANT: Return your response in this exact format:
+[Subject Line]$$$[Email Body]
+  `;
+
+      // ---- API CALL ----
+      const response = await fetch('https://linkmail-api.vercel.app/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: String(userPrompt),
+          systemPrompt: String(systemPrompt)
+        })
+      });
+
+      const data = await response.json();
+
+      console.log(data);
+      
+      // Parse the response into subject and email parts
+      const [subject, email] = data.result.split('$$$').map(str => str.trim());
+      
+      return {
+        subject,
+        email
+      };
+
+    } catch (error) {
+      console.error('Error generating email:', error);
+      return null;
+    }
+  }
 };
