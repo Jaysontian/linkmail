@@ -127,21 +127,25 @@
          <p class="section-description">Create custom email templates to use when reaching out to LinkedIn connections. Use [bracketed text] to indicate variables that should be filled by AI.</p>
         
         <div class="form-group">
-          <input type="text" id="templateName" placeholder="Template Name">
+          <label for="templateName">Template Name</label>
+          <input type="text" id="templateName" placeholder="Startup Internship Template">
+        </div>
+
+        <div class="form-group">
+          <label for="templateSubjectLine">Subject Line Template</label>
+          <input type="text" id="templateSubjectLine" placeholder="Would Love to Intern at [Recipient Company]!">
         </div>
         
         <div class="form-group">
-          <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a [User Year] student at [User College].&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;[Your Name]" style="min-height: 200px;"></textarea>
+          <label for="templateContent">Template Content</label>
+          <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a senior at UCLA.&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;Ishaan" style="min-height: 200px;"></textarea>
         </div>
         
         <div class="help-text">
           <p><strong>Template Variables:</strong></p>
           <ul>
-            <li>[Recipient Name] - The LinkedIn user's name</li>
-            <li>[Recipient Company] - The LinkedIn user's company</li>
-            <li>[Your Name] - Your name from your profile</li>
-            <li>[User College] - Your college/university</li>
-            <li>[User Year] - Your year based on graduation date</li>
+            <li>[Recipient First Name] - The Recipient's First Name</li>
+            <li>[Recipient Company] - The Recipient's Current Workplace</li>
           </ul>
           <p>Use brackets [like this] for any text you want the AI to replace with personalized content.</p>
         </div>

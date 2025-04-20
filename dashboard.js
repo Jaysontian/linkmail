@@ -1,5 +1,3 @@
-
-
 function formatDate(emailDate) {
   const now = new Date();
   const emailDateTime = new Date(emailDate);
@@ -306,6 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function initializeTemplatesManagement() {
     const templatesContainer = document.getElementById('templates-container');
     const templateNameInput = document.getElementById('templateName');
+    const templateSubjectLineInput = document.getElementById('templateSubjectLine');
     const templateContentInput = document.getElementById('templateContent');
     const addTemplateButton = document.getElementById('addTemplateButton');
     const noTemplatesMessage = document.getElementById('no-templates-message');
@@ -322,6 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to reset the add form to its default state
     function resetTemplateForm() {
       templateNameInput.value = '';
+      templateSubjectLineInput.value = '';
       templateContentInput.value = '';
       addTemplateButton.textContent = 'Add Template';
       addTemplateButton.dataset.mode = 'add';
@@ -388,6 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
           </div>
           <div class="template-content">
+            ${template.subjectLine ? `<div class="template-subject"><strong>Subject:</strong> ${escapeHtml(template.subjectLine)}</div>` : ''}
             ${escapeHtml(template.content || '')}
           </div>
         `;
@@ -399,6 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             // Populate form with template data for editing
             templateNameInput.value = template.name || '';
+            templateSubjectLineInput.value = template.subjectLine || '';
             templateContentInput.value = template.content || '';
             
             // Change add button to update button
@@ -445,6 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       try {
         const name = templateNameInput.value.trim();
+        const subjectLine = templateSubjectLineInput.value.trim();
         const content = templateContentInput.value.trim();
         
         if (!name) {
@@ -473,7 +476,11 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           
           // Add new template
-          templates.push({ name, content });
+          templates.push({ 
+            name, 
+            content,
+            subjectLine: subjectLine || `${name} with [Recipient Name]`
+          });
           console.log('Added new template:', name);
           
           // Save templates immediately after adding
@@ -488,7 +495,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
           
-          templates[index] = { name, content };
+          templates[index] = { 
+            name, 
+            content,
+            subjectLine: subjectLine || `${name} with [Recipient Name]`
+          };
           console.log('Updated template at index', index);
           
           // Save templates immediately after updating
