@@ -116,7 +116,7 @@
 }
 
 /* Button styles */
-.linkmail button, .lm-btn {
+.lm-btn {
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -132,7 +132,7 @@
     margin: 0 auto;
 }
 
-.linkmail button:hover, .lm-btn:hover {
+.lm-btn:hover {
     background-color: var(--primary-hover);
 }
 
@@ -157,7 +157,7 @@
     width: 16px;
     height: 16px;
     margin-right:8px;
-    color:rgb(114, 114, 114);
+    color:white;
 }
 
 .lm-btn-2:hover {

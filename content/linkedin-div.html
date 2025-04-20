@@ -12,8 +12,8 @@
                 <p>Connect your Gmail to generate and send personalized emails straight from LinkedIn</p>
             </div>
             <button id="googleSignInButton" class="lm-btn">
-                <img src="https://ragsdalemartin.com/wp-content/uploads/2020/07/white-google-logo.png" alt="Google logo" style="height: 18px; margin-right: 8px; vertical-align: middle;">
-                Sign in with Google
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/1280px-Gmail_icon_%282020%29.svg.png" alt="Google logo" style="height: 14px; margin-right: 8px; vertical-align: middle;">
+                Connect Gmail Account
             </button>
             <br>
         </div>
@@ -41,23 +41,6 @@
             Generate
             <svg xmlns="http://www.w3.org/2000/svg" style="margin-left:8px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal-icon lucide-send-horizontal"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
         </button>
-        
-        <div id="apolloIntegration" style="margin-top:10px; text-align:center;">
-            <div id="apolloNotAuthenticated" style="display:block;">
-                <p style="font-size:10pt; color:#666; margin-bottom:5px;">Can't find email? Use Apollo integration:</p>
-                <button id="apolloAuthButton" class="lm-btn-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:4px; vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-square"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><circle cx="10" cy="16" r="2"/><path d="m16 10-4.5 4.5"/><path d="m15 11 1 1"/></svg>
-                    Connect Apollo Account
-                </button>
-            </div>
-            <div id="apolloAuthenticated" style="display:none;">
-                <p style="font-size:10pt; color:#666; margin-bottom:5px;">Apollo connected</p>
-                <button id="apolloDisconnectButton" class="lm-btn-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:4px; vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                    Disconnect Apollo
-                </button>
-            </div>
-        </div>
     </div>
 
     <div id="linkmail-editor" style="display: none;">
@@ -69,6 +52,22 @@
                     Find email with Apollo
                 </button>
                 <div id="apolloSearchStatus" style="display:none; margin-top:4px; font-size:10pt; color:#666;"></div>
+                <div id="apolloIntegration" style="margin-top:10px; text-align:center;">
+                    <div id="apolloNotAuthenticated" style="display:block;">
+                        <p style="font-size:10pt; color:#666; margin-bottom:5px;">Can't find email? Use Apollo integration:</p>
+                        <button id="apolloAuthButton" class="lm-btn-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:4px; vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-square"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><circle cx="10" cy="16" r="2"/><path d="m16 10-4.5 4.5"/><path d="m15 11 1 1"/></svg>
+                            Connect Apollo Account
+                        </button>
+                    </div>
+                    <div id="apolloAuthenticated" style="display:none;">
+                        <p style="font-size:10pt; color:#666; margin-bottom:5px;">Apollo connected</p>
+                        <button id="apolloDisconnectButton" class="lm-btn-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:4px; vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                            Disconnect Apollo
+                        </button>
+                    </div>
+                </div>
             </div>
             <input id="emailSubject" class="lm-input linkmail-subject" placeholder="Empty Subject" style="font-size:10pt;">
             <div style="position:relative;">

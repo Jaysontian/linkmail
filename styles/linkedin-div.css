@@ -11,6 +11,14 @@
     border-radius:8px;
 }
 
+#googleSignInButton {
+    background-color:white;
+    color:rgba(0, 0, 0, 0.7);
+    font-weight:500;
+    border-radius:8px;
+    border: rgba(0, 0, 0, 0.1) solid 1px;
+}
+
 #googleSignInButton, #generateButton{
     animation: lm-pulse 2s infinite;
 }
@@ -66,48 +74,62 @@
 /*  Templates and Picker */
 
 #template-dropdown{
+    background-color:rgb(244, 244, 244);
+    border: rgba(0, 0, 0, 0.05);
+    border-radius:12px;
+    padding:4px; 
     display:flex;
     flex-direction:column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .template-dropdown-card{
-    background-color:rgb(247, 247, 247);
+    background-color:rgb(255, 255, 255, 0);
     border-radius: 8px;
     display:flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    min-height:60px;
-    padding:8px 4px;
+    padding:6px 2px;
     cursor:pointer;
     border: 1px solid rgba(255, 255, 255, 0);
-    transition: 0.05s ease-in-out all;
+    transition: all 0.05s ease-in;
+}
+
+.template-dropdown-card:hover{
+    background-color:rgba(0, 0, 0, 0.05) !important;
 }
 
 .template-dropdown-card.selected, .template-dropdown-card.selected:hover {
-    border: 1px solid var(--primary-color);
-    background-color: rgb(230, 239, 255) !important;
+    /* border: 1px solid var(--primary-color); */
+    background-color: var(--primary-color) !important;
+    color: white !important;
 }
 
 
-.template-dropdown-icon {
-    font-size:20pt !important;
-    width:20%;
+.template-dropdown-icon, .template-dropdown-card h1 {
+    font-size:14pt !important;
+    width:fit-content;
     text-align:center;
+    margin-bottom:0px;
+    margin: 0px 8px;
+    height: fit-content;
 }
 .template-dropdown-card div {
-    width:80%;
-    padding: 8px 0px;
+    width:100%;
+    padding: 0px 0px;
 }
 .template-dropdown-card h2{
     font-size:11pt;
     font-weight:500;
+    margin-bottom:0px;
+    color:inherit;
 }
 .template-dropdown-card p{
     font-size:9pt;
     line-height:1.2;
     margin-top:4px;
     color: rgb(161, 161, 161);
+    margin-bottom:0px;
 }
 
 
