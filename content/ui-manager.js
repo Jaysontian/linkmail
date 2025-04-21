@@ -1,3 +1,4 @@
+
 //ui-manager.js
 window.UIManager = {
   elements: {},
@@ -316,7 +317,7 @@ window.UIManager = {
           }
         } finally {
           findEmailWithApolloButton.disabled = false;
-          findEmailWithApolloButton.textContent = 'Find email with Apollo';
+          findEmailWithApolloButton.textContent = 'Find Email';
         }
       });
     }

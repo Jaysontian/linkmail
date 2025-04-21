@@ -16,11 +16,12 @@
   ],
   "web_accessible_resources": [{
     "resources": [
+      "assets/*",
       "content/linkedin-div.html",
       "bio-setup.html",
       "bio-setup.js"
     ],
-    "matches": ["https://*.linkedin.com/*"]
+    "matches": ["https://*.linkedin.com/*", "imgur.com/*"]
   }],
   "host_permissions": [
     "https://*.googleapis.com/*",
