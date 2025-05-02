@@ -16,7 +16,7 @@ window.UIManager = {
       description: "Send a friendly request to chat with this person.",
       purpose: "to schedule a coffee chat to the recipient",
       subjectLine: "Coffee Chat Request",
-      content: "Hey [NAME]!\nI bet you get hundreds of cold emails so I'll try to keep this concise: I saw that XXX I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. I have two internships under my belt, have a high GPA, and good communication / leadership development. Let me know if you are down to schedule a time for a chat!\nBest regards,",
+      content: "Hey [Recipient First Name]!\n\nI bet you get hundreds of cold emails so I'll try to keep this concise: I saw that XXX I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. I have two internships under my belt, have a high GPA, and good communication / leadership development. Let me know if you are down to schedule a time for a chat!\nBest regards,\n  [Sender Name]",
     },
     {
       icon: "💼",
@@ -24,7 +24,7 @@ window.UIManager = {
       description: "Craft a professional email to a recruiter or manager",
       purpose: "to inquire if there is internship or job",
       subjectLine: "Job Application Request",
-      content: "Hey [name],\nI'm [insert personal info here]. I think it's really cool how *Skiff is building a privacy-first collaboration platform with expiring links, secure workspaces, and password protection.* Would love to connect and learn about any possible internship opportunities!\nBest regards,",
+      content: "Hey [Recipient First Name],\n\nI'm [insert personal info here]. I think it's really cool how *Skiff is building a privacy-first collaboration platform with expiring links, secure workspaces, and password protection.* Would love to connect and learn about any possible internship opportunities!\nBest regards,\n [Sender Name]",
     }
   ],
 
