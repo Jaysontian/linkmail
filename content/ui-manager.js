@@ -673,10 +673,10 @@ window.UIManager = {
         this.showSignInUI();
         return;
       }
-    
+
       this.elements.generateButton.disabled = true;
       this.elements.generateButton.innerText = "Generating...";
-    
+
       function adjustHeight(element) {
         element.style.height = 'auto';
         element.style.height = element.scrollHeight + 'px';
@@ -687,21 +687,29 @@ window.UIManager = {
       if (emailResult) {
         emailResult.addEventListener('input', function() {adjustHeight(this);});
       }
-    
+
       try {
         // First get basic profile data (no contact info overlay)
         const basicProfileData = await ProfileScraper.scrapeBasicProfileData();
 
-        // Add logging here
-        console.log('LinkedIn Profile Data (before finding email):', JSON.stringify(basicProfileData, null, 2));
-        
-        // Now explicitly look for email only at this point (will open contact info overlay)
-        const email = await EmailFinder.getEmail();
-        
-        // Add the email to the profile data
+        // Prefer email from about section if available
+        let emailToUse = basicProfileData.emailFromAbout;
+
+        // Only look for email via contact info if not found in about section
+        if (!emailToUse) {
+          const foundEmail = await EmailFinder.getEmail();
+          
+          // Clean up the email if it has any extra text
+          if (foundEmail) {
+            emailToUse = ProfileScraper.cleanupEmail(foundEmail);
+          }
+        }
+
+        // Add the email to the profile data (remove emailFromAbout to avoid duplication)
+        const { emailFromAbout, ...cleanedProfileData } = basicProfileData;
         const profileData = {
-          ...basicProfileData,
-          email: email
+          ...cleanedProfileData,
+          email: emailToUse
         };
 
         // Log the complete profile data with email
@@ -711,8 +719,8 @@ window.UIManager = {
         const recipientInput = document.getElementById('recipientEmailInput');
         const apolloSearchContainer = document.getElementById('apolloSearchContainer');
         
-        if (recipientInput && email) {
-          recipientInput.value = email;
+        if (recipientInput && emailToUse) {  // Changed email to emailToUse
+          recipientInput.value = emailToUse;  // Changed email to emailToUse
           
           // Hide Apollo search button if we found an email
           if (apolloSearchContainer) {
@@ -722,12 +730,12 @@ window.UIManager = {
           // Show Apollo search button if we didn't find an email but Apollo is connected
           apolloSearchContainer.style.display = 'block';
         }
-    
+
         // Get selected template
         useTemplate = this.selectedTemplate;
-    
+
         console.log(useTemplate);
-    
+
         // Add user data to the template
         if (this.userData) {
           useTemplate.userData = {
@@ -738,11 +746,11 @@ window.UIManager = {
             skills: this.userData.skills
           };
         }
-    
+
         const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
-    
+
         console.log(response);
-    
+
         document.querySelector('#linkmail-splash').style.display = "none";
         document.querySelector('#linkmail-editor').style.display = "block";
         
@@ -751,7 +759,7 @@ window.UIManager = {
           if (this.userData && this.userData.name) {
             emailContent = emailContent.replace('[Your Name]', this.userData.name);
           }
-    
+
           this.elements.emailResult.value = emailContent;
           this.elements.emailSubject.value = response.subject;
           
