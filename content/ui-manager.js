@@ -673,10 +673,10 @@ window.UIManager = {
         this.showSignInUI();
         return;
       }
-
+    
       this.elements.generateButton.disabled = true;
       this.elements.generateButton.innerText = "Generating...";
-
+    
       function adjustHeight(element) {
         element.style.height = 'auto';
         element.style.height = element.scrollHeight + 'px';
@@ -687,10 +687,13 @@ window.UIManager = {
       if (emailResult) {
         emailResult.addEventListener('input', function() {adjustHeight(this);});
       }
-
+    
       try {
         // First get basic profile data (no contact info overlay)
         const basicProfileData = await ProfileScraper.scrapeBasicProfileData();
+
+        // Add logging here
+        console.log('LinkedIn Profile Data (before finding email):', JSON.stringify(basicProfileData, null, 2));
         
         // Now explicitly look for email only at this point (will open contact info overlay)
         const email = await EmailFinder.getEmail();
@@ -700,6 +703,9 @@ window.UIManager = {
           ...basicProfileData,
           email: email
         };
+
+        // Log the complete profile data with email
+        console.log('Complete Profile Data (with email):', JSON.stringify(profileData, null, 2));
         
         // Update the recipient email field
         const recipientInput = document.getElementById('recipientEmailInput');
@@ -716,12 +722,12 @@ window.UIManager = {
           // Show Apollo search button if we didn't find an email but Apollo is connected
           apolloSearchContainer.style.display = 'block';
         }
-  
+    
         // Get selected template
         useTemplate = this.selectedTemplate;
-  
+    
         console.log(useTemplate);
-  
+    
         // Add user data to the template
         if (this.userData) {
           useTemplate.userData = {
@@ -732,11 +738,11 @@ window.UIManager = {
             skills: this.userData.skills
           };
         }
-  
+    
         const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
-  
+    
         console.log(response);
-  
+    
         document.querySelector('#linkmail-splash').style.display = "none";
         document.querySelector('#linkmail-editor').style.display = "block";
         
@@ -745,9 +751,12 @@ window.UIManager = {
           if (this.userData && this.userData.name) {
             emailContent = emailContent.replace('[Your Name]', this.userData.name);
           }
-  
+    
           this.elements.emailResult.value = emailContent;
           this.elements.emailSubject.value = response.subject;
+          
+          // Display attachments if any are present in the selected template
+          this.displayAttachments(useTemplate.attachments);
           
           adjustHeight(this.elements.emailResult);
         } else {
@@ -781,24 +790,27 @@ window.UIManager = {
         this.showSignInUI();
         return;
       }
-
+    
       const email = document.getElementById('recipientEmailInput').value;
       const subject = document.getElementById('emailSubject').value;
       const emailContent = this.elements.emailResult.value;
-
+    
       if (!email || !subject || !emailContent) {
         alert('Please fill in all fields');
         return;
       }
-
+    
       try {
         // Disable button and update text
         this.elements.sendGmailButton.disabled = true;
         this.elements.sendGmailButton.textContent = 'Sending...';
         console.log('Sending email...');
-
-        // Send email
-        await GmailManager.sendAndSaveEmail(email, subject, emailContent);
+    
+        // Get any attachments from the selected template
+        const attachments = this.selectedTemplate?.attachments || [];
+    
+        // Send email with attachments
+        await GmailManager.sendAndSaveEmail(email, subject, emailContent, attachments);
         console.log('Email sent successfully');
         
         // Clear the form
@@ -852,7 +864,7 @@ window.UIManager = {
       } finally {
         // Re-enable button
         this.elements.sendGmailButton.disabled = false;
-        this.elements.sendGmailButton.textContent = 'Send via Gmail';
+        this.elements.sendGmailButton.textContent = 'Send Email';
       }
     });
   },
@@ -1059,7 +1071,8 @@ window.UIManager = {
         description: 'A friendly intro to chat',
         content: this.templates[0].content,
         subjectLine: this.templates[0].subjectLine || "Coffee Chat with [Recipient Name]",
-        purpose: 'to send a coffee chat request'
+        purpose: 'to send a coffee chat request',
+        attachments: [] // Add empty attachments array
       },
       { 
         id: 'job-application', 
@@ -1068,7 +1081,8 @@ window.UIManager = {
         description: 'A professional email for recruiting',
         content: this.templates[1].content,
         subjectLine: this.templates[1].subjectLine || "Job Application - [Your Name] ([User College])",
-        purpose: 'to send a job application'
+        purpose: 'to send a job application',
+        attachments: [] // Add empty attachments array
       }
     ];
     
@@ -1076,7 +1090,7 @@ window.UIManager = {
     
     if (this.userData && this.userData.templates && Array.isArray(this.userData.templates)) {
       console.log(`Found ${this.userData.templates.length} custom templates`);
-
+  
       const customTemplates = this.userData.templates
         .filter(template => template && template.name)
         .map((template, index) => ({
@@ -1086,14 +1100,15 @@ window.UIManager = {
           description: template.description || 'Custom email template',
           content: template.content,
           subjectLine: template.subjectLine || `${template.name} with [Recipient Name]`,
-          purpose: `to send a ${template.name} email`
+          purpose: `to send a ${template.name} email`,
+          attachments: template.attachments || [] // Include attachments
         }));
       
       allTemplates = [...allTemplates, ...customTemplates];
     } else {
       console.log('No custom templates found');
     }
-
+  
     
     // Render each template from the concatenated array
     allTemplates.forEach(template => {
@@ -1106,9 +1121,14 @@ window.UIManager = {
         card.classList.add('selected');
       }
       
+      // Add attachment indicator if template has attachments
+      const attachmentIndicator = template.attachments && template.attachments.length > 0 
+        ? `<span class="template-attachment-indicator">${template.attachments.length}</span>` 
+        : '';
+      
       // Use the specified HTML structure
       card.innerHTML = `
-        <h1 class="template-dropdown-icon">${template.icon}</h1>
+        <h1 class="template-dropdown-icon">${template.icon}${attachmentIndicator}</h1>
         <div>
           <h2>${template.name}</h2>
         </div>
@@ -1129,7 +1149,8 @@ window.UIManager = {
           name: template.name,
           content: template.content,
           subjectLine: template.subjectLine,
-          purpose: template.purpose
+          purpose: template.purpose,
+          attachments: template.attachments || [] // Include attachments in selected template
         };
       });
       
@@ -1298,6 +1319,63 @@ window.UIManager = {
         });
       }
     });
+  },
+
+  // Display template attachments in the email editor
+  displayAttachments(attachments) {
+    if (!attachments || !Array.isArray(attachments) || attachments.length === 0) {
+      // Hide attachments section if there are no attachments
+      const attachmentsSection = document.getElementById('emailAttachments');
+      if (attachmentsSection) {
+        attachmentsSection.style.display = 'none';
+      }
+      return;
+    }
+    
+    // Show attachments section
+    const attachmentsSection = document.getElementById('emailAttachments');
+    const attachmentsList = document.getElementById('attachmentsList');
+    
+    if (!attachmentsSection || !attachmentsList) {
+      console.error('Attachments elements not found');
+      return;
+    }
+    
+    // Clear any existing attachments
+    attachmentsList.innerHTML = '';
+    
+    // Add each attachment
+    attachments.forEach((attachment, index) => {
+      const attachmentItem = document.createElement('div');
+      attachmentItem.className = 'email-attachment-item';
+      
+      // Format file size
+      const sizeInKB = Math.round(attachment.size / 1024);
+      const sizeFormatted = sizeInKB >= 1024 
+        ? (sizeInKB / 1024).toFixed(2) + ' MB' 
+        : sizeInKB + ' KB';
+      
+      attachmentItem.innerHTML = `
+        <div class="attachment-info">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M9 18v-6"/>
+            <path d="M12 18v-3"/>
+            <path d="M15 18v-6"/>
+          </svg>
+          <div>
+            <p class="attachment-name">${attachment.name}</p>
+            <p class="attachment-size">${sizeFormatted}</p>
+          </div>
+        </div>
+      `;
+      
+      attachmentsList.appendChild(attachmentItem);
+    });
+    
+    // Show the attachments section
+    attachmentsSection.style.display = 'block';
   },
   
 

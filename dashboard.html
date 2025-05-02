@@ -140,6 +140,23 @@
           <label for="templateContent">Template Content</label>
           <textarea id="templateContent" placeholder="Hi [Recipient Name],&#10;&#10;I'm a senior at UCLA.&#10;&#10;I think it's really cool how [Recipient Company] [comment about their work].&#10;&#10;[Connection to your experience]&#10;&#10;Would love to connect and learn more!&#10;&#10;Best,&#10;Ishaan" style="min-height: 200px;"></textarea>
         </div>
+
+        <div class="form-group">
+          <label for="templateAttachments">Attachments</label>
+          <div class="attachment-container">
+            <div id="attachmentsList" class="attachments-list">
+              <!-- Attachments will be listed here -->
+              <p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>
+            </div>
+            <div class="attachment-controls">
+              <label for="attachmentFile" class="file-upload-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paperclip"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.47"/></svg>
+                Add PDF
+              </label>
+              <input type="file" id="attachmentFile" accept=".pdf" style="display: none;">
+            </div>
+          </div>
+        </div>
         
         <div class="help-text">
           <p><strong>Template Variables:</strong></p>

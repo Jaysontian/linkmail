@@ -308,6 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const templateContentInput = document.getElementById('templateContent');
     const addTemplateButton = document.getElementById('addTemplateButton');
     const noTemplatesMessage = document.getElementById('no-templates-message');
+    const attachmentFileInput = document.getElementById('attachmentFile');
+    const attachmentsList = document.getElementById('attachmentsList');
     
     // Skip initialization if elements don't exist
     if (!templatesContainer || !templateNameInput || !templateContentInput || !addTemplateButton || !noTemplatesMessage) {
@@ -317,6 +319,122 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let templates = [];
     const MAX_TEMPLATES = 10;
+    
+    // Initialize current template attachments array
+    window.currentTemplateAttachments = [];
+    
+    // Add file attachment handling
+    if (attachmentFileInput && attachmentsList) {
+      attachmentFileInput.addEventListener('change', async function(e) {
+        if (!this.files || !this.files.length) return;
+        
+        const file = this.files[0];
+        
+        // Check if it's a PDF
+        if (file.type !== 'application/pdf') {
+          showError('Only PDF files are allowed');
+          this.value = ''; // Clear the input
+          return;
+        }
+        
+        // Check file size (limit to 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          showError('File size exceeds 5MB limit');
+          this.value = ''; // Clear the input
+          return;
+        }
+        
+        try {
+          // Convert the file to base64
+          const base64Data = await readFileAsBase64(file);
+          
+          // Add to current attachments
+          window.currentTemplateAttachments.push({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: base64Data
+          });
+          
+          // Update the attachments list UI
+          updateAttachmentsList();
+          
+          // Clear the input for next selection
+          this.value = '';
+        } catch (error) {
+          console.error('Error reading file:', error);
+          showError('Error reading file: ' + error.message);
+        }
+      });
+      
+      // Function to read file as base64
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          
+          reader.onload = () => {
+            // Get the base64 string (remove the data URL prefix)
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          };
+          
+          reader.onerror = () => {
+            reject(new Error('Error reading file'));
+          };
+          
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      // Function to update attachments list UI
+      function updateAttachmentsList() {
+        // Clear current list
+        attachmentsList.innerHTML = '';
+        
+        if (!window.currentTemplateAttachments || window.currentTemplateAttachments.length === 0) {
+          // Show no attachments message
+          attachmentsList.innerHTML = '<p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>';
+          return;
+        }
+        
+        // Add each attachment to the list
+        window.currentTemplateAttachments.forEach((attachment, index) => {
+          const attachmentItem = document.createElement('div');
+          attachmentItem.className = 'attachment-item';
+          
+          // Format file size
+          const sizeInKB = Math.round(attachment.size / 1024);
+          const sizeFormatted = sizeInKB >= 1024 
+            ? (sizeInKB / 1024).toFixed(2) + ' MB' 
+            : sizeInKB + ' KB';
+          
+          attachmentItem.innerHTML = `
+            <div class="attachment-info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="attachment-icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 18v-6"/><path d="M12 18v-3"/><path d="M15 18v-6"/></svg>
+              <div>
+                <p class="attachment-name">${escapeHtml(attachment.name)}</p>
+                <p class="attachment-size">${sizeFormatted}</p>
+              </div>
+            </div>
+            <button class="attachment-remove" data-index="${index}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+          `;
+          
+          // Add click handler for remove button
+          const removeButton = attachmentItem.querySelector('.attachment-remove');
+          if (removeButton) {
+            removeButton.addEventListener('click', function() {
+              const index = parseInt(this.getAttribute('data-index'));
+              window.currentTemplateAttachments.splice(index, 1);
+              updateAttachmentsList();
+            });
+          }
+          
+          attachmentsList.appendChild(attachmentItem);
+        });
+      }
+    }
 
     // Function to reset the add form to its default state
     function resetTemplateForm() {
@@ -326,6 +444,22 @@ document.addEventListener('DOMContentLoaded', function() {
       addTemplateButton.textContent = 'Add Template';
       addTemplateButton.dataset.mode = 'add';
       delete addTemplateButton.dataset.index;
+      
+      // Clear attachments list
+      const attachmentsList = document.getElementById('attachmentsList');
+      if (attachmentsList) {
+        // Keep only the "No attachments" message
+        const noAttachmentsMessage = document.getElementById('noAttachmentsMessage');
+        attachmentsList.innerHTML = '';
+        if (noAttachmentsMessage) {
+          attachmentsList.appendChild(noAttachmentsMessage);
+        } else {
+          attachmentsList.innerHTML = '<p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>';
+        }
+      }
+      
+      // Clear any template attachments data
+      window.currentTemplateAttachments = [];
     }
 
     // Function to render template cards - fixed to prevent infinite loops
@@ -377,7 +511,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         card.innerHTML = `
           <div class="template-header">
-            <h3 class="template-title">${escapeHtml(template.name || '')}</h3>
+            <h3 class="template-title">${escapeHtml(template.name || '')}
+              ${template.attachments && template.attachments.length > 0 ? 
+                `<span class="attachment-badge" title="${template.attachments.length} attachment${template.attachments.length > 1 ? 's' : ''}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.47"/>
+                  </svg>
+                  ${template.attachments.length}
+                </span>` : ''}
+            </h3>
             <div class="template-btn-group">
               <button class="template-btn template-edit">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-icon lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
@@ -407,6 +549,68 @@ document.addEventListener('DOMContentLoaded', function() {
             addTemplateButton.textContent = 'Update Template';
             addTemplateButton.dataset.mode = 'edit';
             addTemplateButton.dataset.index = index;
+            
+            // Load attachments if any
+            window.currentTemplateAttachments = template.attachments || [];
+            
+            // Update the attachments list UI
+            if (typeof updateAttachmentsList === 'function') {
+              updateAttachmentsList();
+            } else {
+              // Fallback if the function isn't directly accessible
+              const attachmentsList = document.getElementById('attachmentsList');
+              if (attachmentsList) {
+                attachmentsList.innerHTML = '';
+                
+                if (!window.currentTemplateAttachments || window.currentTemplateAttachments.length === 0) {
+                  attachmentsList.innerHTML = '<p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>';
+                } else {
+                  window.currentTemplateAttachments.forEach((attachment, idx) => {
+                    const attachmentItem = document.createElement('div');
+                    attachmentItem.className = 'attachment-item';
+                    
+                    // Format file size
+                    const sizeInKB = Math.round(attachment.size / 1024);
+                    const sizeFormatted = sizeInKB >= 1024 
+                      ? (sizeInKB / 1024).toFixed(2) + ' MB' 
+                      : sizeInKB + ' KB';
+                    
+                    attachmentItem.innerHTML = `
+                      <div class="attachment-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="attachment-icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 18v-6"/><path d="M12 18v-3"/><path d="M15 18v-6"/></svg>
+                        <div>
+                          <p class="attachment-name">${escapeHtml(attachment.name)}</p>
+                          <p class="attachment-size">${sizeFormatted}</p>
+                        </div>
+                      </div>
+                      <button class="attachment-remove" data-index="${idx}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                      </button>
+                    `;
+                    
+                    attachmentsList.appendChild(attachmentItem);
+                  });
+                  
+                  // Add event listeners to remove buttons
+                  attachmentsList.querySelectorAll('.attachment-remove').forEach(button => {
+                    button.addEventListener('click', function() {
+                      const idx = parseInt(this.getAttribute('data-index'));
+                      window.currentTemplateAttachments.splice(idx, 1);
+                      
+                      // Re-render the attachments list
+                      const parent = this.closest('.attachment-item');
+                      if (parent) {
+                        parent.remove();
+                      }
+                      
+                      if (window.currentTemplateAttachments.length === 0) {
+                        attachmentsList.innerHTML = '<p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>';
+                      }
+                    });
+                  });
+                }
+              }
+            }
             
             // Scroll to the form
             templateNameInput.scrollIntoView({ behavior: 'smooth' });
@@ -462,6 +666,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const mode = addTemplateButton.dataset.mode || 'add';
         
+        // Get attachments from the current form
+        const attachments = window.currentTemplateAttachments || [];
+        
         if (mode === 'add') {
           // Check max templates
           if (templates.length >= MAX_TEMPLATES) {
@@ -479,9 +686,10 @@ document.addEventListener('DOMContentLoaded', function() {
           templates.push({ 
             name, 
             content,
-            subjectLine: subjectLine || `${name} with [Recipient Name]`
+            subjectLine: subjectLine || `${name} with [Recipient Name]`,
+            attachments: attachments
           });
-          console.log('Added new template:', name);
+          console.log('Added new template:', name, 'with', attachments.length, 'attachments');
           
           // Save templates immediately after adding
           saveTemplates();
@@ -498,9 +706,10 @@ document.addEventListener('DOMContentLoaded', function() {
           templates[index] = { 
             name, 
             content,
-            subjectLine: subjectLine || `${name} with [Recipient Name]`
+            subjectLine: subjectLine || `${name} with [Recipient Name]`,
+            attachments: attachments
           };
-          console.log('Updated template at index', index);
+          console.log('Updated template at index', index, 'with', attachments.length, 'attachments');
           
           // Save templates immediately after updating
           saveTemplates();
@@ -515,6 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showSuccess('Template saved successfully!');
       } catch (error) {
         console.error('Error handling template save:', error);
+        showError('Error handling template save:', error);
         showError('An error occurred while saving the template');
         resetTemplateForm();
       }
@@ -705,11 +915,17 @@ document.addEventListener('DOMContentLoaded', function() {
     sortedEmails.forEach((email, index) => {
       const date = formatDate(email.date);
       const preview = email.content.substring(0, 100) + (email.content.length > 100 ? '...' : '');
+      const attachmentIndicator = email.attachments && email.attachments.length > 0 ? 
+        `<span class="email-attachment-indicator" title="${email.attachments.length} attachment${email.attachments.length > 1 ? 's' : ''}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.47"/>
+          </svg>
+        </span>` : '';
       
       emailListHTML += `
         <div class="email-item" data-index="${index}">
           <div class="email-header">
-            <div class="email-recipient">${escapeHtml(email.recipientName || email.recipientEmail)}</div>
+            <div class="email-recipient">${escapeHtml(email.recipientName || email.recipientEmail)} ${attachmentIndicator}</div>
             <div class="email-date">${date}</div>
           </div>
           <div class="email-subject">${escapeHtml(email.subject)}</div>
@@ -730,8 +946,29 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   function showEmailDetails(email) {
-
     const date = formatDate(email.date);
+    
+    let attachmentsHtml = '';
+    if (email.attachments && email.attachments.length > 0) {
+      const attachmentsList = email.attachments.map(att => {
+        return `<div class="email-detail-attachment">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span>${escapeHtml(att.name)}</span>
+        </div>`;
+      }).join('');
+      
+      attachmentsHtml = `
+        <div class="email-detail-attachments">
+          <h4>Attachments</h4>
+          <div class="email-attachments-list">
+            ${attachmentsList}
+          </div>
+        </div>
+      `;
+    }
     
     let detailsHTML = `
       <div class="email-detail-header">
@@ -741,6 +978,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ${email.linkedInUrl ? `<a href="${escapeHtml(email.linkedInUrl)}" target="_blank"><button class="lm-btn" style="margin:8px 0px;">View LinkedIn</button></a>` : ''}
       </div>
 
+      ${attachmentsHtml}
+      
       <div class="email-detail-body">${escapeHtml(email.content)}</div>
     `;
     

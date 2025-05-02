@@ -303,3 +303,67 @@
 .dropdown-menu.active {
     display: block;
 }
+
+.lm-btn-2 svg {
+    width: 16px;
+    height: 16px;
+    margin-right:8px;
+    color:white;
+}
+
+.lm-btn-2:hover {
+    background-color: #dddddd !important;
+}
+
+/* Email attachments */
+.email-attachments {
+    margin: 8px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-light);
+    padding: 10px;
+    animation: lm-fadeIn 0.3s ease;
+}
+
+.attachments-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--text-light);
+    font-size: 11pt;
+    gap: 8px;
+}
+
+.email-attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.email-attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+}
+
+.attachment-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.attachment-name {
+    font-size: 10pt;
+    margin: 0;
+    font-weight: 500;
+}
+
+.attachment-size {
+    font-size: 9pt;
+    color: var(--text-light);
+    margin: 0;
+}

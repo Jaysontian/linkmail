@@ -31,7 +31,7 @@ window.GmailManager = {
     console.log('GmailManager: User data set', userData?.name);
   },
 
-  async sendEmail(to, subject, body) {
+  async sendEmail(to, subject, body, attachments = []) {
     try {
       if (!this.currentToken) {
         await this.getAuthToken();
@@ -41,7 +41,7 @@ window.GmailManager = {
       const userProfile = await this.getUserProfile();
       const userEmail = userProfile.emailAddress;
 
-      // Create the message with the proper From header
+      // Create the message with the proper From header and attachments
       const message = {
         raw: this.createEmail({
           to,
@@ -50,7 +50,8 @@ window.GmailManager = {
           from: {
             email: userEmail,
             name: this.userData?.name || userEmail.split('@')[0]
-          }
+          },
+          attachments
         })
       };
 
@@ -75,17 +76,17 @@ window.GmailManager = {
         this.currentToken = null;
         await this.getAuthToken();
         // Retry the send once
-        return this.sendEmail(to, subject, body);
+        return this.sendEmail(to, subject, body, attachments);
       }
       throw error;
     }
   },
 
   // Update the sendAndSaveEmail method in gmail-manager.js to include a callback to update the status
-  async sendAndSaveEmail(to, subject, body) {
+  async sendAndSaveEmail(to, subject, body, attachments = []) {
     try {
       // First send the email
-      const result = await this.sendEmail(to, subject, body);
+      const result = await this.sendEmail(to, subject, body, attachments);
       
       // If successful, save to local storage
       if (result) {
@@ -104,7 +105,8 @@ window.GmailManager = {
           subject: subject,
           content: body,
           date: new Date().toISOString(),
-          linkedInUrl: profileUrl
+          linkedInUrl: profileUrl,
+          attachments: attachments.map(a => ({ name: a.name, size: a.size })) // Only store metadata, not the actual file
         };
         
         // Get existing user data
@@ -134,22 +136,56 @@ window.GmailManager = {
     }
   },
 
-  createEmail({ to, subject, message, from }) {
+  createEmail({ to, subject, message, from, attachments = [] }) {
     // Process the message to ensure proper line breaks
     const processedMessage = this.processMessageContent(message);
     
-    // Create email in MIME format with proper From header including name and email
-    const email = [
+    // Generate a random boundary string for multipart message
+    const boundary = 'LinkMail_' + Math.random().toString(36).substring(2);
+    
+    // Create email headers
+    const headers = [
       'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=UTF-8',
-      'Content-Transfer-Encoding: 8bit',
       from?.name ? `From: ${from.name} <${from.email}>` : `From: ${from?.email || 'me'}`,
       `To: ${to}`,
       `Subject: ${subject}`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
       '',  // Empty line separates headers from body
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: 8bit',
+      '',  // Empty line separates headers from content
       processedMessage
-    ].join('\r\n');  // Use CRLF line endings for email standards
-
+    ];
+    
+    // Add attachments if any
+    if (attachments && attachments.length > 0) {
+      attachments.forEach(attachment => {
+        if (attachment.data) {
+          headers.push(`--${boundary}`);
+          headers.push(`Content-Type: ${attachment.type || 'application/pdf'}`);
+          headers.push('Content-Transfer-Encoding: base64');
+          headers.push(`Content-Disposition: attachment; filename="${attachment.name}"`);
+          headers.push('');  // Empty line separates headers from content
+          
+          // Add the attachment data - split into chunks to avoid line length issues
+          const chunkSize = 76;
+          let remainingData = attachment.data;
+          while (remainingData.length > 0) {
+            headers.push(remainingData.substring(0, chunkSize));
+            remainingData = remainingData.substring(chunkSize);
+          }
+        }
+      });
+    }
+    
+    // Add closing boundary
+    headers.push(`--${boundary}--`);
+    
+    // Join all parts with CRLF
+    const email = headers.join('\r\n');
+    
+    // Encode the email for Gmail API
     return btoa(unescape(encodeURIComponent(email)))
       .replace(/\+/g, '-')
       .replace(/\//g, '_')

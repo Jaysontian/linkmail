@@ -76,6 +76,16 @@
                 <textarea id="emailResult" class="lm-textarea" id="auto-resize-textarea" style="font-size:10pt;"></textarea>
                 
             </div>
+
+            <div id="emailAttachments" class="email-attachments" style="display:none;">
+                <div class="attachments-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.47"/></svg>
+                    <span>Attachments</span>
+                </div>
+                <div id="attachmentsList" class="email-attachments-list">
+                    <!-- Attachments will be listed here -->
+                </div>
+            </div>
             
             <div style="display:flex; gap:4px; justify-content: space-between; padding:0px 0px;">
                 <button id="copyButton" class="lm-btn-2 linkmail-copy-button" style="margin:0px 0px;">
