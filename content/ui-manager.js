@@ -383,6 +383,11 @@ window.UIManager = {
     
     // Refresh user data from storage to get latest templates
     this.refreshUserData().then(() => {
+      // Pass user data to GmailManager
+      if (window.GmailManager && this.userData) {
+        window.GmailManager.setUserData(this.userData);
+      }
+      
       // Populate template dropdown with user's custom templates
       this.populateTemplateDropdown();
       
@@ -407,6 +412,11 @@ window.UIManager = {
         if (storedUserData) {
           console.log('Found stored user data, updating local copy');
           this.userData = storedUserData;
+          
+          // Pass updated user data to GmailManager
+          if (window.GmailManager) {
+            window.GmailManager.setUserData(this.userData);
+          }
         } else {
           console.log('No stored user data found');
         }

@@ -1,6 +1,7 @@
 // gmail-manager.js
 window.GmailManager = {
   currentToken: null,
+  userData: null, // Add this to store the user data
 
   async getAuthToken() {
     try {
@@ -24,17 +25,32 @@ window.GmailManager = {
     }
   },
 
+  // Add a method to set user data
+  setUserData(userData) {
+    this.userData = userData;
+    console.log('GmailManager: User data set', userData?.name);
+  },
+
   async sendEmail(to, subject, body) {
     try {
       if (!this.currentToken) {
         await this.getAuthToken();
       }
 
+      // Get user profile to use for the From header
+      const userProfile = await this.getUserProfile();
+      const userEmail = userProfile.emailAddress;
+
+      // Create the message with the proper From header
       const message = {
         raw: this.createEmail({
           to,
           subject,
-          message: body
+          message: body,
+          from: {
+            email: userEmail,
+            name: this.userData?.name || userEmail.split('@')[0]
+          }
         })
       };
 
@@ -118,15 +134,16 @@ window.GmailManager = {
     }
   },
 
-  createEmail({ to, subject, message }) {
+  createEmail({ to, subject, message, from }) {
     // Process the message to ensure proper line breaks
     const processedMessage = this.processMessageContent(message);
     
-    // Create email in MIME format
+    // Create email in MIME format with proper From header including name and email
     const email = [
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=UTF-8',
       'Content-Transfer-Encoding: 8bit',
+      from?.name ? `From: ${from.name} <${from.email}>` : `From: ${from?.email || 'me'}`,
       `To: ${to}`,
       `Subject: ${subject}`,
       '',  // Empty line separates headers from body
