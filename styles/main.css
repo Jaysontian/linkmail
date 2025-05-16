@@ -1,9 +1,6 @@
-
-/* declared for all the main CSS and root variables */
-
-
-
-/* Base styles */
+/* ==========================================================================
+   Core Variables and Base Styles
+   ========================================================================== */
 :root {
     --primary-color: #0B66C2;
     --primary-hover: #084e96;
@@ -18,6 +15,9 @@
     --shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
+/* ==========================================================================
+   Base Layout
+   ========================================================================== */
 .linkmail body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     background-color: #f3f2ef;
@@ -29,14 +29,16 @@
     min-height: 100vh;
 }
 
+/* ==========================================================================
+   Typography
+   ========================================================================== */
 .linkmail p {
-    font-size:10.5pt;
-    font-weight:400;
-    color:var(--text-light);
-    line-height:20px;
+    font-size: 10.5pt;
+    font-weight: 400;
+    color: var(--text-light);
+    line-height: 20px;
 }
 
-/* Typography */
 .linkmail h1, .linkmail h2, .linkmail h3 {
     color: var(--text-color);
     margin-bottom: 12px;
@@ -57,109 +59,4 @@
 .description {
     text-align: center;
     margin-bottom: 24px;
-}
-
-/* Form elements */
-.form-group {
-    margin-bottom: 16px;
-}
-
-.linkmail label {
-    display: block;
-    margin: 12px 0px;
-    font-weight: 400;
-    color: var(--text-color);
-    font-size: 10.5pt;
-}
-
-/* Common styles for inputs and textareas */
-.linkmail input, .linkmail textarea, .search-input, .lm-input, .lm-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 11pt;
-    box-sizing: border-box;
-    background-color: var(--bg-light);
-    box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.04) !important;
-    font-family: inherit;
-    outline: none;
-    transition: all 0.1s ease-in-out;
-}
-
-
-.lm-input:hover, .lm-textarea:hover, .lm-input:hover:not(:focus), .lm-textarea:hover:not(:focus) {
-    border: 1px solid var(--border-color) !important;
-    outline:none !important;
-    background-color: var(--bg-light-hover);
-    box-shadow: 0 0 0 0px rgba(11, 102, 194, 0.2) !important;
-}
-
-.lm-textarea:focus, .lm-input:focus, 
-.lm-textarea:active, .lm-textarea:active, 
-.lm-input:focus-visible, .lm-textarea:focus-visible {
-    border: 1px solid var(--primary-color) !important;
-    outline:none !important;
-    box-shadow: 0 0 0 0px rgba(11, 102, 194, 0.2) !important;
-}
-
-.linkmail input::placeholder,
-.linkmail textarea::placeholder, .lm-textarea::placeholder, .lm-input::placeholder {
-    color: #bbb;
-    opacity: 1;
-}
-
-
-.linkmail textarea, .lm-textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-
-/* Button styles */
-.lm-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: var(--button-radius);
-    padding: 8px 16px;
-    font-size: 11pt;
-    font-weight: 550;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-}
-
-.lm-btn:hover {
-    background-color: var(--primary-hover);
-}
-
-/* secondary button styles */
-.lm-btn-2 { 
-    background-color: var(--bg-light-hover);
-    color: rgb(84, 84, 84);
-    border: rgb(193, 193, 193);
-    border-radius: var(--button-radius);
-    padding: 8px 16px;
-    font-size: 11pt;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-}
-
-.lm-btn-2 svg {
-    width: 16px;
-    height: 16px;
-    margin-right:8px;
-    color:white;
-}
-
-.lm-btn-2:hover {
-    background-color: #dddddd !important;
 }

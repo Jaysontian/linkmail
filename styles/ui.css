@@ -1,0 +1,242 @@
+/* ==========================================================================
+   Shared UI Components
+   ========================================================================== */
+
+/* ==========================================================================
+   Form Elements
+   ========================================================================== */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.linkmail label {
+    display: block;
+    margin: 12px 0px;
+    font-weight: 400;
+    color: var(--text-color);
+    font-size: 10.5pt;
+}
+
+/* Common styles for inputs and textareas */
+.linkmail input, .linkmail textarea, .search-input, .lm-input, .lm-textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 11pt;
+    box-sizing: border-box;
+    background-color: var(--bg-light);
+    box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.04) !important;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.1s ease-in-out;
+}
+
+.lm-input:hover, .lm-textarea:hover, .lm-input:hover:not(:focus), .lm-textarea:hover:not(:focus) {
+    border: 1px solid var(--border-color) !important;
+    outline: none !important;
+    background-color: var(--bg-light-hover);
+    box-shadow: 0 0 0 0px rgba(11, 102, 194, 0.2) !important;
+}
+
+.lm-textarea:focus, .lm-input:focus, 
+.lm-textarea:active, .lm-textarea:active, 
+.lm-input:focus-visible, .lm-textarea:focus-visible {
+    border: 1px solid var(--primary-color) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 0px rgba(11, 102, 194, 0.2) !important;
+}
+
+.linkmail input::placeholder,
+.linkmail textarea::placeholder, .lm-textarea::placeholder, .lm-input::placeholder {
+    color: #bbb;
+    opacity: 1;
+}
+
+.linkmail textarea, .lm-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.lm-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--button-radius);
+    padding: 8px 16px;
+    font-size: 11pt;
+    font-weight: 550;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.lm-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+.lm-btn-2 { 
+    background-color: var(--bg-light-hover);
+    color: rgb(84, 84, 84);
+    border: rgb(193, 193, 193);
+    border-radius: var(--button-radius);
+    padding: 8px 16px;
+    font-size: 11pt;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.lm-btn-2 svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    color: white;
+}
+
+.lm-btn-2:hover {
+    background-color: #dddddd !important;
+}
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+.container {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 550px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    min-height: 100vh;
+}
+
+/* ==========================================================================
+   Messages and Alerts
+   ========================================================================== */
+.error {
+    color: #e74c3c;
+    font-size: 10pt;
+    margin-top: 4px;
+}
+
+.success {
+    text-align: center;
+    color: #27ae60;
+    margin-top: 16px;
+    font-size: 11pt;
+}
+
+.placeholder-text {
+    color: #999;
+    font-style: italic;
+    margin: 0;
+    font-size: 10.5pt;
+}
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-right: 5px;
+    font-size: 11pt;
+    font-weight: 500;
+    color: var(--text-light);
+    transition: var(--transition);
+}
+
+.tab:hover {
+    color: var(--primary-color);
+}
+
+.tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.tab-content {
+    display: none;
+    animation: lm-fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ==========================================================================
+   Dropdowns
+   ========================================================================== */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+}
+
+.dropdown-menu.active {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-light);
+}
+
+/* ==========================================================================
+   Help Text
+   ========================================================================== */
+.help-text {
+    font-size: 10.5pt;
+    color: var(--text-light);
+    margin-top: 8px;
+}
+
+.help-text ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.help-text p {
+    margin: 4px 0;
+}
