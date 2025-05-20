@@ -18,7 +18,7 @@
     "resources": [
       "content/linkedin-div.html",
       "dashboard.html",
-      "dashboard.js",
+      "dashboard/*.js",
       "assets/*"
     ],
     "matches": ["https://*.linkedin.com/*"]
