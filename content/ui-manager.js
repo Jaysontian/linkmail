@@ -1,4 +1,3 @@
-
 //ui-manager.js
 window.UIManager = {
   elements: {},
@@ -1129,14 +1128,9 @@ window.UIManager = {
         card.classList.add('selected');
       }
       
-      // Add attachment indicator if template has attachments
-      const attachmentIndicator = template.attachments && template.attachments.length > 0 
-        ? `<span class="template-attachment-indicator">${template.attachments.length}</span>` 
-        : '';
-      
-      // Use the specified HTML structure
+      // Use the specified HTML structure without attachment indicator
       card.innerHTML = `
-        <h1 class="template-dropdown-icon">${template.icon}${attachmentIndicator}</h1>
+        <h1 class="template-dropdown-icon">${template.icon}</h1>
         <div>
           <h2>${template.name}</h2>
         </div>

@@ -225,6 +225,18 @@ function initializeTemplatesManagement() {
 
   // Add form submit handler
   const templateForm = document.getElementById('templateForm');
+  const saveTemplateButton = document.getElementById('saveTemplateButton');
+
+  // Add click handler for save button
+  if (saveTemplateButton) {
+    saveTemplateButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (templateForm) {
+        templateForm.dispatchEvent(new Event('submit'));
+      }
+    });
+  }
+
   if (templateForm) {
     templateForm.addEventListener('submit', function(e) {
       e.preventDefault();

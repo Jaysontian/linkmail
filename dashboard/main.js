@@ -61,6 +61,14 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
   
+  // Load initial user data to update profile in sidebar
+  chrome.storage.local.get([email], function(result) {
+    const userData = result[email];
+    if (userData) {
+      updateUserProfileInSidebar(userData);
+    }
+  });
+  
   // Update UI based on mode
   if (isEditMode) {
     if (pageTitle) pageTitle.textContent = 'Your Profile';
@@ -73,6 +81,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (document.getElementById('name')) document.getElementById('name').value = userData.name || '';
         if (document.getElementById('college')) document.getElementById('college').value = userData.college || '';
         if (document.getElementById('gradYear')) document.getElementById('gradYear').value = userData.graduationYear || '';
+        
+        // Update user profile in sidebar
+        updateUserProfileInSidebar(userData);
         
         // Load email history
         if (typeof window.loadEmailHistory === 'function') {
@@ -107,9 +118,18 @@ document.addEventListener('DOMContentLoaded', function() {
         sectionId = 'emails';
       } else if (navItem.classList.contains('templates-section')) {
         sectionId = 'templates';
+      } else if (navItem.classList.contains('new-template-button')) {
+        // Special case for the "New Template" button
+        sectionId = 'templates';
       }
       
       console.log('Found section ID:', sectionId);
+      
+      // Only proceed if we have a valid sectionId
+      if (!sectionId) {
+        console.log('No section ID found for this nav item, skipping tab switch');
+        return;
+      }
       
       // Show the corresponding content section
       const targetSection = document.getElementById(sectionId);
@@ -197,7 +217,12 @@ document.addEventListener('DOMContentLoaded', function() {
     cards.forEach((card, index) => {
       const num = index + 1;
       card.dataset.experienceId = num;
-      card.querySelector('.experience-title').textContent = `Experience ${num}`;
+      
+      // Check if the title element exists before updating it
+      const titleElement = card.querySelector('.experience-title');
+      if (titleElement) {
+        titleElement.textContent = `Experience ${num}`;
+      }
     });
   }
   
@@ -417,3 +442,27 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// Add new function to update user profile in sidebar
+function updateUserProfileInSidebar(userData) {
+  if (!userData || !userData.name || !userData.email) return;
+  
+  const userNameElement = document.querySelector('.user-name');
+  const userEmailElement = document.getElementById('user-email-display');
+  const userAvatarElement = document.querySelector('.user-avatar');
+  
+  if (userNameElement) userNameElement.textContent = userData.name;
+  if (userEmailElement) userEmailElement.textContent = userData.email;
+  
+  if (userAvatarElement && userData.name) {
+    // Generate initials from name (up to 2 characters)
+    const nameParts = userData.name.split(' ');
+    let initials = nameParts[0].charAt(0);
+    
+    if (nameParts.length > 1) {
+      initials += nameParts[nameParts.length - 1].charAt(0);
+    }
+    
+    userAvatarElement.textContent = initials.toUpperCase();
+  }
+}

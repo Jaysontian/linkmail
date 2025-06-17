@@ -48,7 +48,12 @@ function updateExperienceCounts() {
   cards.forEach((card, index) => {
     const num = index + 1;
     card.dataset.experienceId = num;
-    card.querySelector('.experience-title').textContent = `Experience ${num}`;
+    
+    // Check if the title element exists before updating it
+    const titleElement = card.querySelector('.experience-title');
+    if (titleElement) {
+      titleElement.textContent = `Experience ${num}`;
+    }
   });
 }
 
@@ -147,6 +152,8 @@ function removeSkill(skillToRemove) {
 
 function updateSkillsDisplay() {
   const noSkillsMessage = document.getElementById('noSkillsMessage');
+  if (!noSkillsMessage) return;
+  
   if (window.skills.length === 0) {
     noSkillsMessage.style.display = 'block';
   } else {

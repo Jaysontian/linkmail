@@ -11,12 +11,12 @@ function createToastContainer() {
   return toastContainer;
 }
 
-// Show a toast notification
-function showToast(message) {
+// Show a toast notification with type (success, error, info, warning)
+function showToast(message, type = 'info') {
   const container = createToastContainer();
   
   const toast = document.createElement('div');
-  toast.className = 'toast';
+  toast.className = `toast toast-${type}`;
   
   const content = document.createElement('div');
   content.className = 'toast-content';
@@ -44,13 +44,83 @@ function removeToast(toast) {
   setTimeout(() => toast.remove(), 300);
 }
 
-// Notification types - all use the same styling now
-const notifications = {
-  success: (message) => showToast(message),
-  error: (message) => showToast(message),
-  info: (message) => showToast(message),
-  warning: (message) => showToast(message)
+// Define notification functions
+window.notifications = {
+  success: (message) => showToast(message, 'success'),
+  error: (message) => showToast(message, 'error'),
+  info: (message) => showToast(message, 'info'),
+  warning: (message) => showToast(message, 'warning')
 };
 
-// Export the notification functions
-window.notifications = notifications; 
+// Add convenience methods to window object
+window.showSuccess = window.notifications.success;
+window.showError = window.notifications.error;
+window.showInfo = window.notifications.info;
+window.showWarning = window.notifications.warning;
+
+// Add some basic styles for the notifications if they don't exist
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 320px;
+  max-width: 100%;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-success {
+  border-left: 4px solid #4caf50;
+}
+
+.toast-error {
+  border-left: 4px solid #f44336;
+}
+
+.toast-info {
+  border-left: 4px solid #2196f3;
+}
+
+.toast-warning {
+  border-left: 4px solid #ff9800;
+}
+
+.toast-content {
+  flex: 1;
+  font-size: 14px;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 0 0 10px;
+  color: #999;
+}
+`;
+
+document.head.appendChild(styleElement); 
