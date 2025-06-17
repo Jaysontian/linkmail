@@ -323,12 +323,23 @@ function initializeTemplatesManagement() {
         
         // Load the newly created template for editing (keep user on this template)
         setTimeout(() => {
+          // Remove active class from all nav items, including the "New Template" button
+          document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+          });
+          
           loadTemplateForEditing(newTemplate, newIndex);
           
           // Ensure the new template is active in sidebar
           const templateItems = document.querySelectorAll('.sidebar-template-item');
           if (templateItems[newIndex]) {
             templateItems[newIndex].classList.add('active');
+          }
+          
+          // Make sure the templates section tab is active
+          const templatesNavItem = document.querySelector('.nav-item.templates-section');
+          if (templatesNavItem) {
+            templatesNavItem.classList.add('active');
           }
         }, 100);
       }
