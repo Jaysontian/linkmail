@@ -279,10 +279,20 @@ function initializeTemplatesManagement() {
         // Update the sidebar
         updateSidebarTemplates();
         
-        // Reset form
-        resetTemplateForm();
+        // Don't reset form, keep the current template loaded
+        // Just update the sidebar to reflect changes
         
-        window.showSuccess('Template updated successfully!');
+        // Show success message
+        window.showSuccess('Changes Have Been Saved');
+        
+        // Ensure the current template stays active in sidebar
+        setTimeout(() => {
+          const templateItems = document.querySelectorAll('.sidebar-template-item');
+          if (templateItems[index]) {
+            templateItems[index].classList.add('active');
+          }
+        }, 100);
+        
       } else {
         // Check for duplicate name for new template
         if (templates.some(t => t.name === name)) {
@@ -291,13 +301,16 @@ function initializeTemplatesManagement() {
         }
         
         // Add new template
-        templates.push({
+        const newTemplate = {
           name,
           content,
           subjectLine: subjectLine || `${name} with [Recipient Name]`,
           attachments: window.currentTemplateAttachments || [],
           icon: icon
-        });
+        };
+        
+        templates.push(newTemplate);
+        const newIndex = templates.length - 1;
         
         // Save templates
         saveTemplates();
@@ -305,10 +318,19 @@ function initializeTemplatesManagement() {
         // Update the sidebar
         updateSidebarTemplates();
         
-        // Reset form
-        resetTemplateForm();
+        // Show success message
+        window.showSuccess('Template Created');
         
-        window.showSuccess('Template saved successfully!');
+        // Load the newly created template for editing (keep user on this template)
+        setTimeout(() => {
+          loadTemplateForEditing(newTemplate, newIndex);
+          
+          // Ensure the new template is active in sidebar
+          const templateItems = document.querySelectorAll('.sidebar-template-item');
+          if (templateItems[newIndex]) {
+            templateItems[newIndex].classList.add('active');
+          }
+        }, 100);
       }
     });
   }
