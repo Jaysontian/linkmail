@@ -14,6 +14,9 @@
     "storage",
     "tabs"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none';"
+  },
   "web_accessible_resources": [{
     "resources": [
       "assets/*",
@@ -27,6 +30,7 @@
     "https://*.googleapis.com/*",
     "https://gmail.googleapis.com/*",
     "https://www.googleapis.com/*",
+    "https://linkmail-api.vercel.app/*",
     "*://*.linkedin.com/*"
   ],
   "oauth2": {

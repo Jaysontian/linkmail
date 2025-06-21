@@ -162,16 +162,16 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="experience-field-row">
           <div class="experience-field">
             <label for="jobTitle${num}">Job Title</label>
-            <input type="text" id="jobTitle${num}" name="jobTitle${num}" class="lm-input short" placeholder="e.g. Software Engineer Intern" value="${data.jobTitle || ''}">
+            <input type="text" id="jobTitle${num}" name="jobTitle${num}" class="lm-input short" placeholder="e.g. Software Engineer Intern" value="${escapeHtml(data.jobTitle || '')}">
           </div>
           <div class="experience-field">
             <label for="company${num}">Company Name</label>
-            <input type="text" id="company${num}" name="company${num}" class="lm-input short" placeholder="e.g. Google" value="${data.company || ''}">
+            <input type="text" id="company${num}" name="company${num}" class="lm-input short" placeholder="e.g. Google" value="${escapeHtml(data.company || '')}">
           </div>
         </div>
         <div class="experience-field">
           <label for="description${num}">Description</label>
-          <textarea id="description${num}" name="description${num}" class="lm-input" placeholder="Describe your responsibilities and achievements...">${data.description || ''}</textarea>
+          <textarea id="description${num}" name="description${num}" class="lm-input" placeholder="Describe your responsibilities and achievements...">${escapeHtml(data.description || '')}</textarea>
         </div>
       </div>
     `;

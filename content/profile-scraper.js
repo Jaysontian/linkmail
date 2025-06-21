@@ -355,10 +355,10 @@ IMPORTANT: Return your response in this exact format:
 
         const [subject, email] = parts.map(str => str.trim());
         
-        // Sanitize the response
+        // Return the response as plain text (no HTML sanitization needed for email composer)
         return {
-          subject: Utils.escapeHtml(subject),
-          email: Utils.sanitizeText(email)
+          subject: subject,
+          email: email
         };
 
       } catch (fetchError) {

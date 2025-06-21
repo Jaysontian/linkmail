@@ -30,7 +30,6 @@
     "https://*.googleapis.com/*",
     "https://gmail.googleapis.com/*",
     "https://www.googleapis.com/*",
-    "https://igupta1.github.io/*",
     "https://linkmail-api.vercel.app/*",
     "*://*.linkedin.com/*"
   ],
