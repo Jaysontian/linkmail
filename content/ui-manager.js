@@ -215,9 +215,9 @@ window.UIManager = {
     this.container = null;
   },
 
-  showAuthenticatedUI() {
+  showAuthenticatedUI(preserveCurrentView = false) {
     try {
-      console.log('Showing authenticated UI');
+      console.log('Showing authenticated UI, preserveCurrentView:', preserveCurrentView);
       
       // Check if extension context is still valid
       if (!chrome.runtime?.id) {
@@ -225,11 +225,18 @@ window.UIManager = {
         return;
       }
       
+      // Always hide the sign-in view
       if (this.elements.signInView) {
         this.elements.signInView.style.display = 'none';
       }
-      if (this.elements.splashView) {
-        this.elements.splashView.style.display = 'flex';
+      
+      // Only show splash view if we're not preserving the current view
+      if (!preserveCurrentView) {
+        if (this.elements.splashView) {
+          this.elements.splashView.style.display = 'flex';
+        }
+      } else {
+        console.log('Preserving current view, not changing to splash view');
       }
       
       // Display user info if available
@@ -769,6 +776,11 @@ window.UIManager = {
       
       if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
         console.log('User data updated in storage, refreshing UI');
+        
+        // Check current view before updating
+        const currentView = this.getCurrentView();
+        console.log('Current view before storage listener update:', currentView);
+        
         // User data has been updated, refresh the UI and userData
         this.getUserFromStorage(this.userData.email)
           .then(userData => {
@@ -781,8 +793,12 @@ window.UIManager = {
                 userEmailDisplay.textContent = this.userData.email;
               }
               
+              // Preserve current view if user is in editor or success view
+              const shouldPreserveView = currentView === 'editor' || currentView === 'success';
+              console.log('Should preserve view:', shouldPreserveView);
+              
               // Only update UI if we're not showing the success view
-              this.showAuthenticatedUI();
+              this.showAuthenticatedUI(shouldPreserveView);
             }
           });
       }
@@ -1255,16 +1271,19 @@ window.UIManager = {
       if (this.isAuthenticated && this.userData && this.userData.email) {
         // Check current UI state before refreshing
         const currentView = this.getCurrentView();
-        console.log('Current view before refresh:', currentView);
+        console.log('Current view before focus refresh:', currentView);
         
         this.refreshUserData().then(() => {
           // Only update template dropdown, don't change the current view
           this.populateTemplateDropdown();
           
-          // If user was in email editor view, keep them there
-          if (currentView === 'editor') {
-            console.log('Preserving email editor view after template refresh');
-            // Don't change the view, user should stay in email editor
+          // If user was in email editor or success view, preserve it
+          if (currentView === 'editor' || currentView === 'success') {
+            console.log('Preserving current view after focus refresh:', currentView);
+            // Don't call showAuthenticatedUI as it might change the view
+          } else {
+            // Only refresh UI if we're not in a critical view
+            console.log('Safe to refresh UI after focus');
           }
         });
       }
