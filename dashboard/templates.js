@@ -8,27 +8,27 @@ const MAX_TEMPLATES = 10;
 function updateAttachmentsList() {
   const attachmentsList = document.getElementById('attachmentsList');
   if (!attachmentsList) return;
-  
+
   // Clear current list
   attachmentsList.innerHTML = '';
-  
+
   if (!window.currentTemplateAttachments || window.currentTemplateAttachments.length === 0) {
     // Show no attachments message
     attachmentsList.innerHTML = '<p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>';
     return;
   }
-  
+
   // Add each attachment to the list
   window.currentTemplateAttachments.forEach((attachment, index) => {
     const attachmentItem = document.createElement('div');
     attachmentItem.className = 'attachment-item';
-    
+
     // Format file size
     const sizeInKB = Math.round(attachment.size / 1024);
-    const sizeFormatted = sizeInKB >= 1024 
-      ? (sizeInKB / 1024).toFixed(2) + ' MB' 
+    const sizeFormatted = sizeInKB >= 1024
+      ? (sizeInKB / 1024).toFixed(2) + ' MB'
       : sizeInKB + ' KB';
-    
+
     attachmentItem.innerHTML = `
       <div class="attachment-info">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="attachment-icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 18v-6"/><path d="M12 18v-3"/><path d="M15 18v-6"/></svg>
@@ -41,7 +41,7 @@ function updateAttachmentsList() {
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
       </button>
     `;
-    
+
     // Add click handler for remove button
     const removeButton = attachmentItem.querySelector('.attachment-remove');
     if (removeButton) {
@@ -51,22 +51,22 @@ function updateAttachmentsList() {
         updateAttachmentsList();
       });
     }
-    
+
     attachmentsList.appendChild(attachmentItem);
   });
 }
 
 function initializeTemplatesManagement() {
   console.log('Initializing template management');
-  
+
   // Initialize current template attachments array
   window.currentTemplateAttachments = [];
-  
+
   // Add file attachment handling
   const attachmentFileInput = document.getElementById('attachmentFile');
   const fileUploadButton = document.getElementById('fileUploadButton');
   const attachmentsList = document.getElementById('attachmentsList');
-  
+
   // Add click handler for the upload button
   if (fileUploadButton && attachmentFileInput) {
     fileUploadButton.addEventListener('click', function() {
@@ -80,30 +80,30 @@ function initializeTemplatesManagement() {
     deleteTemplateButton.addEventListener('click', function() {
       const templateForm = document.getElementById('templateForm');
       const editIndex = templateForm.dataset.editIndex;
-      
+
       if (editIndex === undefined) {
         console.error('No template index found for deletion');
         return;
       }
-      
+
       if (confirm('Are you sure you want to delete this template?')) {
         console.log('Deleting template at index:', editIndex);
-        
+
         // Remove the template from the array
         templates.splice(parseInt(editIndex), 1);
-        
+
         // Save the updated templates
         saveTemplates();
-        
+
         // Update the sidebar
         updateSidebarTemplates();
-        
+
         // Reset the form
         resetTemplateForm();
-        
+
         // Show success message
         window.showSuccess('Template deleted successfully!');
-        
+
         // Remove active class from all template items
         document.querySelectorAll('.sidebar-template-item').forEach(item => {
           item.classList.remove('active');
@@ -116,45 +116,45 @@ function initializeTemplatesManagement() {
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = () => {
         // Get the base64 string (remove the data URL prefix)
         const base64 = reader.result.split(',')[1];
         resolve(base64);
       };
-      
+
       reader.onerror = () => {
         reject(new Error('Error reading file'));
       };
-      
+
       reader.readAsDataURL(file);
     });
   }
-  
+
   if (attachmentFileInput && attachmentsList) {
     attachmentFileInput.addEventListener('change', async function(e) {
       if (!this.files || !this.files.length) return;
-      
+
       const file = this.files[0];
-      
+
       // Check if it's a PDF
       if (file.type !== 'application/pdf') {
         window.showError('Only PDF files are allowed');
         this.value = ''; // Clear the input
         return;
       }
-      
+
       // Check file size (limit to 5MB)
       if (file.size > 5 * 1024 * 1024) {
         window.showError('File size exceeds 5MB limit');
         this.value = ''; // Clear the input
         return;
       }
-      
+
       try {
         // Convert the file to base64
         const base64Data = await readFileAsBase64(file);
-        
+
         // Add to current attachments
         window.currentTemplateAttachments.push({
           name: file.name,
@@ -162,10 +162,10 @@ function initializeTemplatesManagement() {
           size: file.size,
           data: base64Data
         });
-        
+
         // Update the attachments list UI
         updateAttachmentsList();
-        
+
         // Clear the input for next selection
         this.value = '';
       } catch (error) {
@@ -178,7 +178,7 @@ function initializeTemplatesManagement() {
   // Load existing templates
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email');
-  
+
   if (email) {
     chrome.storage.local.get([email], function(result) {
       const userData = result[email];
@@ -203,7 +203,7 @@ function initializeTemplatesManagement() {
         window.showError(`You can only add up to ${MAX_TEMPLATES} templates`);
         return;
       }
-      
+
       // Show templates section
       document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
@@ -212,10 +212,10 @@ function initializeTemplatesManagement() {
       if (templatesSection) {
         templatesSection.classList.add('active');
       }
-      
+
       // Reset form
       resetTemplateForm();
-      
+
       // Remove active class from all template items
       document.querySelectorAll('.sidebar-template-item').forEach(item => {
         item.classList.remove('active');
@@ -240,30 +240,30 @@ function initializeTemplatesManagement() {
   if (templateForm) {
     templateForm.addEventListener('submit', function(e) {
       e.preventDefault();
-      
+
       const name = document.getElementById('templateName').value.trim();
       const subjectLine = document.getElementById('templateSubjectLine').value.trim();
       const content = document.getElementById('templateContent').value.trim();
       const icon = document.getElementById('templateIcon').textContent;
-      
+
       if (!name || !content) {
         window.showError('Please fill in all required fields');
         return;
       }
-      
+
       const editIndex = this.dataset.editIndex;
-      
+
       if (editIndex !== undefined) {
         // Update existing template
         const index = parseInt(editIndex);
-        
+
         // Check for duplicate name (excluding current template)
         const duplicateIndex = templates.findIndex((t, i) => i !== index && t.name === name);
         if (duplicateIndex !== -1) {
           window.showError('A template with this name already exists');
           return;
         }
-        
+
         // Update the template in place
         templates[index] = {
           name,
@@ -272,19 +272,19 @@ function initializeTemplatesManagement() {
           attachments: window.currentTemplateAttachments || [],
           icon: icon
         };
-        
+
         // Save templates
         saveTemplates();
-        
+
         // Update the sidebar
         updateSidebarTemplates();
-        
+
         // Don't reset form, keep the current template loaded
         // Just update the sidebar to reflect changes
-        
+
         // Show success message
         window.showSuccess('Changes Have Been Saved');
-        
+
         // Ensure the current template stays active in sidebar
         setTimeout(() => {
           const templateItems = document.querySelectorAll('.sidebar-template-item');
@@ -292,14 +292,14 @@ function initializeTemplatesManagement() {
             templateItems[index].classList.add('active');
           }
         }, 100);
-        
+
       } else {
         // Check for duplicate name for new template
         if (templates.some(t => t.name === name)) {
           window.showError('A template with this name already exists');
           return;
         }
-        
+
         // Add new template
         const newTemplate = {
           name,
@@ -308,34 +308,34 @@ function initializeTemplatesManagement() {
           attachments: window.currentTemplateAttachments || [],
           icon: icon
         };
-        
+
         templates.push(newTemplate);
         const newIndex = templates.length - 1;
-        
+
         // Save templates
         saveTemplates();
-        
+
         // Update the sidebar
         updateSidebarTemplates();
-        
+
         // Show success message
         window.showSuccess('Template Created');
-        
+
         // Load the newly created template for editing (keep user on this template)
         setTimeout(() => {
           // Remove active class from all nav items, including the "New Template" button
           document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
           });
-          
+
           loadTemplateForEditing(newTemplate, newIndex);
-          
+
           // Ensure the new template is active in sidebar
           const templateItems = document.querySelectorAll('.sidebar-template-item');
           if (templateItems[newIndex]) {
             templateItems[newIndex].classList.add('active');
           }
-          
+
           // Make sure the templates section tab is active
           const templatesNavItem = document.querySelector('.nav-item.templates-section');
           if (templatesNavItem) {
@@ -364,7 +364,7 @@ function updateSidebarTemplates() {
     const templateItem = document.createElement('div');
     templateItem.className = 'sidebar-template-item';
     templateItem.dataset.index = index;
-    
+
     templateItem.innerHTML = `
       <span class="template-dropdown-icon">${template.icon || '📝'}</span>
       ${escapeHtml(template.name)}
@@ -376,10 +376,10 @@ function updateSidebarTemplates() {
       document.querySelectorAll('.sidebar-template-item').forEach(item => {
         item.classList.remove('active');
       });
-      
+
       // Add active class to clicked item
       this.classList.add('active');
-      
+
       // Show templates section and activate the templates tab
       document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
@@ -397,7 +397,7 @@ function updateSidebarTemplates() {
       if (templatesNavItem) {
         templatesNavItem.classList.add('active');
       }
-      
+
       // Load template data
       loadTemplateForEditing(template, index);
     });
@@ -416,25 +416,25 @@ function loadTemplateForEditing(template, index) {
   const templateIcon = document.getElementById('templateIcon');
   const saveButton = document.getElementById('saveTemplateButton');
   const deleteButton = document.getElementById('deleteTemplateButton');
-  
+
   // Populate form
   templateName.value = template.name || '';
   templateSubjectLine.value = template.subjectLine || '';
   templateContent.value = template.content || '';
   templateIcon.textContent = template.icon || '📝';
-  
+
   // Load attachments
   window.currentTemplateAttachments = template.attachments || [];
   updateAttachmentsList();
-  
+
   // Update button states
   saveButton.textContent = 'Save Changes';
   deleteButton.style.display = 'inline-flex';
-  
+
   // Store current template index
   templateForm.dataset.editIndex = index;
   console.log('Set editIndex to:', index);
-  
+
   // Scroll to form
   templateForm.scrollIntoView({ behavior: 'smooth' });
 }
@@ -448,18 +448,18 @@ function resetTemplateForm() {
   const templateIcon = document.getElementById('templateIcon');
   const saveButton = document.getElementById('saveTemplateButton');
   const deleteButton = document.getElementById('deleteTemplateButton');
-  
+
   // Clear form
   templateForm.reset();
   delete templateForm.dataset.editIndex;
-  
+
   // Reset button states
   saveButton.textContent = 'Create';
   deleteButton.style.display = 'none';
-  
+
   // Reset emoji to default
   templateIcon.textContent = '📝';
-  
+
   // Clear attachments
   window.currentTemplateAttachments = [];
   updateAttachmentsList();
@@ -470,25 +470,25 @@ function saveTemplates() {
   // Get email from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email');
-  
+
   if (!email) {
     console.error('Email is not available, cannot save templates');
     window.showError('Email parameter is missing. Please try again.');
     return;
   }
-  
+
   console.log('Saving templates to storage:', templates.length);
-  
+
   chrome.storage.local.get([email], function(result) {
     const userData = result[email] || {};
-    
+
     // Update templates in user data
     userData.templates = templates;
-    
+
     // Save back to storage
     const data = {};
     data[email] = userData;
-    
+
     chrome.storage.local.set(data, function() {
       console.log('Templates saved successfully');
       // Update sidebar after saving
@@ -501,11 +501,11 @@ function saveTemplates() {
 function escapeHtml(unsafe) {
   if (!unsafe) return '';
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // Initialize emoji picker
@@ -574,4 +574,4 @@ function initEmojiPicker() {
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(initializeTemplatesManagement, 500);
   initEmojiPicker();
-}); 
+});

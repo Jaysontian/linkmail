@@ -43,7 +43,7 @@ function initEmojiPicker() {
   emojiSearch.addEventListener('input', (e) => {
     const searchTerm = e.target.value.toLowerCase();
     const emojiItems = emojiPickerContent.getElementsByClassName('emoji-item');
-    
+
     Array.from(emojiItems).forEach(item => {
       const emoji = item.textContent;
       const isVisible = emoji.includes(searchTerm);
@@ -55,4 +55,4 @@ function initEmojiPicker() {
 // Initialize emoji picker when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initEmojiPicker();
-}); 
+});

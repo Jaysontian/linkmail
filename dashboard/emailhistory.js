@@ -23,44 +23,44 @@ function formatDate(emailDate) {
 function loadEmailHistory(userData, searchTerm = '') {
   const emailList = document.getElementById('emailList');
   const sentEmails = userData.sentEmails || [];
-  
+
   if (sentEmails.length === 0) {
     emailList.innerHTML = '<div class="no-emails">No emails found</div>';
     return;
   }
-  
+
   // Filter emails if search term is provided
-  const filteredEmails = searchTerm ? 
-    sentEmails.filter(email => 
+  const filteredEmails = searchTerm ?
+    sentEmails.filter(email =>
       (email.recipientName && email.recipientName.toLowerCase().includes(searchTerm)) ||
       (email.recipientEmail && email.recipientEmail.toLowerCase().includes(searchTerm)) ||
       (email.subject && email.subject.toLowerCase().includes(searchTerm)) ||
       (email.content && email.content.toLowerCase().includes(searchTerm))
-    ) : 
+    ) :
     sentEmails;
-  
+
   if (filteredEmails.length === 0) {
     emailList.innerHTML = '<div class="no-emails">No matching emails found</div>';
     return;
   }
-  
+
   // Sort emails by date (newest first)
-  const sortedEmails = [...filteredEmails].sort((a, b) => 
+  const sortedEmails = [...filteredEmails].sort((a, b) =>
     new Date(b.date) - new Date(a.date)
   );
-  
+
   // Generate HTML for email list
   let emailListHTML = '';
-  
+
   sortedEmails.forEach((email, index) => {
     const date = formatDate(email.date);
-    const attachmentIndicator = email.attachments && email.attachments.length > 0 ? 
+    const attachmentIndicator = email.attachments && email.attachments.length > 0 ?
       `<span class="email-attachment-indicator" title="${email.attachments.length} attachment${email.attachments.length > 1 ? 's' : ''}">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.47"/>
         </svg>
       </span>` : '';
-    
+
     emailListHTML += `
       <div class="email-item" data-index="${index}">
         <div class="email-recipient">
@@ -72,9 +72,9 @@ function loadEmailHistory(userData, searchTerm = '') {
       </div>
     `;
   });
-  
+
   emailList.innerHTML = emailListHTML;
-  
+
   // Add click event to email items
   document.querySelectorAll('.email-item').forEach(item => {
     item.addEventListener('click', function() {
@@ -88,7 +88,7 @@ function showEmailDetails(email) {
   const emailModal = document.getElementById('emailModal');
   const emailDetail = document.getElementById('emailDetail');
   const date = formatDate(email.date);
-  
+
   let attachmentsHtml = '';
   if (email.attachments && email.attachments.length > 0) {
     const attachmentsList = email.attachments.map(att => {
@@ -100,7 +100,7 @@ function showEmailDetails(email) {
         <span>${escapeHtml(att.name)}</span>
       </div>`;
     }).join('');
-    
+
     attachmentsHtml = `
       <div class="email-detail-attachments">
         <h4>Attachments</h4>
@@ -115,7 +115,7 @@ function showEmailDetails(email) {
   const initials = email.recipientName
     ? email.recipientName.split(' ').map(n => n[0]).join('').toUpperCase()
     : email.recipientEmail[0].toUpperCase();
-  
+
   let detailsHTML = `
     <div class="email-detail-header">
       <div class="header-top">
@@ -147,7 +147,7 @@ function showEmailDetails(email) {
     
     <div class="email-detail-body">${escapeHtml(email.content)}</div>
   `;
-  
+
   emailDetail.innerHTML = detailsHTML;
   emailModal.style.display = 'block';
 }
@@ -156,11 +156,11 @@ function showEmailDetails(email) {
 function escapeHtml(unsafe) {
   if (!unsafe) return '';
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // Initialize email history functionality
@@ -168,14 +168,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const emailSearch = document.getElementById('emailSearch');
   const emailModal = document.getElementById('emailModal');
   const closeModal = document.getElementById('closeModal');
-  
+
   // Email search functionality
   if (emailSearch) {
     emailSearch.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
       const urlParams = new URLSearchParams(window.location.search);
       const email = urlParams.get('email');
-      
+
       chrome.storage.local.get([email], function(result) {
         const userData = result[email];
         if (userData) {
@@ -184,18 +184,18 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
-  
+
   // Close modal
   if (closeModal) {
     closeModal.addEventListener('click', function() {
       emailModal.style.display = 'none';
     });
   }
-  
+
   // Close modal when clicking outside
   window.addEventListener('click', function(event) {
     if (event.target === emailModal) {
       emailModal.style.display = 'none';
     }
   });
-}); 
+});

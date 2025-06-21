@@ -30,24 +30,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const emailModal = document.getElementById('emailModal');
   const emailDetail = document.getElementById('emailDetail');
   const closeModal = document.getElementById('closeModal');
-  
+
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email');
   const mode = urlParams.get('mode');
   const isEditMode = mode === 'edit';
-  
+
   if (!email) {
     showError('Email parameter is missing. Please try again.');
     bioForm.style.display = 'none';
     return;
   }
-  
+
   // Update UI based on mode
   if (isEditMode) {
     pageTitle.textContent = 'Your Profile';
     submitButton.textContent = 'Save Changes';
-    
+
     // Load existing data
     chrome.storage.local.get([email], function(result) {
       const userData = result[email];
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('name').value = userData.name || '';
         document.getElementById('college').value = userData.college || '';
         document.getElementById('gradYear').value = userData.graduationYear || '';
-        
+
         // Load email history
         loadEmailHistory(userData);
       }
@@ -64,20 +64,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hide the email history tab for new users
     document.querySelector('.nav-item.emails-section').style.display = 'none';
   }
-  
+
   // Tab switching
   navItems.forEach(navItem => {
     navItem.addEventListener('click', () => {
       console.log('Nav item clicked:', navItem);
       console.log('Nav item classes:', navItem.classList);
-      
+
       // Remove active class from all nav items and contents
       navItems.forEach(item => item.classList.remove('active'));
       document.querySelectorAll('.content-section').forEach(content => content.classList.remove('active'));
-      
+
       // Add active class to clicked nav item
       navItem.classList.add('active');
-      
+
       // Get the section ID based on the nav item class
       let sectionId;
       if (navItem.classList.contains('profile-section')) {
@@ -87,16 +87,16 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (navItem.classList.contains('templates-section')) {
         sectionId = 'templates';
       }
-      
+
       console.log('Found section ID:', sectionId);
-      
+
       // Show the corresponding content section
       const targetSection = document.getElementById(sectionId);
       console.log('Target section element:', targetSection);
-      
+
       if (targetSection) {
         targetSection.classList.add('active');
-        
+
         // If switching to emails tab, refresh the email list
         if (sectionId === 'emails') {
           console.log('Switching to emails tab, refreshing email list');
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
-  
+
   // Email search functionality
   emailSearch.addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
@@ -130,32 +130,32 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
-  
+
   // Close modal
   closeModal.addEventListener('click', function() {
     emailModal.style.display = 'none';
   });
-  
+
   // Close modal when clicking outside
   window.addEventListener('click', function(event) {
     if (event.target === emailModal) {
       emailModal.style.display = 'none';
     }
   });
-  
+
   // Experience management functionality
   const experiencesContainer = document.getElementById('experiencesContainer');
   const addExperienceButton = document.getElementById('addExperienceButton');
   const experienceLimit = document.getElementById('experienceLimit');
   let experienceCount = 0;
   const MAX_EXPERIENCES = 5;
-  
+
   // Function to create a new experience card
   function createExperienceCard(num, data = {}) {
     const card = document.createElement('div');
     card.className = 'experience-card';
     card.dataset.experienceId = num;
-    
+
     card.innerHTML = `
       <button type="button" class="experience-remove" title="Remove Experience">&times;</button>
       <div class="experience-fields">
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       </div>
     `;
-    
+
     // Add remove event listener
     const removeButton = card.querySelector('.experience-remove');
     if (removeButton) {
@@ -189,10 +189,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300); // Match animation duration
       });
     }
-    
+
     return card;
   }
-  
+
   // Function to update the experience numbers after removal
   function updateExperienceCounts() {
     const cards = experiencesContainer.querySelectorAll('.experience-card');
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
       card.querySelector('.experience-title').textContent = `Experience ${num}`;
     });
   }
-  
+
   // Function to check if we've reached the max experiences
   function checkExperienceLimit() {
     if (experienceCount >= MAX_EXPERIENCES) {
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
       experienceLimit.style.display = 'none';
     }
   }
-  
+
   // Add experience button click handler
   addExperienceButton.addEventListener('click', function() {
     if (experienceCount < MAX_EXPERIENCES) {
@@ -223,12 +223,12 @@ document.addEventListener('DOMContentLoaded', function() {
       checkExperienceLimit();
     }
   });
-  
+
   // Function to collect all experiences data
   function collectExperiencesData() {
     const experiences = [];
     const cards = experiencesContainer.querySelectorAll('.experience-card');
-    
+
     cards.forEach(card => {
       const id = card.dataset.experienceId;
       const experience = {
@@ -236,16 +236,16 @@ document.addEventListener('DOMContentLoaded', function() {
         company: document.getElementById(`company${id}`).value.trim(),
         description: document.getElementById(`description${id}`).value.trim()
       };
-      
+
       // Only add if at least one field has data
       if (experience.jobTitle || experience.company || experience.description) {
         experiences.push(experience);
       }
     });
-    
+
     return experiences;
   }
-  
+
   // Skills management functionality
   const skillInput = document.getElementById('skillInput');
   const addSkillButton = document.getElementById('addSkillButton');
@@ -257,26 +257,26 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to add a skill
   function addSkill() {
     const skill = skillInput.value.trim();
-    
+
     if (!skill) {
       return;
     }
-    
+
     // Check for duplicate
     if (skills.includes(skill)) {
       showError('This skill has already been added');
       return;
     }
-    
+
     // Check max skills
     if (skills.length >= MAX_SKILLS) {
       showError(`You can only add up to ${MAX_SKILLS} skills`);
       return;
     }
-    
+
     // Add to array
     skills.push(skill);
-    
+
     // Create tag element
     const tagElement = document.createElement('div');
     tagElement.className = 'skill-tag';
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ${escapeHtml(skill)}
       <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
     `;
-    
+
     // Add click event to remove button
     tagElement.querySelector('.remove-skill').addEventListener('click', function() {
       const skillToRemove = this.getAttribute('data-skill');
@@ -292,16 +292,16 @@ document.addEventListener('DOMContentLoaded', function() {
       tagElement.remove();
       updateSkillsDisplay();
     });
-    
+
     // Add to container
     skillsTagsContainer.appendChild(tagElement);
-    
+
     // Clear input
     skillInput.value = '';
-    
+
     // Focus input for next entry
     skillInput.focus();
-    
+
     // Update display
     updateSkillsDisplay();
   }
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
       addSkill();
     }
   });
-  
+
   // Templates management functionality
   let templates = []; // Move templates array to global scope
   const MAX_TEMPLATES = 10;
@@ -338,27 +338,27 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateAttachmentsList() {
     const attachmentsList = document.getElementById('attachmentsList');
     if (!attachmentsList) return;
-    
+
     // Clear current list
     attachmentsList.innerHTML = '';
-    
+
     if (!window.currentTemplateAttachments || window.currentTemplateAttachments.length === 0) {
       // Show no attachments message
       attachmentsList.innerHTML = '<p id="noAttachmentsMessage" class="placeholder-text">No attachments added</p>';
       return;
     }
-    
+
     // Add each attachment to the list
     window.currentTemplateAttachments.forEach((attachment, index) => {
       const attachmentItem = document.createElement('div');
       attachmentItem.className = 'attachment-item';
-      
+
       // Format file size
       const sizeInKB = Math.round(attachment.size / 1024);
-      const sizeFormatted = sizeInKB >= 1024 
-        ? (sizeInKB / 1024).toFixed(2) + ' MB' 
+      const sizeFormatted = sizeInKB >= 1024
+        ? (sizeInKB / 1024).toFixed(2) + ' MB'
         : sizeInKB + ' KB';
-      
+
       attachmentItem.innerHTML = `
         <div class="attachment-info">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="attachment-icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 18v-6"/><path d="M12 18v-3"/><path d="M15 18v-6"/></svg>
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       `;
-      
+
       // Add click handler for remove button
       const removeButton = attachmentItem.querySelector('.attachment-remove');
       if (removeButton) {
@@ -381,22 +381,22 @@ document.addEventListener('DOMContentLoaded', function() {
           updateAttachmentsList();
         });
       }
-      
+
       attachmentsList.appendChild(attachmentItem);
     });
   }
 
   function initializeTemplatesManagement() {
     console.log('Initializing template management');
-    
+
     // Initialize current template attachments array
     window.currentTemplateAttachments = [];
-    
+
     // Add file attachment handling
     const attachmentFileInput = document.getElementById('attachmentFile');
     const fileUploadButton = document.getElementById('fileUploadButton');
     const attachmentsList = document.getElementById('attachmentsList');
-    
+
     // Add click handler for the upload button
     if (fileUploadButton && attachmentFileInput) {
       fileUploadButton.addEventListener('click', function() {
@@ -410,30 +410,30 @@ document.addEventListener('DOMContentLoaded', function() {
       deleteTemplateButton.addEventListener('click', function() {
         const templateForm = document.getElementById('templateForm');
         const editIndex = templateForm.dataset.editIndex;
-        
+
         if (editIndex === undefined) {
           console.error('No template index found for deletion');
           return;
         }
-        
+
         if (confirm('Are you sure you want to delete this template?')) {
           console.log('Deleting template at index:', editIndex);
-          
+
           // Remove the template from the array
           templates.splice(parseInt(editIndex), 1);
-          
+
           // Save the updated templates
           saveTemplates();
-          
+
           // Update the sidebar
           updateSidebarTemplates();
-          
+
           // Reset the form
           resetTemplateForm();
-          
+
           // Show success message
           showSuccess('Template deleted successfully!');
-          
+
           // Remove active class from all template items
           document.querySelectorAll('.sidebar-template-item').forEach(item => {
             item.classList.remove('active');
@@ -446,45 +446,45 @@ document.addEventListener('DOMContentLoaded', function() {
     function readFileAsBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        
+
         reader.onload = () => {
           // Get the base64 string (remove the data URL prefix)
           const base64 = reader.result.split(',')[1];
           resolve(base64);
         };
-        
+
         reader.onerror = () => {
           reject(new Error('Error reading file'));
         };
-        
+
         reader.readAsDataURL(file);
       });
     }
-    
+
     if (attachmentFileInput && attachmentsList) {
       attachmentFileInput.addEventListener('change', async function(e) {
         if (!this.files || !this.files.length) return;
-        
+
         const file = this.files[0];
-        
+
         // Check if it's a PDF
         if (file.type !== 'application/pdf') {
           showError('Only PDF files are allowed');
           this.value = ''; // Clear the input
           return;
         }
-        
+
         // Check file size (limit to 5MB)
         if (file.size > 5 * 1024 * 1024) {
           showError('File size exceeds 5MB limit');
           this.value = ''; // Clear the input
           return;
         }
-        
+
         try {
           // Convert the file to base64
           const base64Data = await readFileAsBase64(file);
-          
+
           // Add to current attachments
           window.currentTemplateAttachments.push({
             name: file.name,
@@ -492,10 +492,10 @@ document.addEventListener('DOMContentLoaded', function() {
             size: file.size,
             data: base64Data
           });
-          
+
           // Update the attachments list UI
           updateAttachmentsList();
-          
+
           // Clear the input for next selection
           this.value = '';
         } catch (error) {
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showError(`You can only add up to ${MAX_TEMPLATES} templates`);
           return;
         }
-        
+
         // Show templates section
         document.querySelectorAll('.content-section').forEach(section => {
           section.classList.remove('active');
@@ -537,10 +537,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (templatesSection) {
           templatesSection.classList.add('active');
         }
-        
+
         // Reset form
         resetTemplateForm();
-        
+
         // Remove active class from all template items
         document.querySelectorAll('.sidebar-template-item').forEach(item => {
           item.classList.remove('active');
@@ -553,30 +553,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (templateForm) {
       templateForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const name = document.getElementById('templateName').value.trim();
         const subjectLine = document.getElementById('templateSubjectLine').value.trim();
         const content = document.getElementById('templateContent').value.trim();
         const icon = document.getElementById('templateIcon').textContent;
-        
+
         if (!name || !content) {
           showError('Please fill in all required fields');
           return;
         }
-        
+
         const editIndex = this.dataset.editIndex;
-        
+
         if (editIndex !== undefined) {
           // Update existing template
           const index = parseInt(editIndex);
-          
+
           // Check for duplicate name (excluding current template)
           const duplicateIndex = templates.findIndex((t, i) => i !== index && t.name === name);
           if (duplicateIndex !== -1) {
             showError('A template with this name already exists');
             return;
           }
-          
+
           // Update the template in place
           templates[index] = {
             name,
@@ -585,16 +585,16 @@ document.addEventListener('DOMContentLoaded', function() {
             attachments: window.currentTemplateAttachments || [],
             icon: icon
           };
-          
+
           // Save templates
           saveTemplates();
-          
+
           // Update the sidebar
           updateSidebarTemplates();
-          
+
           // Reset form
           resetTemplateForm();
-          
+
           showSuccess('Template updated successfully!');
         } else {
           // Check for duplicate name for new template
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showError('A template with this name already exists');
             return;
           }
-          
+
           // Add new template
           templates.push({
             name,
@@ -611,16 +611,16 @@ document.addEventListener('DOMContentLoaded', function() {
             attachments: window.currentTemplateAttachments || [],
             icon: icon
           });
-          
+
           // Save templates
           saveTemplates();
-          
+
           // Update the sidebar
           updateSidebarTemplates();
-          
+
           // Reset form
           resetTemplateForm();
-          
+
           showSuccess('Template saved successfully!');
         }
       });
@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const templateItem = document.createElement('div');
       templateItem.className = 'sidebar-template-item';
       templateItem.dataset.index = index;
-      
+
       templateItem.innerHTML = `
         <span class="template-dropdown-icon">${template.icon || '📝'}</span>
         ${escapeHtml(template.name)}
@@ -656,10 +656,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.sidebar-template-item').forEach(item => {
           item.classList.remove('active');
         });
-        
+
         // Add active class to clicked item
         this.classList.add('active');
-        
+
         // Show templates section and activate the templates tab
         document.querySelectorAll('.content-section').forEach(section => {
           section.classList.remove('active');
@@ -677,7 +677,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (templatesNavItem) {
           templatesNavItem.classList.add('active');
         }
-        
+
         // Load template data
         loadTemplateForEditing(template, index);
       });
@@ -685,7 +685,7 @@ document.addEventListener('DOMContentLoaded', function() {
       sidebarTemplatesList.appendChild(templateItem);
     });
   }
-  
+
   // Function to load template for editing
   function loadTemplateForEditing(template, index) {
     console.log('Loading template for editing:', template, 'at index:', index);
@@ -696,29 +696,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const templateIcon = document.getElementById('templateIcon');
     const saveButton = document.getElementById('saveTemplateButton');
     const deleteButton = document.getElementById('deleteTemplateButton');
-    
+
     // Populate form
     templateName.value = template.name || '';
     templateSubjectLine.value = template.subjectLine || '';
     templateContent.value = template.content || '';
     templateIcon.textContent = template.icon || '📝';
-    
+
     // Load attachments
     window.currentTemplateAttachments = template.attachments || [];
     updateAttachmentsList();
-    
+
     // Update button states
     saveButton.textContent = 'Save Changes';
     deleteButton.style.display = 'inline-flex';
-    
+
     // Store current template index
     templateForm.dataset.editIndex = index;
     console.log('Set editIndex to:', index);
-    
+
     // Scroll to form
     templateForm.scrollIntoView({ behavior: 'smooth' });
   }
-  
+
   // Function to reset template form
   function resetTemplateForm() {
     const templateForm = document.getElementById('templateForm');
@@ -728,18 +728,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const templateIcon = document.getElementById('templateIcon');
     const saveButton = document.getElementById('saveTemplateButton');
     const deleteButton = document.getElementById('deleteTemplateButton');
-    
+
     // Clear form
     templateForm.reset();
     delete templateForm.dataset.editIndex;
-    
+
     // Reset button states
     saveButton.textContent = 'Create';
     deleteButton.style.display = 'none';
-    
+
     // Reset emoji to default
     templateIcon.textContent = '📝';
-    
+
     // Clear attachments
     window.currentTemplateAttachments = [];
     updateAttachmentsList();
@@ -750,25 +750,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get email from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const email = urlParams.get('email');
-    
+
     if (!email) {
       console.error('Email is not available, cannot save templates');
       showError('Email parameter is missing. Please try again.');
       return;
     }
-    
+
     console.log('Saving templates to storage:', templates.length);
-    
+
     chrome.storage.local.get([email], function(result) {
       const userData = result[email] || {};
-      
+
       // Update templates in user data
       userData.templates = templates;
-      
+
       // Save back to storage
       const data = {};
       data[email] = userData;
-      
+
       chrome.storage.local.set(data, function() {
         console.log('Templates saved successfully');
         // Update sidebar after saving
@@ -776,31 +776,31 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
-  
+
   // Form submission handler
   bioForm.addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
     const name = document.getElementById('name').value;
     const college = document.getElementById('college').value;
     const gradYear = document.getElementById('gradYear').value;
-    
+
     if (!name || !college || !gradYear) {
       showError('Please fill in all required fields');
       return;
     }
-    
+
     try {
       // Collect experiences data
       const experiences = collectExperiencesData();
-      
+
       // Collect skills data
       const skillsData = typeof window.skills !== 'undefined' ? window.skills : skills;
-      
+
       // Get existing user data first to ensure we don't lose templates
       chrome.storage.local.get([email], function(result) {
         const existingData = result[email] || {};
-        
+
         // Collect templates data safely
         let templatesData = [];
         if (typeof window.collectTemplatesData === 'function') {
@@ -820,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
           templatesData = existingData.templates;
           console.log('Using existing templates from storage:', templatesData.length);
         }
-        
+
         // Prepare user data
         const userData = {
           name: name,
@@ -832,23 +832,23 @@ document.addEventListener('DOMContentLoaded', function() {
           templates: templatesData,
           setupCompleted: true
         };
-        
+
         console.log('Saving user data with templates:', templatesData.length);
-        
+
         // Merge with other existing data (like sent emails)
         const mergedData = {
           ...existingData,
           ...userData
         };
-        
+
         // Store the data
         const data = {};
         data[email] = mergedData;
-        
+
         chrome.storage.local.set(data, function() {
           // Show success message
           showSuccess('Profile saved successfully!');
-          
+
           // If not in edit mode, close the tab after a delay
           if (!isEditMode) {
             setTimeout(() => {
@@ -863,47 +863,47 @@ document.addEventListener('DOMContentLoaded', function() {
       showError(`Error ${actionText} profile: ${error.message}`);
     }
   });
-  
+
   function loadEmailHistory(userData, searchTerm = '') {
     const sentEmails = userData.sentEmails || [];
-    
+
     if (sentEmails.length === 0) {
       emailList.innerHTML = '<div class="no-emails">No emails found</div>';
       return;
     }
-    
+
     // Filter emails if search term is provided
-    const filteredEmails = searchTerm ? 
-      sentEmails.filter(email => 
+    const filteredEmails = searchTerm ?
+      sentEmails.filter(email =>
         (email.recipientName && email.recipientName.toLowerCase().includes(searchTerm)) ||
         (email.recipientEmail && email.recipientEmail.toLowerCase().includes(searchTerm)) ||
         (email.subject && email.subject.toLowerCase().includes(searchTerm)) ||
         (email.content && email.content.toLowerCase().includes(searchTerm))
-      ) : 
+      ) :
       sentEmails;
-    
+
     if (filteredEmails.length === 0) {
       emailList.innerHTML = '<div class="no-emails">No matching emails found</div>';
       return;
     }
-    
+
     // Sort emails by date (newest first)
-    const sortedEmails = [...filteredEmails].sort((a, b) => 
+    const sortedEmails = [...filteredEmails].sort((a, b) =>
       new Date(b.date) - new Date(a.date)
     );
-    
+
     // Generate HTML for email list
     let emailListHTML = '';
-    
+
     sortedEmails.forEach((email, index) => {
       const date = formatDate(email.date);
-      const attachmentIndicator = email.attachments && email.attachments.length > 0 ? 
+      const attachmentIndicator = email.attachments && email.attachments.length > 0 ?
         `<span class="email-attachment-indicator" title="${email.attachments.length} attachment${email.attachments.length > 1 ? 's' : ''}">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.47"/>
           </svg>
         </span>` : '';
-      
+
       emailListHTML += `
         <div class="email-item" data-index="${index}">
           <div class="email-recipient">
@@ -915,9 +915,9 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       `;
     });
-    
+
     emailList.innerHTML = emailListHTML;
-    
+
     // Add click event to email items
     document.querySelectorAll('.email-item').forEach(item => {
       item.addEventListener('click', function() {
@@ -926,10 +926,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
-  
+
   function showEmailDetails(email) {
     const date = formatDate(email.date);
-    
+
     let attachmentsHtml = '';
     if (email.attachments && email.attachments.length > 0) {
       const attachmentsList = email.attachments.map(att => {
@@ -941,7 +941,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <span>${escapeHtml(att.name)}</span>
         </div>`;
       }).join('');
-      
+
       attachmentsHtml = `
         <div class="email-detail-attachments">
           <h4>Attachments</h4>
@@ -956,7 +956,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const initials = email.recipientName
       ? email.recipientName.split(' ').map(n => n[0]).join('').toUpperCase()
       : email.recipientEmail[0].toUpperCase();
-    
+
     let detailsHTML = `
       <div class="email-detail-header">
         <div class="header-top">
@@ -988,7 +988,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       <div class="email-detail-body">${escapeHtml(email.content)}</div>
     `;
-    
+
     emailDetail.innerHTML = detailsHTML;
     emailModal.style.display = 'block';
 
@@ -1003,16 +1003,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const index = parseInt(activeTemplate.dataset.index);
             // Remove the template from the array
             templates.splice(index, 1);
-            
+
             // Save the updated templates
             saveTemplates();
-            
+
             // Update the sidebar
             updateSidebarTemplates();
-            
+
             // Close the modal
             emailModal.style.display = 'none';
-            
+
             // Show success message
             showSuccess('Template deleted successfully!');
           }
@@ -1020,26 +1020,26 @@ document.addEventListener('DOMContentLoaded', function() {
       };
     }
   }
-  
+
   function showError(message) {
     window.notifications.error(message);
   }
-  
+
   function showSuccess(message) {
     window.notifications.success(message);
   }
-  
+
   // Helper function to escape HTML to prevent XSS
   function escapeHtml(unsafe) {
     if (!unsafe) return '';
     return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
-  
+
   // Load existing experiences if in edit mode
   if (isEditMode) {
     chrome.storage.local.get([email], function(result) {
@@ -1059,11 +1059,11 @@ document.addEventListener('DOMContentLoaded', function() {
           const card = createExperienceCard(experienceCount);
           experiencesContainer.appendChild(card);
         }
-        
+
         // Load skills
         if (userData.skills && Array.isArray(userData.skills)) {
           skills = [...userData.skills];
-          
+
           // Create skill tags
           skills.forEach(skill => {
             const tagElement = document.createElement('div');
@@ -1072,7 +1072,7 @@ document.addEventListener('DOMContentLoaded', function() {
               ${escapeHtml(skill)}
               <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
             `;
-            
+
             // Add click event to remove button
             tagElement.querySelector('.remove-skill').addEventListener('click', function() {
               const skillToRemove = this.getAttribute('data-skill');
@@ -1080,11 +1080,11 @@ document.addEventListener('DOMContentLoaded', function() {
               tagElement.remove();
               updateSkillsDisplay();
             });
-            
+
             // Add to container
             skillsTagsContainer.appendChild(tagElement);
           });
-          
+
           updateSkillsDisplay();
         }
       }
@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const card = createExperienceCard(experienceCount);
     experiencesContainer.appendChild(card);
   }
-  
+
   // Initialize templates management with a slight delay to ensure DOM is ready
   setTimeout(initializeTemplatesManagement, 500);
 

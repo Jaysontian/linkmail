@@ -14,26 +14,26 @@ function createToastContainer() {
 // Show a toast notification with type (success, error, info, warning)
 function showToast(message, type = 'info') {
   const container = createToastContainer();
-  
+
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  
+
   const content = document.createElement('div');
   content.className = 'toast-content';
   content.textContent = message;
-  
+
   const closeButton = document.createElement('button');
   closeButton.className = 'toast-close';
   closeButton.innerHTML = '&times;';
   closeButton.onclick = () => removeToast(toast);
-  
+
   toast.appendChild(content);
   toast.appendChild(closeButton);
   container.appendChild(toast);
-  
+
   // Trigger animation
   setTimeout(() => toast.classList.add('show'), 10);
-  
+
   // Auto remove after 3 seconds
   setTimeout(() => removeToast(toast), 3000);
 }
@@ -123,4 +123,4 @@ styleElement.textContent = `
 }
 `;
 
-document.head.appendChild(styleElement); 
+document.head.appendChild(styleElement);

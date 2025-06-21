@@ -4,7 +4,7 @@ window.EmailFinder = {
   // Last found email is cached to avoid opening the overlay multiple times
   _lastFoundEmail: null,
   _lastProfileUrl: null,
-  
+
   async checkContactInfo() {
     const contactButton = document.querySelector('a[href*="contact-info"]');
     if (!contactButton) return null;
@@ -26,7 +26,7 @@ window.EmailFinder = {
 
     // Click the contact button to open the overlay (now invisible)
     contactButton.click();
-    
+
     let modalContent = null;
     for (let i = 0; i < 5; i++) {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -44,19 +44,19 @@ window.EmailFinder = {
     if (modalContent) {
       const allText = modalContent.innerText || modalContent.textContent;
       console.log('Modal content found:', allText);
-      
+
       email = Utils.extractEmail(allText);
       console.log('Email found:', email);
-      
+
       const closeButton = document.querySelector([
         'button[aria-label="Dismiss"]',
         '.artdeco-modal__dismiss',
         '.artdeco-modal__close'
       ].join(','));
-      
+
       if (closeButton) closeButton.click();
     }
-    
+
     // Remove the style that was hiding the modal
     const styleElement = document.getElementById('linkmail-hide-modal-style');
     if (styleElement) {
@@ -68,7 +68,7 @@ window.EmailFinder = {
       this._lastFoundEmail = email;
       this._lastProfileUrl = window.location.href;
     }
-    
+
     return email;
   },
 
@@ -84,7 +84,7 @@ window.EmailFinder = {
       console.log('Using cached email:', this._lastFoundEmail);
       return this._lastFoundEmail;
     }
-    
+
     // Try to find email in the about section first (no overlay needed)
     const aboutEmail = this.checkAboutSection();
     if (aboutEmail) {
@@ -92,21 +92,21 @@ window.EmailFinder = {
       this._lastProfileUrl = window.location.href;
       return aboutEmail;
     }
-    
+
     // If not found, check contact info (opens overlay)
     const contactInfoEmail = await this.checkContactInfo();
     return contactInfoEmail;
   },
-  
+
   // Get email - will only open the overlay if no cached email is available
   async getEmail(forceRefresh = false) {
     if (!forceRefresh && this._lastFoundEmail && this._lastProfileUrl === window.location.href) {
       return this._lastFoundEmail;
     }
-    
+
     return await this.findLinkedInEmail(false);
   },
-  
+
   // Clear the cached email
   clearCachedEmail() {
     this._lastFoundEmail = null;

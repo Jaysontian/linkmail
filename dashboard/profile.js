@@ -5,7 +5,7 @@ function createExperienceCard(num, data = {}) {
   const card = document.createElement('div');
   card.className = 'experience-card';
   card.dataset.experienceId = num;
-  
+
   card.innerHTML = `
     <button type="button" class="experience-remove" title="Remove Experience">&times;</button>
     <div class="experience-fields">
@@ -25,7 +25,7 @@ function createExperienceCard(num, data = {}) {
       </div>
     </div>
   `;
-  
+
   // Add remove event listener
   const removeButton = card.querySelector('.experience-remove');
   if (removeButton) {
@@ -39,7 +39,7 @@ function createExperienceCard(num, data = {}) {
       }, 300); // Match animation duration
     });
   }
-  
+
   return card;
 }
 
@@ -48,7 +48,7 @@ function updateExperienceCounts() {
   cards.forEach((card, index) => {
     const num = index + 1;
     card.dataset.experienceId = num;
-    
+
     // Check if the title element exists before updating it
     const titleElement = card.querySelector('.experience-title');
     if (titleElement) {
@@ -61,7 +61,7 @@ function checkExperienceLimit() {
   const addExperienceButton = document.getElementById('addExperienceButton');
   const experienceLimit = document.getElementById('experienceLimit');
   const MAX_EXPERIENCES = 5;
-  
+
   if (window.experienceCount >= MAX_EXPERIENCES) {
     addExperienceButton.disabled = true;
     experienceLimit.style.display = 'block';
@@ -74,7 +74,7 @@ function checkExperienceLimit() {
 function collectExperiencesData() {
   const experiences = [];
   const cards = document.getElementById('experiencesContainer').querySelectorAll('.experience-card');
-  
+
   cards.forEach(card => {
     const id = card.dataset.experienceId;
     const experience = {
@@ -82,13 +82,13 @@ function collectExperiencesData() {
       company: document.getElementById(`company${id}`).value.trim(),
       description: document.getElementById(`description${id}`).value.trim()
     };
-    
+
     // Only add if at least one field has data
     if (experience.jobTitle || experience.company || experience.description) {
       experiences.push(experience);
     }
   });
-  
+
   return experiences;
 }
 
@@ -97,26 +97,26 @@ function addSkill() {
   const skillInput = document.getElementById('skillInput');
   const skill = skillInput.value.trim();
   const MAX_SKILLS = 10;
-  
+
   if (!skill) {
     return;
   }
-  
+
   // Check for duplicate
   if (window.skills.includes(skill)) {
     window.showError('This skill has already been added');
     return;
   }
-  
+
   // Check max skills
   if (window.skills.length >= MAX_SKILLS) {
     window.showError(`You can only add up to ${MAX_SKILLS} skills`);
     return;
   }
-  
+
   // Add to array
   window.skills.push(skill);
-  
+
   // Create tag element
   const tagElement = document.createElement('div');
   tagElement.className = 'skill-tag';
@@ -124,7 +124,7 @@ function addSkill() {
     ${escapeHtml(skill)}
     <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
   `;
-  
+
   // Add click event to remove button
   tagElement.querySelector('.remove-skill').addEventListener('click', function() {
     const skillToRemove = this.getAttribute('data-skill');
@@ -132,16 +132,16 @@ function addSkill() {
     tagElement.remove();
     updateSkillsDisplay();
   });
-  
+
   // Add to container
   document.getElementById('skillsTagsContainer').appendChild(tagElement);
-  
+
   // Clear input
   skillInput.value = '';
-  
+
   // Focus input for next entry
   skillInput.focus();
-  
+
   // Update display
   updateSkillsDisplay();
 }
@@ -153,7 +153,7 @@ function removeSkill(skillToRemove) {
 function updateSkillsDisplay() {
   const noSkillsMessage = document.getElementById('noSkillsMessage');
   if (!noSkillsMessage) return;
-  
+
   if (window.skills.length === 0) {
     noSkillsMessage.style.display = 'block';
   } else {
@@ -165,11 +165,11 @@ function updateSkillsDisplay() {
 function escapeHtml(unsafe) {
   if (!unsafe) return '';
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // Initialize profile functionality
@@ -179,14 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const experiencesContainer = document.getElementById('experiencesContainer');
   const skillInput = document.getElementById('skillInput');
   const addSkillButton = document.getElementById('addSkillButton');
-  
+
   // Initialize experience count
   window.experienceCount = 0;
   const MAX_EXPERIENCES = 5;
-  
+
   // Initialize skills array
   window.skills = [];
-  
+
   // Add experience button click handler
   if (addExperienceButton) {
     addExperienceButton.addEventListener('click', function() {
@@ -198,12 +198,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
+
   // Add event listeners for skills
   if (addSkillButton) {
     addSkillButton.addEventListener('click', addSkill);
   }
-  
+
   if (skillInput) {
     skillInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
@@ -212,35 +212,35 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
+
   // Form submission handler
   if (bioForm) {
     bioForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      
+
       const name = document.getElementById('name').value;
       const college = document.getElementById('college').value;
       const gradYear = document.getElementById('gradYear').value;
-      
+
       if (!name || !college || !gradYear) {
         window.showError('Please fill in all required fields');
         return;
       }
-      
+
       try {
         // Collect experiences data
         const experiences = collectExperiencesData();
-        
+
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const email = urlParams.get('email');
         const mode = urlParams.get('mode');
         const isEditMode = mode === 'edit';
-        
+
         // Get existing user data first to ensure we don't lose templates
         chrome.storage.local.get([email], function(result) {
           const existingData = result[email] || {};
-          
+
           // Prepare user data
           const userData = {
             name: name,
@@ -251,21 +251,21 @@ document.addEventListener('DOMContentLoaded', function() {
             skills: window.skills,
             setupCompleted: true
           };
-          
+
           // Merge with other existing data (like sent emails and templates)
           const mergedData = {
             ...existingData,
             ...userData
           };
-          
+
           // Store the data
           const data = {};
           data[email] = mergedData;
-          
+
           chrome.storage.local.set(data, function() {
             // Show success message
             window.showSuccess('Profile saved successfully!');
-            
+
             // If not in edit mode, close the tab after a delay
             if (!isEditMode) {
               setTimeout(() => {
@@ -281,13 +281,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
+
   // Load existing data if in edit mode
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email');
   const mode = urlParams.get('mode');
   const isEditMode = mode === 'edit';
-  
+
   if (isEditMode && email) {
     chrome.storage.local.get([email], function(result) {
       const userData = result[email];
@@ -306,11 +306,11 @@ document.addEventListener('DOMContentLoaded', function() {
           const card = createExperienceCard(window.experienceCount);
           experiencesContainer.appendChild(card);
         }
-        
+
         // Load skills
         if (userData.skills && Array.isArray(userData.skills)) {
           window.skills = [...userData.skills];
-          
+
           // Create skill tags
           window.skills.forEach(skill => {
             const tagElement = document.createElement('div');
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
               ${escapeHtml(skill)}
               <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
             `;
-            
+
             // Add click event to remove button
             tagElement.querySelector('.remove-skill').addEventListener('click', function() {
               const skillToRemove = this.getAttribute('data-skill');
@@ -327,11 +327,11 @@ document.addEventListener('DOMContentLoaded', function() {
               tagElement.remove();
               updateSkillsDisplay();
             });
-            
+
             // Add to container
             document.getElementById('skillsTagsContainer').appendChild(tagElement);
           });
-          
+
           updateSkillsDisplay();
         }
       }
@@ -342,4 +342,4 @@ document.addEventListener('DOMContentLoaded', function() {
     const card = createExperienceCard(window.experienceCount);
     experiencesContainer.appendChild(card);
   }
-}); 
+});

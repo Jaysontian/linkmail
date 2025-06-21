@@ -4,7 +4,7 @@ const BACKEND_URL = 'http://localhost:3000';
 // Use a self-executing function with a more robust initialization check
 (function() {
   let currentProfileId = null;
-  
+
   // Function to get LinkedIn profile ID from URL
   function getProfileIdFromUrl() {
     const url = window.location.href;
@@ -21,15 +21,15 @@ const BACKEND_URL = 'http://localhost:3000';
       if (container) {
         const successView = container.querySelector('#linkmail-success');
         const splashView = container.querySelector('#linkmail-splash');
-        
+
         // If success view is visible, hide it and show splash
         if (successView && successView.style.display === 'block') {
           console.log('Found success view visible, resetting to splash view');
           successView.style.display = 'none';
-          
+
           if (splashView) {
             splashView.style.display = 'flex';
-            
+
             // Update the title with the new profile name
             const nameElement = container.querySelector('#title');
             if (nameElement) {
@@ -47,61 +47,61 @@ const BACKEND_URL = 'http://localhost:3000';
       }, 1000); // Small delay to ensure DOM is ready
     }
   }
-  
+
   // Function to initialize the extension
   async function initialize() {
-    console.log("Starting initialization");
-    
+    console.log('Starting initialization');
+
     // Only proceed if we're on a profile page
     const profileId = getProfileIdFromUrl();
     if (!profileId) {
-      console.log("Not on a profile page");
+      console.log('Not on a profile page');
       return;
     }
-    
+
     // Check if this is a different profile than before
     const isNewProfile = profileId !== currentProfileId;
     currentProfileId = profileId;
-    
+
     // Wait for the DOM to be fully loaded
     if (document.readyState === 'loading') {
       await new Promise(resolve => {
         document.addEventListener('DOMContentLoaded', resolve);
       });
     }
-    
+
     // Wait a bit more to ensure LinkedIn's dynamic content is loaded
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // If profile changed, clear the cached email
     if (isNewProfile && window.EmailFinder) {
-      console.log("New profile detected, clearing cached email");
+      console.log('New profile detected, clearing cached email');
       window.EmailFinder.clearCachedEmail();
     }
-    
+
     // If UI exists but profile changed, reset UI
     const existingUI = document.querySelector('.linkmail-container');
     if (existingUI && isNewProfile) {
-      console.log("Detected navigation to a new profile, resetting UI");
+      console.log('Detected navigation to a new profile, resetting UI');
       forceResetUIState();
       window.UIManager.resetUI();
       return;
     }
-    
+
     // If no UI exists, create it
     if (!existingUI) {
-      console.log("No UI found, creating new UI");
+      console.log('No UI found, creating new UI');
       await window.UIManager.init();
     }
   }
-  
+
   // Function to observe URL changes
   function setupUrlObserver() {
-    console.log("Setting up URL observer");
-    
+    console.log('Setting up URL observer');
+
     // Save initial profile ID
     currentProfileId = getProfileIdFromUrl();
-    
+
     // Set up interval to check for URL changes
     setInterval(() => {
       const newProfileId = getProfileIdFromUrl();
@@ -110,13 +110,13 @@ const BACKEND_URL = 'http://localhost:3000';
         initialize();
       }
     }, 1000);
-    
+
     // Also listen for navigation events
     window.addEventListener('popstate', () => {
       console.log('Navigation detected via popstate');
       initialize();
     });
-    
+
     // Set up a MutationObserver as backup
     const observer = new MutationObserver(
       Utils.debounce(() => {
@@ -127,7 +127,7 @@ const BACKEND_URL = 'http://localhost:3000';
         }
       }, 500)
     );
-    
+
     // Only observe if document.body exists
     if (document.body) {
       observer.observe(document.body, { childList: true, subtree: true });
@@ -142,28 +142,28 @@ const BACKEND_URL = 'http://localhost:3000';
       bodyObserver.observe(document.documentElement, { childList: true });
     }
   }
-  
+
   // Start initialization and setup observers
   initialize().then(() => {
     setupUrlObserver();
   });
-  
+
   // Handle extension messages
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "findEmail") {
+    if (request.action === 'findEmail') {
       EmailFinder.findLinkedInEmail()
         .then(email => {
-          console.log("Found email:", email);
+          console.log('Found email:', email);
           if (email) {
             UIManager.populateForm();
             sendResponse({ email: email });
           } else {
-            sendResponse({ error: "No Email Found on LinkedIn Page. Please Input Email Manually." });
+            sendResponse({ error: 'No Email Found on LinkedIn Page. Please Input Email Manually.' });
           }
         })
         .catch(error => {
-          console.error("Error finding email:", error);
-          sendResponse({ error: "Error finding email" });
+          console.error('Error finding email:', error);
+          sendResponse({ error: 'Error finding email' });
         });
       return true; // Required for async response
     }

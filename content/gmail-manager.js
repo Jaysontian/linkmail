@@ -7,13 +7,13 @@ window.GmailManager = {
     try {
       const response = await new Promise((resolve) => {
         chrome.runtime.sendMessage(
-          { action: "getAuthToken" },
+          { action: 'getAuthToken' },
           (response) => resolve(response)
         );
       });
 
       if (response.error) {
-        console.log("could not get auth token!");
+        console.log('could not get auth token!');
         throw new Error(response.error.message);
       }
 
@@ -87,17 +87,17 @@ window.GmailManager = {
     try {
       // First send the email
       const result = await this.sendEmail(to, subject, body, attachments);
-      
+
       // If successful, save to local storage
       if (result) {
         // Get current user email
         const userProfile = await this.getUserProfile();
         const userEmail = userProfile.emailAddress;
-        
+
         // Get current LinkedIn profile URL and name
         const profileUrl = window.location.href;
         const recipientName = document.querySelector('h1')?.innerText || '';
-        
+
         // Create email record
         const emailRecord = {
           recipientEmail: to,
@@ -108,15 +108,15 @@ window.GmailManager = {
           linkedInUrl: profileUrl,
           attachments: attachments.map(a => ({ name: a.name, size: a.size })) // Only store metadata, not the actual file
         };
-        
+
         // Get existing user data
         chrome.storage.local.get([userEmail], (result) => {
           const userData = result[userEmail] || {};
-          
+
           // Add email to sent emails array
           userData.sentEmails = userData.sentEmails || [];
           userData.sentEmails.push(emailRecord);
-          
+
           // Save back to storage
           const data = {};
           data[userEmail] = userData;
@@ -127,7 +127,7 @@ window.GmailManager = {
             }
           });
         });
-        
+
         return result;
       }
     } catch (error) {
@@ -139,10 +139,10 @@ window.GmailManager = {
   createEmail({ to, subject, message, from, attachments = [] }) {
     // Process the message to ensure proper line breaks
     const processedMessage = this.processMessageContent(message);
-    
+
     // Generate a random boundary string for multipart message
     const boundary = 'LinkMail_' + Math.random().toString(36).substring(2);
-    
+
     // Create email headers
     const headers = [
       'MIME-Version: 1.0',
@@ -157,7 +157,7 @@ window.GmailManager = {
       '',  // Empty line separates headers from content
       processedMessage
     ];
-    
+
     // Add attachments if any
     if (attachments && attachments.length > 0) {
       attachments.forEach(attachment => {
@@ -167,7 +167,7 @@ window.GmailManager = {
           headers.push('Content-Transfer-Encoding: base64');
           headers.push(`Content-Disposition: attachment; filename="${attachment.name}"`);
           headers.push('');  // Empty line separates headers from content
-          
+
           // Add the attachment data - split into chunks to avoid line length issues
           const chunkSize = 76;
           let remainingData = attachment.data;
@@ -178,24 +178,24 @@ window.GmailManager = {
         }
       });
     }
-    
+
     // Add closing boundary
     headers.push(`--${boundary}--`);
-    
+
     // Join all parts with CRLF
     const email = headers.join('\r\n');
-    
+
     // Encode the email for Gmail API
     return btoa(unescape(encodeURIComponent(email)))
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
   },
-  
+
   processMessageContent(message) {
     // Group text into paragraphs
     const paragraphs = message.split('\n\n').map(p => p.trim()).filter(p => p);
-    
+
     // Process each paragraph - handle line breaks within paragraphs
     const processedParagraphs = paragraphs.map(paragraph => {
       // Replace single line breaks with spaces if they're within a paragraph
@@ -203,7 +203,7 @@ window.GmailManager = {
         .replace(/\n/g, ' ')
         .replace(/\s+/g, ' ') // Normalize spaces
         .trim();
-      
+
       // Escape HTML special characters
       return processedParagraph
         .replace(/&/g, '&amp;')
@@ -212,12 +212,12 @@ window.GmailManager = {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     });
-    
+
     // Join paragraphs with proper spacing
     const htmlContent = processedParagraphs
       .map(p => `<p>${p}</p>`)
       .join('');
-    
+
     // Wrap the content in HTML structure
     return `
       <!DOCTYPE html>
@@ -244,7 +244,7 @@ window.GmailManager = {
       </html>
     `;
   },
-  
+
   async getUserProfile() {
     try {
       if (!this.currentToken) {
