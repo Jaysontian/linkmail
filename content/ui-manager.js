@@ -1148,13 +1148,18 @@ window.UIManager = {
       
       console.log('Auto-selected template:', JSON.stringify(this.selectedTemplate, null, 2));
       
-      // Add visual selection to the first card
-      const firstCard = templateContainer.querySelector('.template-dropdown-card');
-      if (firstCard) {
-        firstCard.classList.add('selected');
-        console.log('Added selected class to first template card');
-      } else {
-        console.error('Could not find first template card for visual selection');
+      // Add visual selection to the correct template card
+      const templateCards = templateContainer.querySelectorAll('.template-dropdown-card');
+      templateCards.forEach(card => {
+        const cardTemplateName = card.querySelector('h2')?.textContent;
+        if (cardTemplateName === firstTemplate.name) {
+          card.classList.add('selected');
+          console.log('Added selected class to template card:', cardTemplateName);
+        }
+      });
+      
+      if (templateCards.length === 0) {
+        console.error('Could not find any template cards for visual selection');
       }
     } else if (this.selectedTemplate.name) {
       console.log('Template already selected:', this.selectedTemplate.name, '- preserving selection');
@@ -1163,6 +1168,9 @@ window.UIManager = {
       const templateCards = templateContainer.querySelectorAll('.template-dropdown-card');
       templateCards.forEach(card => {
         const templateName = card.querySelector('h2')?.textContent;
+        // Clear all selections first
+        card.classList.remove('selected');
+        // Then highlight only the correct one
         if (templateName === this.selectedTemplate.name) {
           card.classList.add('selected');
           console.log('Preserved visual selection for:', templateName);
