@@ -57,18 +57,50 @@ window.UIManager = {
   // Add this method to check if user exists in storage
   async checkUserInStorage(email) {
     return new Promise((resolve) => {
-      chrome.storage.local.get([email], (result) => {
-        resolve(result[email] ? true : false);
-      });
+      try {
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, cannot check user in storage');
+          resolve(false);
+          return;
+        }
+        
+        chrome.storage.local.get([email], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log('Chrome storage error:', chrome.runtime.lastError);
+            resolve(false);
+            return;
+          }
+          resolve(result[email] ? true : false);
+        });
+      } catch (error) {
+        console.log('Error checking user in storage:', error);
+        resolve(false);
+      }
     });
   },
 
   // Add this method to get user data from storage
   async getUserFromStorage(email) {
     return new Promise((resolve) => {
-      chrome.storage.local.get([email], (result) => {
-        resolve(result[email] || null);
-      });
+      try {
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, cannot get user from storage');
+          resolve(null);
+          return;
+        }
+        
+        chrome.storage.local.get([email], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log('Chrome storage error:', chrome.runtime.lastError);
+            resolve(null);
+            return;
+          }
+          resolve(result[email] || null);
+        });
+      } catch (error) {
+        console.log('Error getting user from storage:', error);
+        resolve(null);
+      }
     });
   },
 
@@ -107,9 +139,22 @@ window.UIManager = {
 
   async checkAuthStatus() {
     try {
+      // Check if extension context is still valid
+      if (!chrome.runtime?.id) {
+        console.log('Extension context invalidated, cannot check auth status');
+        this.isAuthenticated = false;
+        this.showSignInUI();
+        return;
+      }
+      
       // Check if user is already authenticated
       const authStatus = await new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: "checkAuthStatus" }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('Chrome runtime error:', chrome.runtime.lastError);
+            resolve({ isAuthenticated: false });
+            return;
+          }
           resolve(response);
         });
       });
@@ -171,36 +216,56 @@ window.UIManager = {
   },
 
   showAuthenticatedUI() {
-    console.log('Showing authenticated UI');
-    if (this.elements.signInView) {
-      this.elements.signInView.style.display = 'none';
-    }
-    if (this.elements.splashView) {
-      this.elements.splashView.style.display = 'flex';
-    }
-    
-    // Display user info if available
-    const accountInfo = document.querySelector('.linkmail-account-info');
-    const userEmailDisplay = document.getElementById('user-email-display');
-    
-    if (accountInfo && this.userData?.email) {
-      accountInfo.style.display = 'block';
-      userEmailDisplay.textContent = this.userData.email;
-    }
-    
-    // Refresh user data from storage to get latest templates
-    this.refreshUserData().then(() => {
-      // Pass user data to GmailManager
-      if (window.GmailManager && this.userData) {
-        window.GmailManager.setUserData(this.userData);
+    try {
+      console.log('Showing authenticated UI');
+      
+      // Check if extension context is still valid
+      if (!chrome.runtime?.id) {
+        console.log('Extension context invalidated, cannot show authenticated UI');
+        return;
       }
       
-      // Populate template dropdown with user's custom templates
-      this.populateTemplateDropdown();
+      if (this.elements.signInView) {
+        this.elements.signInView.style.display = 'none';
+      }
+      if (this.elements.splashView) {
+        this.elements.splashView.style.display = 'flex';
+      }
       
-      // Check email history after authentication is confirmed
-      this.checkLastEmailSent();
-    });
+      // Display user info if available
+      try {
+        const accountInfo = document.querySelector('.linkmail-account-info');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        
+        if (accountInfo && this.userData?.email) {
+          accountInfo.style.display = 'block';
+          if (userEmailDisplay) {
+            userEmailDisplay.textContent = this.userData.email;
+          }
+        }
+      } catch (domError) {
+        console.log('Error accessing DOM elements:', domError);
+      }
+      
+      // Refresh user data from storage to get latest templates
+      this.refreshUserData().then(() => {
+        // Pass user data to GmailManager
+        if (window.GmailManager && this.userData) {
+          window.GmailManager.setUserData(this.userData);
+        }
+        
+        // Populate template dropdown with user's custom templates
+        this.populateTemplateDropdown();
+        
+        // Check email history after authentication is confirmed
+        this.checkLastEmailSent();
+      }).catch(error => {
+        console.log('Error refreshing user data:', error);
+      });
+      
+    } catch (error) {
+      console.log('Error in showAuthenticatedUI:', error);
+    }
   },
 
   // Add this new method to UIManager to refresh user data
@@ -213,23 +278,40 @@ window.UIManager = {
     console.log('Refreshing user data from storage');
     
     return new Promise((resolve) => {
-      chrome.storage.local.get([this.userData.email], (result) => {
-        const storedUserData = result[this.userData.email];
-        
-        if (storedUserData) {
-          console.log('Found stored user data, updating local copy');
-          this.userData = storedUserData;
-          
-          // Pass updated user data to GmailManager
-          if (window.GmailManager) {
-            window.GmailManager.setUserData(this.userData);
-          }
-        } else {
-          console.log('No stored user data found');
+      try {
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, skipping storage refresh');
+          resolve();
+          return;
         }
         
+        chrome.storage.local.get([this.userData.email], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log('Chrome storage error:', chrome.runtime.lastError);
+            resolve();
+            return;
+          }
+          
+          const storedUserData = result[this.userData.email];
+          
+          if (storedUserData) {
+            console.log('Found stored user data, updating local copy');
+            this.userData = storedUserData;
+            
+            // Pass updated user data to GmailManager
+            if (window.GmailManager) {
+              window.GmailManager.setUserData(this.userData);
+            }
+          } else {
+            console.log('No stored user data found');
+          }
+          
+          resolve();
+        });
+      } catch (error) {
+        console.log('Error accessing chrome storage:', error);
         resolve();
-      });
+      }
     });
   },
 
@@ -962,34 +1044,68 @@ window.UIManager = {
     if (this.isAuthenticated && this.userData && this.userData.email) {
       console.log('Actively checking for template updates');
       
-      chrome.storage.local.get([this.userData.email], (result) => {
-        const storedData = result[this.userData.email];
+      try {
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, cannot check template updates');
+          return;
+        }
         
-        if (storedData && storedData.templates) {
-          // Check if templates have changed by comparing lengths first (quick check)
-          const currentTemplatesLength = this.userData.templates ? this.userData.templates.length : 0;
-          const newTemplatesLength = storedData.templates.length;
-          
-          if (newTemplatesLength !== currentTemplatesLength) {
-            console.log(`Template count changed: ${currentTemplatesLength} -> ${newTemplatesLength}`);
-            this.userData = storedData;
-            this.populateTemplateDropdown();
+        chrome.storage.local.get([this.userData.email], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log('Chrome storage error:', chrome.runtime.lastError);
             return;
           }
           
-          // If lengths match, do a deeper comparison
-          if (currentTemplatesLength > 0) {
-            const currentTemplatesJSON = JSON.stringify(this.userData.templates);
-            const newTemplatesJSON = JSON.stringify(storedData.templates);
+          const storedData = result[this.userData.email];
+          
+          if (storedData && storedData.templates) {
+            // Check if templates have changed by comparing lengths first (quick check)
+            const currentTemplatesLength = this.userData.templates ? this.userData.templates.length : 0;
+            const newTemplatesLength = storedData.templates.length;
             
-            if (currentTemplatesJSON !== newTemplatesJSON) {
-              console.log('Template content changed, updating dropdown');
+            if (newTemplatesLength !== currentTemplatesLength) {
+              console.log(`Template count changed: ${currentTemplatesLength} -> ${newTemplatesLength}`);
+              
+              // Check current UI state before updating
+              const currentView = this.getCurrentView();
+              console.log('Current view before template count update:', currentView);
+              
               this.userData = storedData;
               this.populateTemplateDropdown();
+              
+              // Preserve the current view state
+              if (currentView === 'editor') {
+                console.log('Preserving email editor view after template count change');
+              }
+              return;
+            }
+            
+            // If lengths match, do a deeper comparison
+            if (currentTemplatesLength > 0) {
+              const currentTemplatesJSON = JSON.stringify(this.userData.templates);
+              const newTemplatesJSON = JSON.stringify(storedData.templates);
+              
+              if (currentTemplatesJSON !== newTemplatesJSON) {
+                console.log('Template content changed, updating dropdown');
+                
+                // Check current UI state before updating
+                const currentView = this.getCurrentView();
+                console.log('Current view before template content update:', currentView);
+                
+                this.userData = storedData;
+                this.populateTemplateDropdown();
+                
+                // Preserve the current view state
+                if (currentView === 'editor') {
+                  console.log('Preserving email editor view after template content change');
+                }
+              }
             }
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.log('Error checking template updates:', error);
+      }
     }
   },
 
@@ -1028,13 +1144,24 @@ window.UIManager = {
       
       // Now we're sure we're authenticated and have user data
       // Get full user data from storage directly
-      chrome.storage.local.get([this.userData.email], (result) => {
-        const storedUserData = result[this.userData.email];
-        
-        if (!storedUserData || !storedUserData.sentEmails || !storedUserData.sentEmails.length) {
-          console.log('No sent emails found in storage');
-          return; // No emails sent yet
+      try {
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, cannot check last email sent');
+          return;
         }
+        
+        chrome.storage.local.get([this.userData.email], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log('Chrome storage error:', chrome.runtime.lastError);
+            return;
+          }
+          
+          const storedUserData = result[this.userData.email];
+          
+          if (!storedUserData || !storedUserData.sentEmails || !storedUserData.sentEmails.length) {
+            console.log('No sent emails found in storage');
+            return; // No emails sent yet
+          }
         
         console.log(`Found ${storedUserData.sentEmails.length} sent emails in storage`);
         
@@ -1078,7 +1205,10 @@ window.UIManager = {
           // lastEmailStatus.style.color = '#4caf50'; // Green color to indicate success
           console.log('Updated status with last email date:', formattedDate);
         }
-      });
+        });
+      } catch (error) {
+        console.log('Error accessing chrome storage for last email check:', error);
+      }
       
     } catch (error) {
       console.error('Error checking last email sent:', error);
@@ -1096,11 +1226,21 @@ window.UIManager = {
             JSON.stringify(newValue.templates) !== JSON.stringify(oldValue.templates)) {
           console.log('Templates have changed, updating user data and dropdown');
           
+          // Check current UI state before updating
+          const currentView = this.getCurrentView();
+          console.log('Current view before storage update:', currentView);
+          
           // Update local userData
           this.userData = newValue;
           
-          // Update the dropdown
+          // Update the dropdown without changing the current view
           this.populateTemplateDropdown();
+          
+          // Preserve the current view state
+          if (currentView === 'editor') {
+            console.log('Preserving email editor view after storage update');
+            // Don't change the view, user should stay in email editor
+          }
         }
       }
     });
@@ -1113,11 +1253,44 @@ window.UIManager = {
       console.log('Window focused, checking for template updates');
       
       if (this.isAuthenticated && this.userData && this.userData.email) {
+        // Check current UI state before refreshing
+        const currentView = this.getCurrentView();
+        console.log('Current view before refresh:', currentView);
+        
         this.refreshUserData().then(() => {
+          // Only update template dropdown, don't change the current view
           this.populateTemplateDropdown();
+          
+          // If user was in email editor view, keep them there
+          if (currentView === 'editor') {
+            console.log('Preserving email editor view after template refresh');
+            // Don't change the view, user should stay in email editor
+          }
         });
       }
     });
+  },
+
+  // Helper method to detect current view
+  getCurrentView() {
+    if (!this.container) return 'unknown';
+    
+    const editorView = this.container.querySelector('#linkmail-editor');
+    const splashView = this.container.querySelector('#linkmail-splash');
+    const successView = this.container.querySelector('#linkmail-success');
+    const signInView = this.container.querySelector('#linkmail-signin');
+    
+    if (editorView && editorView.style.display === 'block') {
+      return 'editor';
+    } else if (successView && successView.style.display === 'block') {
+      return 'success';
+    } else if (splashView && splashView.style.display === 'flex') {
+      return 'splash';
+    } else if (signInView && signInView.style.display === 'flex') {
+      return 'signin';
+    }
+    
+    return 'unknown';
   },
 
   // Display template attachments in the email editor

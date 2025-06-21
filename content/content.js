@@ -128,7 +128,19 @@ const BACKEND_URL = 'http://localhost:3000';
       }, 500)
     );
     
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Only observe if document.body exists
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true });
+    } else {
+      // Wait for document.body to be available
+      const bodyObserver = new MutationObserver(() => {
+        if (document.body) {
+          bodyObserver.disconnect();
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
+      });
+      bodyObserver.observe(document.documentElement, { childList: true });
+    }
   }
   
   // Start initialization and setup observers
