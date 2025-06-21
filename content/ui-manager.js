@@ -3,9 +3,18 @@ window.UIManager = {
   elements: {},
   userData: null,
   isAuthenticated: false,
-  selectedTemplate: {},
+  _selectedTemplate: {},
   container: null, // Add this line to store the container reference
   instanceId: Math.random().toString(36).substring(2, 15),
+  
+  // Add getter and setter for selectedTemplate to track changes
+  get selectedTemplate() {
+    return this._selectedTemplate;
+  },
+  
+  set selectedTemplate(value) {
+    this._selectedTemplate = value;
+  },
   
 
   templates: [
@@ -635,23 +644,14 @@ window.UIManager = {
 
         console.log('Selected template for email generation:', JSON.stringify(useTemplate, null, 2));
         
-        // Debug: Check if template is empty and fix it
+        // FAILSAFE: Ensure template is selected
         if (!useTemplate.name || !useTemplate.content) {
-          console.error('WARNING: Selected template is empty or invalid!');
-          console.error('Template object keys:', Object.keys(useTemplate));
-          console.error('Template object values:', useTemplate);
-          
-          // FAILSAFE: Force template selection if empty
-          console.log('Attempting to fix empty template by calling populateTemplateDropdown...');
+          // Force template selection if empty
           this.populateTemplateDropdown();
-          
-          // Try again after population
           useTemplate = this.selectedTemplate;
-          console.log('Template after forced population:', JSON.stringify(useTemplate, null, 2));
           
           // If still empty, use default template
           if (!useTemplate.name || !useTemplate.content) {
-            console.error('Template still empty after forced population, using default template');
             useTemplate = {
               name: 'Coffee Chat',
               content: this.templates[0].content,
@@ -659,10 +659,7 @@ window.UIManager = {
               purpose: 'to send a coffee chat request',
               attachments: []
             };
-            
-            // Update the selectedTemplate for future use
             this.selectedTemplate = useTemplate;
-            console.log('Using default template:', JSON.stringify(useTemplate, null, 2));
           }
         }
 
@@ -966,6 +963,9 @@ window.UIManager = {
       nameElement.textContent = `Draft an email to ${firstName}`;
     }
 
+    // Ensure templates are populated and one is selected
+    this.populateTemplateDropdown();
+
     await this.checkLastEmailSent();
     
     // Re-populate the form with the profile's email
@@ -1017,8 +1017,6 @@ window.UIManager = {
   // Update the populateTemplateDropdown method in UI-manager.js
 
   populateTemplateDropdown() {
-    console.log('=== POPULATE TEMPLATE DROPDOWN CALLED ===');
-    console.log('Current selectedTemplate before population:', JSON.stringify(this.selectedTemplate, null, 2));
     const templateContainer = this.elements.templateDropdown;
     
     if (!templateContainer) {
@@ -1120,9 +1118,6 @@ window.UIManager = {
     });
     
     // Auto-select first template if no template is currently selected
-    console.log('Checking auto-selection: selectedTemplate.name =', this.selectedTemplate.name, ', allTemplates.length =', allTemplates.length);
-    console.log('Current selectedTemplate:', JSON.stringify(this.selectedTemplate, null, 2));
-    
     if ((!this.selectedTemplate.name || Object.keys(this.selectedTemplate).length === 0) && allTemplates.length > 0) {
       // Prefer custom templates over default ones
       let templateToSelect = allTemplates[0]; // fallback to first template
@@ -1131,9 +1126,6 @@ window.UIManager = {
       const customTemplate = allTemplates.find(t => t.id && t.id.startsWith('custom-'));
       if (customTemplate) {
         templateToSelect = customTemplate;
-        console.log('Auto-selecting first custom template:', templateToSelect.name);
-      } else {
-        console.log('No custom templates found, auto-selecting first default template:', templateToSelect.name);
       }
       
       // Select the chosen template
@@ -1146,24 +1138,15 @@ window.UIManager = {
         attachments: firstTemplate.attachments || []
       };
       
-      console.log('Auto-selected template:', JSON.stringify(this.selectedTemplate, null, 2));
-      
       // Add visual selection to the correct template card
       const templateCards = templateContainer.querySelectorAll('.template-dropdown-card');
       templateCards.forEach(card => {
         const cardTemplateName = card.querySelector('h2')?.textContent;
         if (cardTemplateName === firstTemplate.name) {
           card.classList.add('selected');
-          console.log('Added selected class to template card:', cardTemplateName);
         }
       });
-      
-      if (templateCards.length === 0) {
-        console.error('Could not find any template cards for visual selection');
-      }
     } else if (this.selectedTemplate.name) {
-      console.log('Template already selected:', this.selectedTemplate.name, '- preserving selection');
-      
       // Find and highlight the already selected template
       const templateCards = templateContainer.querySelectorAll('.template-dropdown-card');
       templateCards.forEach(card => {
@@ -1173,11 +1156,8 @@ window.UIManager = {
         // Then highlight only the correct one
         if (templateName === this.selectedTemplate.name) {
           card.classList.add('selected');
-          console.log('Preserved visual selection for:', templateName);
         }
       });
-    } else {
-      console.log('No templates available for selection');
     }
   },
 
