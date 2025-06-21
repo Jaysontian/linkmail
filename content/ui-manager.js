@@ -465,8 +465,20 @@ window.UIManager = {
     // Google Sign-in button
     this.elements.signInButton.addEventListener('click', async () => {
       try {
+        // Check if extension context is still valid
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, cannot sign in');
+          alert('Extension needs to be reloaded. Please refresh the page and try again.');
+          return;
+        }
+        
         const response = await new Promise((resolve) => {
           chrome.runtime.sendMessage({ action: "signInWithGoogle" }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.log('Chrome runtime error during sign in:', chrome.runtime.lastError);
+              resolve({ success: false, error: 'Extension context invalidated' });
+              return;
+            }
             resolve(response);
           });
         });
@@ -857,6 +869,13 @@ window.UIManager = {
     if (this.isAuthenticated && !forceSignOut) {
       // Check if user exists in storage
       try {
+        // Check if extension context is still valid
+        if (!chrome.runtime?.id) {
+          console.log('Extension context invalidated, cannot check user in storage during reset');
+          if (signInView) signInView.style.display = 'flex';
+          return;
+        }
+        
         const userExists = await this.checkUserInStorage(this.userData.email);
         
         if (userExists) {
@@ -881,7 +900,7 @@ window.UIManager = {
           this.redirectToBioSetup(this.userData.email);
         }
       } catch (error) {
-        console.error('Error checking user in storage:', error);
+        console.log('Error checking user in storage during reset:', error);
         if (signInView) signInView.style.display = 'flex';
       }
     } else {
@@ -1130,16 +1149,28 @@ window.UIManager = {
     try {
       console.log('Checking last email sent...');
       
-      // Get the current LinkedIn profile URL and name
+      // First check if we're on a LinkedIn profile page
       const currentProfileUrl = window.location.href;
-      const profileName = document.querySelector('h1')?.innerText || '';
-      
-      // Get the last email status element
-      const lastEmailStatus = document.getElementById('lastEmailStatus');
-      if (!lastEmailStatus) {
-        console.error('Last email status element not found');
+      if (!currentProfileUrl.includes('/in/')) {
+        console.log('Not on a LinkedIn profile page, skipping email status check');
         return;
       }
+      
+      // Check if the UI container exists
+      if (!this.container) {
+        console.log('UI container not initialized, skipping email status check');
+        return;
+      }
+      
+      // Get the last email status element
+      const lastEmailStatus = this.container.querySelector('#lastEmailStatus');
+      if (!lastEmailStatus) {
+        console.log('Last email status element not found in container, UI may not be fully initialized');
+        return;
+      }
+      
+      // Get the current LinkedIn profile name
+      const profileName = document.querySelector('h1')?.innerText || '';
       
       // Default state
       lastEmailStatus.style.display = 'none';
