@@ -19,41 +19,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   }
-
-  // Handle Apollo OAuth redirect
-  else if (request.action === "handleApolloRedirect") {
-    chrome.identity.launchWebAuthFlow({
-      url: request.authUrl,
-      interactive: true
-    }, (responseUrl) => {
-      if (chrome.runtime.lastError) {
-        sendResponse({ 
-          success: false,
-          error: chrome.runtime.lastError.message
-        });
-      } else {
-        sendResponse({ 
-          success: true,
-          responseUrl: responseUrl
-        });
-      }
-    });
-    return true; // Required for async response
-  }
-  
-  else if (request.action === "apolloAuthComplete") {
-    // Forward the authentication result to any listeners
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs.length > 0) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: "apolloAuthResult",
-          success: request.success,
-          error: request.error
-        });
-      }
-    });
-    return true;
-  }
   
   else if (request.action === "signInWithGoogle") {
     chrome.identity.getAuthToken({ interactive: true }, function(token) {

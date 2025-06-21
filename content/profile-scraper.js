@@ -239,6 +239,24 @@ window.ProfileScraper = {
 
   async generateColdEmail(profileData, templateData) {
     try {
+      // Validate inputs
+      if (!profileData || !profileData.name) {
+        throw new Error('Invalid profile data provided');
+      }
+
+      // Sanitize user inputs to prevent injection attacks
+      const sanitizedProfileData = {
+        name: Utils.escapeHtml(profileData.name || ''),
+        headline: Utils.escapeHtml(profileData.headline || ''),
+        company: Utils.escapeHtml(profileData.company || ''),
+        about: Utils.escapeHtml(profileData.about || ''),
+        location: Utils.escapeHtml(profileData.location || ''),
+        experience: profileData.experience ? 
+          profileData.experience.map(exp => ({
+            content: Utils.escapeHtml(exp.content || '')
+          })) : []
+      };
+
       // Build system prompt and user prompt here
       // ---- SYSTEM PROMPT ----
       const systemPrompt = `You are an expert email writer who crafts concise, personalized outreach emails on behalf of a sender.
@@ -263,63 +281,100 @@ Subject line here$$$Email body here
 `;
 
       // ---- USER PROMPT ----
-      // You can further customize this as needed!
-      let userPrompt = `Write a short, personalized email from me to ${profileData.name}${profileData.company ? ` who works at ${profileData.company}` : ""}.
+      let userPrompt = `Write a short, personalized email from me to ${sanitizedProfileData.name}${sanitizedProfileData.company ? ` who works at ${sanitizedProfileData.company}` : ""}.
 
   Recipient information:
--  Name: ${profileData.name}
--  Headline: ${profileData.headline || "Not provided"}
--  Company: ${profileData.company || "Not provided"}
--  About: ${profileData.about || "Not provided"}
--  Location: ${profileData.location || "Not provided"}
--  Experiences: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join("; ") : "Not provided"}
+-  Name: ${sanitizedProfileData.name}
+-  Headline: ${sanitizedProfileData.headline || "Not provided"}
+-  Company: ${sanitizedProfileData.company || "Not provided"}
+-  About: ${sanitizedProfileData.about || "Not provided"}
+-  Location: ${sanitizedProfileData.location || "Not provided"}
+-  Experiences: ${sanitizedProfileData.experience && sanitizedProfileData.experience.length > 0 ? sanitizedProfileData.experience.map(e => e.content).join("; ") : "Not provided"}
 
 My information:
--  Name: ${templateData.userData?.name || "[Your Name]"}
--  College/University: ${templateData.userData?.college || ""}
--  Graduation year: ${templateData.userData?.graduationYear || ""}
--  Experiences: ${templateData.userData?.experiences && templateData.userData.experiences.length > 0 ? templateData.userData.experiences.map(e => `${e.jobTitle || ""}${e.company ? ` at ${e.company}` : ""}${e.description ? ` (${e.description.length > 50 ? e.description.substring(0, 50) + "..." : ""})` : ""}`).join("; ") : "Not provided"}
--  Skills: ${templateData.userData?.skills && templateData.userData.skills.length > 0 ? templateData.userData.skills.join(", ") : "Not provided"}
+-  Name: ${Utils.escapeHtml(templateData.userData?.name || "[Your Name]")}
+-  College/University: ${Utils.escapeHtml(templateData.userData?.college || "")}
+-  Graduation year: ${Utils.escapeHtml(templateData.userData?.graduationYear || "")}
+-  Experiences: ${templateData.userData?.experiences && templateData.userData.experiences.length > 0 ? templateData.userData.experiences.map(e => `${Utils.escapeHtml(e.jobTitle || "")}${e.company ? ` at ${Utils.escapeHtml(e.company)}` : ""}${e.description ? ` (${Utils.escapeHtml(e.description.length > 50 ? e.description.substring(0, 50) + "..." : e.description)})` : ""}`).join("; ") : "Not provided"}
+-  Skills: ${templateData.userData?.skills && templateData.userData.skills.length > 0 ? templateData.userData.skills.map(skill => Utils.escapeHtml(skill)).join(", ") : "Not provided"}
 
-Purpose of the email: ${templateData.purpose || "to schedule a coffee chat"}
+Purpose of the email: ${Utils.escapeHtml(templateData.purpose || "to schedule a coffee chat")}
 
 Subject line template:
-${templateData.subjectLine || "Coffee Chat with [Recipient Name]"}
+${Utils.escapeHtml(templateData.subjectLine || "Coffee Chat with [Recipient Name]")}
 
 Email body template:
-${templateData.content || "Hey [NAME], I saw that XXX. I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,"}
+${Utils.escapeHtml(templateData.content || "Hey [NAME], I saw that XXX. I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,")}
 
 IMPORTANT: Return your response in this exact format:
 [Subject Line]$$$[Email Body]
   `;
 
+      // Validate prompt length to prevent abuse
+      if (userPrompt.length > 10000) {
+        throw new Error('Request too large');
+      }
+
       // ---- API CALL ----
-      const response = await fetch('https://linkmail-api.vercel.app/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: String(userPrompt),
-          systemPrompt: String(systemPrompt)
-        })
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const data = await response.json();
+      try {
+        const response = await fetch('https://linkmail-api.vercel.app/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: String(userPrompt),
+            systemPrompt: String(systemPrompt)
+          }),
+          signal: controller.signal
+        });
 
-      console.log(data);
-      
-      // Parse the response into subject and email parts
-      const [subject, email] = data.result.split('$$$').map(str => str.trim());
-      
-      return {
-        subject,
-        email
-      };
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data || !data.result) {
+          throw new Error('Invalid response from API');
+        }
+
+        console.log('API Response received successfully');
+        
+        // Parse the response into subject and email parts
+        const parts = data.result.split('$$$');
+        if (parts.length !== 2) {
+          throw new Error('Invalid response format from API');
+        }
+
+        const [subject, email] = parts.map(str => str.trim());
+        
+        // Sanitize the response
+        return {
+          subject: Utils.escapeHtml(subject),
+          email: Utils.sanitizeText(email)
+        };
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timed out');
+        }
+        throw fetchError;
+      }
 
     } catch (error) {
       console.error('Error generating email:', error);
-      return null;
+      return {
+        subject: 'Connection Request',
+        email: 'Hi there! I came across your profile and would love to connect. Best regards!'
+      };
     }
   }
 };

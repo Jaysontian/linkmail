@@ -37,7 +37,6 @@ window.UIManager = {
   async populateForm() {
     const recipientInput = document.getElementById('recipientEmailInput');
     const nameElement = document.getElementById('profileName');
-    const apolloSearchContainer = document.getElementById('apolloSearchContainer');
     
     // Get basic profile data without opening contact info overlay
     const profileData = await ProfileScraper.scrapeBasicProfileData();
@@ -48,14 +47,6 @@ window.UIManager = {
     if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
       // Use the cached email if available
       recipientInput.value = cachedEmail;
-      
-      // Hide Apollo search button if we already have an email
-      if (apolloSearchContainer) {
-        apolloSearchContainer.style.display = 'none';
-      }
-    } else if (apolloSearchContainer && window.ApolloClient && window.ApolloClient.isAuthenticated()) {
-      // Show Apollo search button if Apollo is authenticated and we don't have an email
-      apolloSearchContainer.style.display = 'block';
     }
     
     if (nameElement) {
@@ -148,189 +139,6 @@ window.UIManager = {
       console.error('Error checking auth status:', error);
       this.isAuthenticated = false;
       this.showSignInUI();
-    }
-  },
-
-  // Check Apollo authentication status
-  async checkApolloAuthStatus() {
-    if (window.ApolloClient) {
-      const isAuthenticated = await window.ApolloClient.init();
-      this.updateApolloUI(isAuthenticated);
-    }
-  },
-  
-  // Update Apollo UI based on authentication state
-  updateApolloUI(isAuthenticated) {
-    const notAuthenticatedDiv = document.getElementById('apolloNotAuthenticated');
-    const authenticatedDiv = document.getElementById('apolloAuthenticated');
-    const apolloSearchContainer = document.getElementById('apolloSearchContainer');
-    
-    if (!notAuthenticatedDiv || !authenticatedDiv) {
-      console.error('Apollo UI elements not found');
-      return;
-    }
-    
-    if (isAuthenticated) {
-      notAuthenticatedDiv.style.display = 'none';
-      authenticatedDiv.style.display = 'block';
-      
-      // Show Apollo search button in the editor view if email field is empty
-      if (apolloSearchContainer) {
-        const recipientInput = document.getElementById('recipientEmailInput');
-        if (recipientInput && !recipientInput.value) {
-          apolloSearchContainer.style.display = 'block';
-        }
-      }
-    } else {
-      notAuthenticatedDiv.style.display = 'block';
-      authenticatedDiv.style.display = 'none';
-      
-      // Hide Apollo search button
-      if (apolloSearchContainer) {
-        apolloSearchContainer.style.display = 'none';
-      }
-    }
-  },
-  
-  // Setup Apollo event listeners
-  setupApolloEventListeners() {
-    // Apollo auth button
-    const apolloAuthButton = document.getElementById('apolloAuthButton');
-    if (apolloAuthButton) {
-      apolloAuthButton.addEventListener('click', async () => {
-        try {
-          apolloAuthButton.disabled = true;
-          apolloAuthButton.textContent = 'Connecting...';
-          
-          if (window.ApolloClient) {
-            // Start the authentication process
-            console.log('Starting Apollo authentication...');
-            const success = await window.ApolloClient.authenticate();
-            
-            if (success) {
-              console.log('Apollo authentication successful');
-              this.updateApolloUI(true);
-            } else {
-              console.error('Apollo authentication failed');
-              alert('Failed to connect Apollo account. Please try again.');
-            }
-          } else {
-            console.error('Apollo client not available');
-            alert('Apollo integration is not available');
-          }
-        } catch (error) {
-          console.error('Error during Apollo authentication:', error);
-          alert('Error connecting Apollo account: ' + error.message);
-        } finally {
-          apolloAuthButton.disabled = false;
-          apolloAuthButton.textContent = 'Connect Apollo Account';
-        }
-      });
-    }
-
-    // Add a listener for authentication messages from the background script
-    chrome.runtime.onMessage.addListener((message) => {
-      if (message.action === "apolloAuthResult") {
-        if (message.success) {
-          console.log('Apollo authentication successful via message');
-          this.updateApolloUI(true);
-        } else {
-          console.error('Apollo authentication failed via message:', message.error);
-          alert('Failed to connect Apollo account: ' + (message.error || 'Unknown error'));
-        }
-        
-        // Re-enable the auth button if needed
-        const apolloAuthButton = document.getElementById('apolloAuthButton');
-        if (apolloAuthButton && apolloAuthButton.disabled) {
-          apolloAuthButton.disabled = false;
-          apolloAuthButton.textContent = 'Connect Apollo Account';
-        }
-      }
-    });
-    
-    // Apollo disconnect button
-    const apolloDisconnectButton = document.getElementById('apolloDisconnectButton');
-    if (apolloDisconnectButton) {
-      apolloDisconnectButton.addEventListener('click', async () => {
-        try {
-          if (window.ApolloClient) {
-            await window.ApolloClient.logout();
-            this.updateApolloUI(false);
-            console.log('Apollo disconnected');
-          }
-        } catch (error) {
-          console.error('Error disconnecting Apollo:', error);
-        }
-      });
-    }
-    
-    // Find email with Apollo button
-    const findEmailWithApolloButton = document.getElementById('findEmailWithApollo');
-    if (findEmailWithApolloButton) {
-      findEmailWithApolloButton.addEventListener('click', async () => {
-        try {
-          const apolloSearchStatus = document.getElementById('apolloSearchStatus');
-          
-          findEmailWithApolloButton.disabled = true;
-          findEmailWithApolloButton.textContent = 'Searching...';
-          
-          if (apolloSearchStatus) {
-            apolloSearchStatus.textContent = 'Searching for email with Apollo...';
-            apolloSearchStatus.style.display = 'block';
-          }
-          
-          // Use Apollo to find email without opening contact overlay
-          const result = await window.EmailFinder.findEmailWithApollo();
-          
-          if (result.success && result.email) {
-            const recipientInput = document.getElementById('recipientEmailInput');
-            if (recipientInput) {
-              recipientInput.value = result.email;
-              
-              // Hide the Apollo search container since we now have an email
-              const apolloSearchContainer = document.getElementById('apolloSearchContainer');
-              if (apolloSearchContainer) {
-                setTimeout(() => {
-                  apolloSearchContainer.style.display = 'none';
-                }, 3000); // Hide after 3 seconds so user can see the success message
-              }
-            }
-            
-            if (apolloSearchStatus) {
-              apolloSearchStatus.textContent = 'Email found with Apollo!';
-              apolloSearchStatus.style.color = '#4caf50';
-            }
-          } else {
-            if (apolloSearchStatus) {
-              apolloSearchStatus.textContent = result.error || 'No email found with Apollo';
-              apolloSearchStatus.style.color = '#f44336';
-            }
-          }
-        } catch (error) {
-          console.error('Error finding email with Apollo:', error);
-          const apolloSearchStatus = document.getElementById('apolloSearchStatus');
-          if (apolloSearchStatus) {
-            apolloSearchStatus.textContent = 'Error: ' + error.message;
-            apolloSearchStatus.style.color = '#f44336';
-            apolloSearchStatus.style.display = 'block';
-          }
-        } finally {
-          findEmailWithApolloButton.disabled = false;
-          findEmailWithApolloButton.textContent = 'Find Email';
-        }
-      });
-    }
-    
-    // Listen for changes to the recipient email input
-    const recipientInput = document.getElementById('recipientEmailInput');
-    const apolloSearchContainer = document.getElementById('apolloSearchContainer');
-    if (recipientInput && apolloSearchContainer) {
-      recipientInput.addEventListener('input', () => {
-        // Only show the Apollo search button if Apollo is authenticated and the input is empty
-        if (window.ApolloClient && window.ApolloClient.isAuthenticated()) {
-          apolloSearchContainer.style.display = recipientInput.value ? 'none' : 'block';
-        }
-      });
     }
   },
 
@@ -716,18 +524,9 @@ window.UIManager = {
         
         // Update the recipient email field
         const recipientInput = document.getElementById('recipientEmailInput');
-        const apolloSearchContainer = document.getElementById('apolloSearchContainer');
         
         if (recipientInput && emailToUse) {  // Changed email to emailToUse
           recipientInput.value = emailToUse;  // Changed email to emailToUse
-          
-          // Hide Apollo search button if we found an email
-          if (apolloSearchContainer) {
-            apolloSearchContainer.style.display = 'none';
-          }
-        } else if (apolloSearchContainer && window.ApolloClient && window.ApolloClient.isAuthenticated()) {
-          // Show Apollo search button if we didn't find an email but Apollo is connected
-          apolloSearchContainer.style.display = 'block';
         }
 
         // Get selected template
@@ -912,7 +711,6 @@ window.UIManager = {
     this.cleanupUI(); // Clean up any existing UI first
     await this.createUI();
     this.setupEventListeners();
-    this.setupApolloEventListeners(); // Set up Apollo event listeners
     this.setupStorageListener();
     this.setupEmailHistoryRefresh();
     this.setupTemplateRefreshListener();
@@ -920,7 +718,6 @@ window.UIManager = {
     
     // Initial checks
     await this.checkLastEmailSent();
-    await this.checkApolloAuthStatus(); // Check Apollo auth status
   },
 
   async resetUI(forceSignOut = false) {

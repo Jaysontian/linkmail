@@ -14,6 +14,9 @@
     "storage",
     "tabs"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none';"
+  },
   "web_accessible_resources": [{
     "resources": [
       "content/linkedin-div.html",
@@ -28,8 +31,8 @@
     "https://gmail.googleapis.com/*",
     "https://www.googleapis.com/*",
     "https://igupta1.github.io/*",
-    "*://*.linkedin.com/*",
-    "https://*.apollo.io/*"
+    "https://linkmail-api.vercel.app/*",
+    "*://*.linkedin.com/*"
   ],
   "key": "ahoknlaefjlpnadehdjimbhikbilcick",
   "oauth2": {
@@ -59,7 +62,6 @@
       "content/profile-scraper.js",
       "content/url-observer.js",
       "content/ui-manager.js",
-      "content/apollo-client.js",
       "content/content.js"
     ],
     "run_at": "document_start"

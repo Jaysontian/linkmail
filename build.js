@@ -13,10 +13,15 @@ const OUTPUT_ZIP = path.join(__dirname, 'linkmail-extension.zip');
 const filesToInclude = [
   'manifest.json',
   'background.js',
-  'bio-setup.html',
-  'bio-setup.js',
-  'assets/**/*',
-  'content/**/*'
+  'dashboard.html',
+  'dashboard.js',
+  'assets/',
+  'content/',
+  'styles/',
+  'utils/',
+  'vendor/',
+  'scripts/',
+  'dashboard/'
 ];
 
 // Create web store build

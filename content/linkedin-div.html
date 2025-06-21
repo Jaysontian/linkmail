@@ -47,30 +47,6 @@
         <div style="display:flex; flex-direction:column; gap:8px;">
             <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt;">
             
-            <div id="apolloIntegration" class="apollo-div" style="margin-top:10px; text-align:center;">
-                <div id="apolloNotAuthenticated" style="display:block;">
-                    <p style="font-size:10pt; color:#666; margin-bottom:5px;">Connect your Apollo Account to allow Linkmail to find emails on your behalf.</p>
-                    <button id="apolloAuthButton">
-                        <img src="https://i.imgur.com/5gO5F7U.png" style="width:16px; height: 16px; margin-right: 8px;">
-                        Connect Apollo
-                    </button>
-                </div>
-                <div id="apolloAuthenticated" style="display:none;">
-                    <div id="apolloSearchContainer" style="margin-top:4px; display:none;">
-                        <div style="display:flex; gap:8px;">
-                            <button id="findEmailWithApollo">
-                                <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:4px; vertical-align:middle; color:black;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                                Find Email
-                            </button>
-                            <button id="apolloDisconnectButton">
-                                <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:4px; vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unlink-icon lucide-unlink"><path d="m18.84 12.25 1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71"/><path d="m5.17 11.75-1.71 1.71a5.004 5.004 0 0 0 .12 7.07 5.006 5.006 0 0 0 6.95 0l1.71-1.71"/><line x1="8" x2="8" y1="2" y2="5"/><line x1="2" x2="5" y1="8" y2="8"/><line x1="16" x2="16" y1="19" y2="22"/><line x1="19" x2="22" y1="16" y2="16"/></svg>
-                                Disconnect
-                            </button>
-                        </div>
-                    </div>
-                    <div id="apolloSearchStatus" style="display:none; margin-top:4px; font-size:10pt; color:#666;"></div>
-                </div>
-            </div>
             <input id="emailSubject" class="lm-input linkmail-subject" placeholder="Empty Subject" style="font-size:10pt;">
             <div style="position:relative;">
                 <textarea id="emailResult" class="lm-textarea" id="auto-resize-textarea" style="font-size:10pt;"></textarea>
