@@ -633,7 +633,38 @@ window.UIManager = {
         // Get selected template
         useTemplate = this.selectedTemplate;
 
-        console.log(useTemplate);
+        console.log('Selected template for email generation:', JSON.stringify(useTemplate, null, 2));
+        
+        // Debug: Check if template is empty and fix it
+        if (!useTemplate.name || !useTemplate.content) {
+          console.error('WARNING: Selected template is empty or invalid!');
+          console.error('Template object keys:', Object.keys(useTemplate));
+          console.error('Template object values:', useTemplate);
+          
+          // FAILSAFE: Force template selection if empty
+          console.log('Attempting to fix empty template by calling populateTemplateDropdown...');
+          this.populateTemplateDropdown();
+          
+          // Try again after population
+          useTemplate = this.selectedTemplate;
+          console.log('Template after forced population:', JSON.stringify(useTemplate, null, 2));
+          
+          // If still empty, use default template
+          if (!useTemplate.name || !useTemplate.content) {
+            console.error('Template still empty after forced population, using default template');
+            useTemplate = {
+              name: 'Coffee Chat',
+              content: this.templates[0].content,
+              subjectLine: this.templates[0].subjectLine || "Coffee Chat with [Recipient Name]",
+              purpose: 'to send a coffee chat request',
+              attachments: []
+            };
+            
+            // Update the selectedTemplate for future use
+            this.selectedTemplate = useTemplate;
+            console.log('Using default template:', JSON.stringify(useTemplate, null, 2));
+          }
+        }
 
         // Add user data to the template
         if (this.userData) {
@@ -656,7 +687,21 @@ window.UIManager = {
         if (response?.email) {
           let emailContent = response.email;
           if (this.userData && this.userData.name) {
-            emailContent = emailContent.replace('[Your Name]', this.userData.name);
+            // Replace various name placeholders with the user's actual name
+            emailContent = emailContent.replace(/\[Your Name\]/g, this.userData.name);
+            emailContent = emailContent.replace(/\[Sender Name\]/g, this.userData.name);
+            
+            // Fix case where recipient name might have been used in signature
+            const profileData = await ProfileScraper.scrapeBasicProfileData();
+            if (profileData.name) {
+              // Replace recipient name in signature area with user name
+              const recipientName = profileData.name;
+              // Look for patterns like "Best regards,\n  [RecipientName]" and replace with user name
+              emailContent = emailContent.replace(
+                new RegExp(`(Best regards,\\s*\\n\\s*)(${recipientName})`, 'gi'), 
+                `$1${this.userData.name}`
+              );
+            }
           }
 
           this.elements.emailResult.value = emailContent;
@@ -972,7 +1017,8 @@ window.UIManager = {
   // Update the populateTemplateDropdown method in UI-manager.js
 
   populateTemplateDropdown() {
-    console.log('Populating template container');
+    console.log('=== POPULATE TEMPLATE DROPDOWN CALLED ===');
+    console.log('Current selectedTemplate before population:', JSON.stringify(this.selectedTemplate, null, 2));
     const templateContainer = this.elements.templateDropdown;
     
     if (!templateContainer) {
@@ -1072,6 +1118,59 @@ window.UIManager = {
       
       templateContainer.appendChild(card);
     });
+    
+    // Auto-select first template if no template is currently selected
+    console.log('Checking auto-selection: selectedTemplate.name =', this.selectedTemplate.name, ', allTemplates.length =', allTemplates.length);
+    console.log('Current selectedTemplate:', JSON.stringify(this.selectedTemplate, null, 2));
+    
+    if ((!this.selectedTemplate.name || Object.keys(this.selectedTemplate).length === 0) && allTemplates.length > 0) {
+      // Prefer custom templates over default ones
+      let templateToSelect = allTemplates[0]; // fallback to first template
+      
+      // Look for custom templates first (they have id starting with 'custom-')
+      const customTemplate = allTemplates.find(t => t.id && t.id.startsWith('custom-'));
+      if (customTemplate) {
+        templateToSelect = customTemplate;
+        console.log('Auto-selecting first custom template:', templateToSelect.name);
+      } else {
+        console.log('No custom templates found, auto-selecting first default template:', templateToSelect.name);
+      }
+      
+      // Select the chosen template
+      const firstTemplate = templateToSelect;
+      this.selectedTemplate = {
+        name: firstTemplate.name,
+        content: firstTemplate.content,
+        subjectLine: firstTemplate.subjectLine,
+        purpose: firstTemplate.purpose,
+        attachments: firstTemplate.attachments || []
+      };
+      
+      console.log('Auto-selected template:', JSON.stringify(this.selectedTemplate, null, 2));
+      
+      // Add visual selection to the first card
+      const firstCard = templateContainer.querySelector('.template-dropdown-card');
+      if (firstCard) {
+        firstCard.classList.add('selected');
+        console.log('Added selected class to first template card');
+      } else {
+        console.error('Could not find first template card for visual selection');
+      }
+    } else if (this.selectedTemplate.name) {
+      console.log('Template already selected:', this.selectedTemplate.name, '- preserving selection');
+      
+      // Find and highlight the already selected template
+      const templateCards = templateContainer.querySelectorAll('.template-dropdown-card');
+      templateCards.forEach(card => {
+        const templateName = card.querySelector('h2')?.textContent;
+        if (templateName === this.selectedTemplate.name) {
+          card.classList.add('selected');
+          console.log('Preserved visual selection for:', templateName);
+        }
+      });
+    } else {
+      console.log('No templates available for selection');
+    }
   },
 
   // Also add this method to actively pull the latest templates when a user returns to LinkedIn

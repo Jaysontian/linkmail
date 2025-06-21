@@ -244,75 +244,129 @@ window.ProfileScraper = {
         throw new Error('Invalid profile data provided');
       }
 
-      // Sanitize user inputs to prevent injection attacks
+      // Clean user inputs (no HTML escaping needed for API calls)
       const sanitizedProfileData = {
-        name: Utils.escapeHtml(profileData.name || ''),
-        headline: Utils.escapeHtml(profileData.headline || ''),
-        company: Utils.escapeHtml(profileData.company || ''),
-        about: Utils.escapeHtml(profileData.about || ''),
-        location: Utils.escapeHtml(profileData.location || ''),
+        name: profileData.name || '',
+        headline: profileData.headline || '',
+        company: profileData.company || '',
+        about: profileData.about || '',
+        location: profileData.location || '',
         experience: profileData.experience ? 
           profileData.experience.map(exp => ({
-            content: Utils.escapeHtml(exp.content || '')
+            content: exp.content || ''
           })) : []
       };
 
       // Build system prompt and user prompt here
       // ---- SYSTEM PROMPT ----
-      const systemPrompt = `You are an expert email writer who crafts concise, personalized outreach emails on behalf of a sender.
+      const systemPrompt = `You are a template-filling assistant. Your ONLY job is to take the provided email templates and fill in the bracketed placeholders with personalized information. You must NOT deviate from the templates in ANY way.
 
-Your response MUST be formatted as follows:
-[Subject Line]$$$[Email Body]
--  Place the subject line first.
--  Use three dollar signs ($$$) as a delimiter.
--  Follow with the email body.
--  Do NOT include any extra text, explanations, or formatting—just the subject and body separated by $$$.
+RESPONSE FORMAT: [Subject Line]$$$[Email Body]
 
-Guidelines:
--  The subject line must use the provided subject line template, replacing any [bracketed text] with relevant content.
--  The email body must be brief (ideally 80–100 words, maximum 100).
--  Use a warm, professional tone suitable for outreach.
--  Highlight ONE specific, meaningful connection between the sender and recipient.
--  Make the reason for connecting clear and specific.
--  End with a short, punchy call-to-action.
+ABSOLUTE REQUIREMENTS:
+1. Use the EXACT wording from the provided templates
+2. Only replace text that is inside [square brackets]
+3. Keep ALL original punctuation, spacing, paragraph breaks, and formatting
+4. Do NOT add any sentences, words, or content not in the original template
+5. Do NOT change greetings, closings, or any other text outside brackets
+6. Do NOT rephrase or "improve" the template language
+7. Do NOT change the tone or style
 
-Example format:
-Subject line here$$$Email body here
+You are essentially doing a "find and replace" operation - find bracketed text, replace with specific info, leave everything else identical.
+
+WRONG: Adding extra content, changing "Hi" to "Hey", rephrasing sentences
+RIGHT: Exact template with only bracketed content replaced
+
+Format: Subject$$$Body (no extra text, explanations, or formatting)
 `;
 
-      // ---- USER PROMPT ----
-      let userPrompt = `Write a short, personalized email from me to ${sanitizedProfileData.name}${sanitizedProfileData.company ? ` who works at ${sanitizedProfileData.company}` : ""}.
+      // Helper function to truncate content intelligently
+      const truncateContent = (profileData, userData, templateData) => {
+        // Option B: Smart field truncation
+        const truncatedProfileData = { ...profileData };
+        
+        // Truncate About section to first 300 characters if it exists
+        if (truncatedProfileData.about && truncatedProfileData.about.length > 300) {
+          truncatedProfileData.about = truncatedProfileData.about.substring(0, 300) + "...";
+        }
+        
+        // Option A: Keep only 2-3 most recent experiences with shortened descriptions
+        if (truncatedProfileData.experience && truncatedProfileData.experience.length > 0) {
+          // Take only the first 3 experiences (assuming they're in reverse chronological order)
+          const recentExperiences = truncatedProfileData.experience.slice(0, 3);
+          
+          // Limit each experience description to ~100 characters
+          truncatedProfileData.experience = recentExperiences.map(exp => ({
+            ...exp,
+            content: exp.content && exp.content.length > 100 ? 
+              exp.content.substring(0, 100) + "..." : exp.content
+          }));
+        }
+        
+        // Also truncate user's experience descriptions if they're very long
+        const truncatedUserData = { ...userData };
+        if (truncatedUserData.experiences && truncatedUserData.experiences.length > 0) {
+          truncatedUserData.experiences = truncatedUserData.experiences.map(exp => ({
+            ...exp,
+            description: exp.description && exp.description.length > 100 ? 
+              exp.description.substring(0, 100) + "..." : exp.description
+          }));
+        }
+        
+        return { truncatedProfileData, truncatedUserData };
+      };
 
-  Recipient information:
--  Name: ${sanitizedProfileData.name}
--  Headline: ${sanitizedProfileData.headline || "Not provided"}
--  Company: ${sanitizedProfileData.company || "Not provided"}
--  About: ${sanitizedProfileData.about || "Not provided"}
--  Location: ${sanitizedProfileData.location || "Not provided"}
--  Experiences: ${sanitizedProfileData.experience && sanitizedProfileData.experience.length > 0 ? sanitizedProfileData.experience.map(e => e.content).join("; ") : "Not provided"}
+             // Build user prompt with original data first
+       const buildUserPrompt = (profileData, userData, templateData) => {
+         return `TEMPLATE FILLING TASK: Replace only the bracketed placeholders in the templates below. Do NOT change anything else.
 
-My information:
--  Name: ${Utils.escapeHtml(templateData.userData?.name || "[Your Name]")}
--  College/University: ${Utils.escapeHtml(templateData.userData?.college || "")}
--  Graduation year: ${Utils.escapeHtml(templateData.userData?.graduationYear || "")}
--  Experiences: ${templateData.userData?.experiences && templateData.userData.experiences.length > 0 ? templateData.userData.experiences.map(e => `${Utils.escapeHtml(e.jobTitle || "")}${e.company ? ` at ${Utils.escapeHtml(e.company)}` : ""}${e.description ? ` (${Utils.escapeHtml(e.description.length > 50 ? e.description.substring(0, 50) + "..." : e.description)})` : ""}`).join("; ") : "Not provided"}
--  Skills: ${templateData.userData?.skills && templateData.userData.skills.length > 0 ? templateData.userData.skills.map(skill => Utils.escapeHtml(skill)).join(", ") : "Not provided"}
+==== TEMPLATES TO FILL ====
 
-Purpose of the email: ${Utils.escapeHtml(templateData.purpose || "to schedule a coffee chat")}
+SUBJECT TEMPLATE:
+${templateData.subjectLine || "Coffee Chat with [Recipient Name]"}
 
-Subject line template:
-${Utils.escapeHtml(templateData.subjectLine || "Coffee Chat with [Recipient Name]")}
+BODY TEMPLATE:
+${templateData.content || "Hey [NAME], I saw that XXX. I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,"}
 
-Email body template:
-${Utils.escapeHtml(templateData.content || "Hey [NAME], I saw that XXX. I'm really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,")}
+==== REPLACEMENT DATA ====
 
-IMPORTANT: Return your response in this exact format:
-[Subject Line]$$$[Email Body]
+Recipient Name: ${profileData.name}
+Company: ${profileData.company || "Not provided"}
+About: ${profileData.about || "Not provided"}
+Experience: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join("; ") : "Not provided"}
+
+==== INSTRUCTIONS ====
+
+1. Copy the templates exactly as shown above
+2. Replace [Recipient Name] with: ${profileData.name}
+3. Replace [NAME] with: ${profileData.name}
+4. Replace any other [bracketed text] with relevant information from the recipient data
+5. Keep everything else IDENTICAL - same words, punctuation, spacing, line breaks
+6. Do NOT add extra content, do NOT change greetings or closings
+
+OUTPUT FORMAT: Subject$$$Body
   `;
+       };
 
-      // Validate prompt length to prevent abuse
+      // ---- USER PROMPT ----
+      let userPrompt = buildUserPrompt(sanitizedProfileData, templateData.userData, templateData);
+
+      // Check if prompt is too large and truncate if necessary
       if (userPrompt.length > 10000) {
-        throw new Error('Request too large');
+        console.log(`Original prompt length: ${userPrompt.length} characters. Truncating content...`);
+        
+        const { truncatedProfileData, truncatedUserData } = truncateContent(sanitizedProfileData, templateData.userData, templateData);
+        
+        // Rebuild prompt with truncated data
+        const truncatedTemplateData = { ...templateData, userData: truncatedUserData };
+        userPrompt = buildUserPrompt(truncatedProfileData, truncatedUserData, templateData);
+        
+        console.log(`Truncated prompt length: ${userPrompt.length} characters`);
+        
+        // Final safety check - if still too large, throw error
+        if (userPrompt.length > 10000) {
+          throw new Error('Request too large even after truncation');
+        }
       }
 
       // ---- API CALL ----
