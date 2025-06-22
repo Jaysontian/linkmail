@@ -45,7 +45,16 @@
 
     <div id="linkmail-editor" style="display: none;">
         <div style="display:flex; flex-direction:column; gap:8px;">
-            <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt;">
+            <div style="position: relative;">
+                <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt;">
+                <button id="findEmailButton" class="lm-btn-2" style="display: none; margin-top: 4px; font-size: 9pt; padding: 4px 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    Find Email
+                </button>
+            </div>
             
             <input id="emailSubject" class="lm-input linkmail-subject" placeholder="Empty Subject" style="font-size:10pt;">
             <div style="position:relative;">

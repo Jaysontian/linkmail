@@ -56,6 +56,15 @@ window.UIManager = {
     if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
       // Use the cached email if available
       recipientInput.value = cachedEmail;
+      // Hide find email button since we have an email
+      if (this.elements.findEmailButton) {
+        this.elements.findEmailButton.style.display = 'none';
+      }
+    } else {
+      // No cached email - show the Find Email button if we're in editor view
+      if (this.elements.findEmailButton && document.querySelector('#linkmail-editor').style.display === 'block') {
+        this.elements.findEmailButton.style.display = 'block';
+      }
     }
 
     if (nameElement) {
@@ -405,7 +414,8 @@ window.UIManager = {
         editProfileButton: injectedDiv.querySelector('#editProfileButton'),
         templateDropdown: injectedDiv.querySelector('#template-dropdown'),
         menuToggle: injectedDiv.querySelector('#menuToggle'),
-        menuContent: injectedDiv.querySelector('#menuContent')
+        menuContent: injectedDiv.querySelector('#menuContent'),
+        findEmailButton: injectedDiv.querySelector('#findEmailButton')
       };
 
       // Check that required elements exist
@@ -637,6 +647,15 @@ window.UIManager = {
 
         if (recipientInput && emailToUse) {  // Changed email to emailToUse
           recipientInput.value = emailToUse;  // Changed email to emailToUse
+          // Hide find email button since we have an email
+          if (this.elements.findEmailButton) {
+            this.elements.findEmailButton.style.display = 'none';
+          }
+        } else {
+          // No email found - show the Find Email button
+          if (this.elements.findEmailButton) {
+            this.elements.findEmailButton.style.display = 'block';
+          }
         }
 
         // Get selected template
@@ -728,6 +747,69 @@ window.UIManager = {
       setTimeout(() => {
         this.elements.copyButton.textContent = 'Copy';
       }, 2000);
+    });
+
+    // Find Email button event listener
+    this.elements.findEmailButton.addEventListener('click', async () => {
+      console.log('Find Email button clicked');
+      
+      // Disable button and show loading state
+      this.elements.findEmailButton.disabled = true;
+      this.elements.findEmailButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px; animation: spin 1s linear infinite;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 11-6.219-8.56"/>
+        </svg>
+        Finding...
+      `;
+
+      try {
+        // Get the current profile data
+        const profileData = await ProfileScraper.scrapeBasicProfileData();
+        console.log('Profile data for Apollo:', profileData);
+
+        // Call Apollo API through EmailFinder
+        const apolloResult = await EmailFinder.findEmailWithApollo(profileData);
+        console.log('Apollo result:', apolloResult);
+
+        if (apolloResult.success && apolloResult.email) {
+          // Success - populate the email field
+          const recipientInput = document.getElementById('recipientEmailInput');
+          if (recipientInput) {
+            recipientInput.value = apolloResult.email;
+            
+            // Cache the email in EmailFinder
+            EmailFinder._lastFoundEmail = apolloResult.email;
+            EmailFinder._lastProfileUrl = window.location.href;
+          }
+
+          // Hide the find email button since we found an email
+          this.elements.findEmailButton.style.display = 'none';
+
+          // Show success message briefly
+          this.showTemporaryMessage('Email found via Apollo!', 'success');
+
+        } else {
+          // No email found or error
+          const errorMessage = apolloResult.error || 'No email found in Apollo database';
+          console.log('Apollo API error:', errorMessage);
+          
+          this.showTemporaryMessage(errorMessage, 'error');
+        }
+
+      } catch (error) {
+        console.error('Error in Find Email:', error);
+        this.showTemporaryMessage('Failed to find email. Please try again.', 'error');
+      } finally {
+        // Reset button state
+        this.elements.findEmailButton.disabled = false;
+        this.elements.findEmailButton.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          Find Email
+        `;
+      }
     });
 
     // Replace your current sendGmailButton event listener with this
@@ -1502,5 +1584,62 @@ window.UIManager = {
     setTimeout(() => {
       clearInterval(refreshInterval);
     }, 10000);
+  },
+
+  // Show temporary message to user
+  showTemporaryMessage(message, type = 'info') {
+    // Create message element if it doesn't exist
+    let messageEl = this.container.querySelector('#linkmail-temp-message');
+    if (!messageEl) {
+      messageEl = document.createElement('div');
+      messageEl.id = 'linkmail-temp-message';
+      messageEl.style.cssText = `
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        z-index: 1000;
+        max-width: 300px;
+        text-align: center;
+        transition: opacity 0.3s ease;
+      `;
+      this.container.style.position = 'relative';
+      this.container.appendChild(messageEl);
+    }
+
+    // Set message content and style based on type
+    messageEl.textContent = message;
+    if (type === 'success') {
+      messageEl.style.backgroundColor = '#d4edda';
+      messageEl.style.color = '#155724';
+      messageEl.style.border = '1px solid #c3e6cb';
+    } else if (type === 'error') {
+      messageEl.style.backgroundColor = '#f8d7da';
+      messageEl.style.color = '#721c24';
+      messageEl.style.border = '1px solid #f5c6cb';
+    } else {
+      messageEl.style.backgroundColor = '#d1ecf1';
+      messageEl.style.color = '#0c5460';
+      messageEl.style.border = '1px solid #bee5eb';
+    }
+
+    messageEl.style.opacity = '1';
+    messageEl.style.display = 'block';
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+      if (messageEl) {
+        messageEl.style.opacity = '0';
+        setTimeout(() => {
+          if (messageEl && messageEl.parentNode) {
+            messageEl.parentNode.removeChild(messageEl);
+          }
+        }, 300);
+      }
+    }, 3000);
   }
 };

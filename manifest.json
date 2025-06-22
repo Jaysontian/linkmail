@@ -31,6 +31,7 @@
     "https://gmail.googleapis.com/*",
     "https://www.googleapis.com/*",
     "https://linkmail-api.vercel.app/*",
+    "https://api.apollo.io/*",
     "*://*.linkedin.com/*"
   ],
   "key": "ahoknlaefjlpnadehdjimbhikbilcick",

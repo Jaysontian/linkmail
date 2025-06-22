@@ -111,5 +111,37 @@ window.EmailFinder = {
   clearCachedEmail() {
     this._lastFoundEmail = null;
     this._lastProfileUrl = null;
+  },
+
+  // New method to find email using Apollo API
+  async findEmailWithApollo(profileData) {
+    try {
+      console.log('Attempting to find email with Apollo API');
+      
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+          action: 'enrichWithApollo',
+          profileData: profileData
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Chrome runtime error:', chrome.runtime.lastError);
+            resolve({
+              success: false,
+              error: 'Extension error occurred'
+            });
+            return;
+          }
+          
+          console.log('Apollo API response:', response);
+          resolve(response);
+        });
+      });
+    } catch (error) {
+      console.error('Error in findEmailWithApollo:', error);
+      return {
+        success: false,
+        error: 'Failed to connect to Apollo API'
+      };
+    }
   }
 };
