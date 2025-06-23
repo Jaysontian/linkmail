@@ -183,7 +183,7 @@ window.ProfileScraper = {
 
   // Clean up email to ensure only the email address is returned
   cleanupEmail(possibleEmail) {
-    if (!possibleEmail) return null;
+    if (!possibleEmail) return '';  // Return empty string instead of null for consistency
 
     // Extract just the email pattern
     const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i;
@@ -557,3 +557,8 @@ Remember: Use $$$ as the delimiter between subject and body.
     }
   }
 };
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ProfileScraper;
+}

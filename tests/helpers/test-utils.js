@@ -19,29 +19,67 @@ function createMockLinkedInProfile(profileData = {}) {
   const profileSection = document.createElement('section');
   profileSection.className = 'pv-top-card';
 
-  // Profile name
+  // Profile name (h1 - this is what ProfileScraper looks for)
   const nameElement = document.createElement('h1');
   nameElement.textContent = name;
-  profileSection.appendChild(nameElement);
+  document.body.appendChild(nameElement); // Add directly to body
 
-  // Profile title
+  // Profile title (.text-body-medium - this is what ProfileScraper looks for)
   const titleElement = document.createElement('div');
   titleElement.className = 'text-body-medium';
-  titleElement.textContent = title;
-  profileSection.appendChild(titleElement);
+  titleElement.textContent = `${title} at ${company}`;
+  document.body.appendChild(titleElement); // Add directly to body
 
-  document.body.appendChild(profileSection);
-
-  // About section
+  // About section with proper structure
   let aboutSection = null;
   if (hasAboutSection) {
-    aboutSection = document.createElement('section');
-    const aboutDiv = document.createElement('div');
-    aboutDiv.id = 'about';
-    aboutDiv.textContent = `${title} at ${company}. Contact me at ${email}`;
-    aboutSection.appendChild(aboutDiv);
+    // Create the structure that ProfileScraper looks for
+    const aboutContainer = document.createElement('div');
+    aboutContainer.className = 'pv-profile-card';
+    
+    const aboutContent = document.createElement('div');
+    aboutContent.className = 'display-flex ph5 pv3';
+    
+    const aboutText = document.createElement('div');
+    aboutText.className = 'inline-show-more-text--is-collapsed';
+    aboutText.textContent = `${title} at ${company}. Contact me at ${email}`;
+    
+    aboutContent.appendChild(aboutText);
+    aboutContainer.appendChild(aboutContent);
+    
+    aboutSection = aboutContainer;
     document.body.appendChild(aboutSection);
   }
+
+  // Experience section with proper structure
+  const experienceSection = document.createElement('section');
+  const experienceDiv = document.createElement('div');
+  experienceDiv.id = 'experience';
+  experienceSection.appendChild(experienceDiv);
+  
+  // Create a parent element for experience
+  const experienceParent = document.createElement('div');
+  experienceParent.appendChild(experienceSection);
+  
+  // Add some mock experience items
+  const experienceList = document.createElement('ul');
+  const experienceItem = document.createElement('li');
+  experienceItem.className = 'artdeco-list__item';
+  
+  const expTitle = document.createElement('span');
+  expTitle.className = 't-bold';
+  expTitle.textContent = title;
+  
+  const expCompany = document.createElement('span');
+  expCompany.className = 't-normal';
+  expCompany.textContent = company;
+  
+  experienceItem.appendChild(expTitle);
+  experienceItem.appendChild(expCompany);
+  experienceList.appendChild(experienceItem);
+  experienceParent.appendChild(experienceList);
+  
+  document.body.appendChild(experienceParent);
 
   // Contact info button
   let contactButton = null;
@@ -57,16 +95,14 @@ function createMockLinkedInProfile(profileData = {}) {
     profileSection,
     aboutSection,
     contactButton,
+    experienceParent,
     cleanup: () => {
-      if (profileSection.parentNode) {
-        profileSection.parentNode.removeChild(profileSection);
-      }
-      if (aboutSection && aboutSection.parentNode) {
-        aboutSection.parentNode.removeChild(aboutSection);
-      }
-      if (contactButton && contactButton.parentNode) {
-        contactButton.parentNode.removeChild(contactButton);
-      }
+      // Clean up all created elements
+      [nameElement, titleElement, aboutSection, experienceParent, contactButton].forEach(el => {
+        if (el && el.parentNode) {
+          el.parentNode.removeChild(el);
+        }
+      });
     }
   };
 }
