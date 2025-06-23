@@ -23,16 +23,16 @@ window.UIManager = {
       name: 'Coffee Chat',
       description: 'Send a friendly request to chat with this person.',
       purpose: 'to schedule a coffee chat to the recipient',
-      subjectLine: 'Coffee Chat Request',
-      content: 'Hey [Recipient First Name]!\n\nI bet you get hundreds of cold emails so I\'ll try to keep this concise: I saw that XXX I\'m really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. I have two internships under my belt, have a high GPA, and good communication / leadership development. Let me know if you are down to schedule a time for a chat!\nBest regards,\n  [Sender Name]'
+      subjectLine: 'Coffee Chat with [Recipient Name]',
+      content: 'Hi [Recipient First Name],\n\nI\'m a 3rd year Computer Science student at UCLA. [Mention something specific about their company or recent work that interests you].\n\nI\'d love to connect and learn more about your experience in [mention their field/industry]. Would you be open to a brief coffee chat?\n\nBest regards,\n[Sender Name]'
     },
     {
       icon: '💼',
       name: 'Job Application',
       description: 'Craft a professional email to a recruiter or manager',
       purpose: 'to inquire if there is internship or job',
-      subjectLine: 'Job Application Request',
-      content: 'Hey [Recipient First Name],\n\nI\'m [insert personal info here]. I think it\'s really cool how *Skiff is building a privacy-first collaboration platform with expiring links, secure workspaces, and password protection.* Would love to connect and learn about any possible internship opportunities!\nBest regards,\n [Sender Name]'
+      subjectLine: 'Internship Inquiry - [Sender Name]',
+      content: 'Hi [Recipient First Name],\n\nI\'m [brief personal introduction including your background]. I\'m really impressed by [mention something specific about their company\'s work or mission].\n\n[Connect their company\'s work to your own experience or interests]. I\'d love to learn about potential internship opportunities at [Company Name].\n\nBest regards,\n[Sender Name]'
     }
   ],
 
@@ -702,29 +702,38 @@ window.UIManager = {
 
         if (response?.email) {
           let emailContent = response.email;
-          if (this.userData && this.userData.name) {
-            // Replace various name placeholders with the user's actual name
-            emailContent = emailContent.replace(/\[Your Name\]/g, this.userData.name);
-            emailContent = emailContent.replace(/\[Sender Name\]/g, this.userData.name);
+          
+          // Check if this is an error message (contains our error format)
+          if (emailContent.includes('As a fallback, here\'s a simple message:')) {
+            // This is an error message, display it as-is for debugging
+            this.elements.emailResult.value = emailContent;
+            this.elements.emailSubject.value = response.subject;
+          } else {
+            // This is a normal email, process it
+            if (this.userData && this.userData.name) {
+              // Replace various name placeholders with the user's actual name
+              emailContent = emailContent.replace(/\[Your Name\]/g, this.userData.name);
+              emailContent = emailContent.replace(/\[Sender Name\]/g, this.userData.name);
 
-            // Fix case where recipient name might have been used in signature
-            const profileData = await ProfileScraper.scrapeBasicProfileData();
-            if (profileData.name) {
-              // Replace recipient name in signature area with user name
-              const recipientName = profileData.name;
-              // Look for patterns like "Best regards,\n  [RecipientName]" and replace with user name
-              emailContent = emailContent.replace(
-                new RegExp(`(Best regards,\\s*\\n\\s*)(${recipientName})`, 'gi'),
-                `$1${this.userData.name}`
-              );
+              // Fix case where recipient name might have been used in signature
+              const profileData = await ProfileScraper.scrapeBasicProfileData();
+              if (profileData.name) {
+                // Replace recipient name in signature area with user name
+                const recipientName = profileData.name;
+                // Look for patterns like "Best regards,\n  [RecipientName]" and replace with user name
+                emailContent = emailContent.replace(
+                  new RegExp(`(Best regards,\\s*\\n\\s*)(${recipientName})`, 'gi'),
+                  `$1${this.userData.name}`
+                );
+              }
             }
+
+            this.elements.emailResult.value = emailContent;
+            this.elements.emailSubject.value = response.subject;
+
+            // Display attachments if any are present in the selected template
+            this.displayAttachments(useTemplate.attachments);
           }
-
-          this.elements.emailResult.value = emailContent;
-          this.elements.emailSubject.value = response.subject;
-
-          // Display attachments if any are present in the selected template
-          this.displayAttachments(useTemplate.attachments);
 
           adjustHeight(this.elements.emailResult);
         } else {

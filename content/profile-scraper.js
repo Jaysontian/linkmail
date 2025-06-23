@@ -239,9 +239,21 @@ window.ProfileScraper = {
 
   async generateColdEmail(profileData, templateData) {
     try {
+      // Log input data for debugging
+      console.log('Email generation input data:', {
+        profileData: profileData,
+        templateData: templateData
+      });
+      
       // Validate inputs
       if (!profileData || !profileData.name) {
+        console.error('Profile data validation failed:', profileData);
         throw new Error('Invalid profile data provided');
+      }
+      
+      if (!templateData || !templateData.content) {
+        console.error('Template data validation failed:', templateData);
+        throw new Error('Invalid template data provided');
       }
 
       // Clean user inputs (no HTML escaping needed for API calls)
@@ -259,25 +271,39 @@ window.ProfileScraper = {
 
       // Build system prompt and user prompt here
       // ---- SYSTEM PROMPT ----
-      const systemPrompt = `You are a template-filling assistant. Your ONLY job is to take the provided email templates and fill in the bracketed placeholders with personalized information. You must NOT deviate from the templates in ANY way.
+      const systemPrompt = `You are a professional email template assistant. Your job is to fill in bracketed placeholders with personalized, natural content while maintaining the template structure.
 
-RESPONSE FORMAT: [Subject Line]$$$[Email Body]
+MANDATORY RESPONSE FORMAT: You MUST respond with exactly this format:
+[Subject Line]$$$[Email Body]
 
-ABSOLUTE REQUIREMENTS:
-1. Use the EXACT wording from the provided templates
-2. Only replace text that is inside [square brackets]
-3. Keep ALL original punctuation, spacing, paragraph breaks, and formatting
-4. Do NOT add any sentences, words, or content not in the original template
-5. Do NOT change greetings, closings, or any other text outside brackets
-6. Do NOT rephrase or "improve" the template language
-7. Do NOT change the tone or style
+The $$$ delimiter is REQUIRED. Do not include any other text, explanations, or formatting.
 
-You are essentially doing a "find and replace" operation - find bracketed text, replace with specific info, leave everything else identical.
+CRITICAL RULES:
+1. Replace ALL text inside [square brackets] with appropriate personalized content
+2. If brackets contain instructions (like "talk about X" or "add a sentence about Y"), follow those instructions and write natural content
+3. NEVER include the instruction text itself in the final output
+4. Keep all formatting, punctuation, and paragraph breaks outside brackets
+5. Write in a professional, networking-appropriate tone
+6. Make the email sound natural and personally written
 
-WRONG: Adding extra content, changing "Hi" to "Hey", rephrasing sentences
-RIGHT: Exact template with only bracketed content replaced
+EXAMPLES:
+Template: "I think it's really cool how [talk about the company's work]"
+✓ GOOD: "I think it's really cool how you're revolutionizing the fintech space with AI-powered solutions"
+✗ BAD: "I think it's really cool how talk about the company's work"
 
-Format: Subject$$$Body (no extra text, explanations, or formatting)
+Template: "[mention something specific about their background]"
+✓ GOOD: "I noticed your experience leading product development at Microsoft"
+✗ BAD: "mention something specific about their background"
+
+Template: "[brief personal introduction including your background]" 
+✓ GOOD: "a senior Computer Science student at UCLA with internship experience at Google and Meta"
+✗ BAD: "brief personal introduction including your background"
+
+Template: "[Connect their company's work to your own experience]. I'd love to learn about opportunities."
+✓ GOOD: "Given my background in machine learning and data analytics, I'm particularly drawn to your AI-driven approach. I'd love to learn about opportunities."
+✗ BAD: "Connect their company's work to your own experience. I'd love to learn about opportunities."
+
+Format: Subject$$$Body (no extra explanations)
 `;
 
       // Helper function to truncate content intelligently
@@ -318,9 +344,17 @@ Format: Subject$$$Body (no extra text, explanations, or formatting)
 
       // Build user prompt with original data first
       const buildUserPrompt = (profileData, userData, templateData) => {
-        return `TEMPLATE FILLING TASK: Replace only the bracketed placeholders in the templates below. Do NOT change anything else.
+        // Extract first name from full name
+        const firstName = profileData.name ? profileData.name.split(' ')[0] : '';
+        
+        // Format user experiences for context
+        const userExperiencesText = userData?.experiences ? 
+          userData.experiences.map(exp => `${exp.title} at ${exp.company}: ${exp.description}`).join('\n') : 
+          'Not provided';
 
-==== TEMPLATES TO FILL ====
+        return `TASK: Fill in the email template with personalized content. Replace ALL bracketed placeholders with natural, professional content.
+
+==== EMAIL TEMPLATES ====
 
 SUBJECT TEMPLATE:
 ${templateData.subjectLine || 'Coffee Chat with [Recipient Name]'}
@@ -328,23 +362,49 @@ ${templateData.subjectLine || 'Coffee Chat with [Recipient Name]'}
 BODY TEMPLATE:
 ${templateData.content || 'Hey [NAME], I saw that XXX. I\'m really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,'}
 
-==== REPLACEMENT DATA ====
+==== RECIPIENT INFORMATION ====
 
-Recipient Name: ${profileData.name}
-Company: ${profileData.company || 'Not provided'}
-About: ${profileData.about || 'Not provided'}
-Experience: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join('; ') : 'Not provided'}
+Full Name: ${profileData.name}
+First Name: ${firstName}
+Company: ${profileData.company || 'Not specified'}
+Headline: ${profileData.headline || 'Not specified'}
+About Section: ${profileData.about || 'Not specified'}
+Experience: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join('; ') : 'Not specified'}
+
+==== SENDER INFORMATION ====
+
+Your Name: ${userData?.name || '[Your Name]'}
+Your College: ${userData?.college || 'UCLA'}
+Your Graduation Year: ${userData?.graduationYear || '2025'}
+Your Experiences: ${userExperiencesText}
 
 ==== INSTRUCTIONS ====
 
-1. Copy the templates exactly as shown above
-2. Replace [Recipient Name] with: ${profileData.name}
-3. Replace [NAME] with: ${profileData.name}
-4. Replace any other [bracketed text] with relevant information from the recipient data
-5. Keep everything else IDENTICAL - same words, punctuation, spacing, line breaks
-6. Do NOT add extra content, do NOT change greetings or closings
+1. Replace [Recipient Name] with the recipient's full name
+2. Replace [Recipient First Name] with the recipient's first name
+3. Replace [NAME] with the recipient's first name
+4. Replace [Sender Name] with your name
+5. For instruction placeholders (like "[talk about...]"), write natural content following the instruction
+6. Use the recipient's company information, experience, and background to personalize the content
+7. Connect the recipient's work to your own experiences when relevant and instructed
+8. Make the email sound professional but friendly, appropriate for networking
+9. Keep all text outside brackets exactly the same
 
-OUTPUT FORMAT: Subject$$$Body
+REQUIRED OUTPUT FORMAT: 
+You MUST respond with this exact format:
+[Subject Line]$$$[Email Body]
+
+Example:
+Coffee Chat with John Smith$$$Hi John,
+
+I'm a 3rd year Computer Science student at UCLA. I'm really impressed by how Microsoft is advancing AI research and its practical applications in cloud computing.
+
+I'd love to connect and learn more about your experience in the tech industry. Would you be open to a brief coffee chat?
+
+Best regards,
+[Your Name]
+
+Remember: Use $$$ as the delimiter between subject and body.
   `;
       };
 
@@ -394,20 +454,68 @@ OUTPUT FORMAT: Subject$$$Body
         }
 
         const data = await response.json();
+        console.log('Full API response structure:', data);
+        console.log('Response keys:', Object.keys(data || {}));
 
-        if (!data || !data.result) {
+        // Handle different possible API response structures
+        let responseContent = null;
+        
+        if (data && data.result) {
+          responseContent = data.result;
+        } else if (data && data.response) {
+          responseContent = data.response;
+        } else if (data && data.content) {
+          responseContent = data.content;
+        } else if (data && data.message) {
+          responseContent = data.message;
+        } else if (typeof data === 'string') {
+          responseContent = data;
+        } else if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+          // OpenAI format
+          responseContent = data.choices[0].message.content;
+        }
+
+        if (!responseContent) {
+          console.error('API response missing expected content');
+          console.error('Expected one of: result, response, content, message, or string');
+          console.error('Got:', data);
           throw new Error('Invalid response from API');
         }
 
         console.log('API Response received successfully');
+        console.log('Raw API response:', data);
+        console.log('API content:', responseContent);
 
         // Parse the response into subject and email parts
-        const parts = data.result.split('$$$');
-        if (parts.length !== 2) {
+        const parts = responseContent.split('$$$');
+        console.log('Split parts:', parts);
+        console.log('Number of parts:', parts.length);
+        
+        let subject, email;
+        
+        if (parts.length === 2) {
+          // Expected format: Subject$$$Body
+          [subject, email] = parts.map(str => str.trim());
+        } else if (parts.length === 1) {
+          // Fallback: AI didn't use the delimiter, try to extract subject and body
+          console.warn('API response missing delimiter, attempting to parse as plain text');
+          const response = responseContent.trim();
+          
+          // Look for a short first line that could be a subject
+          const lines = response.split('\n');
+          if (lines.length > 1 && lines[0].length < 100) {
+            subject = lines[0].trim();
+            email = lines.slice(1).join('\n').trim();
+          } else {
+            // Use default subject and entire response as email
+            subject = 'Connection Request';
+            email = response;
+          }
+        } else {
+          console.error('Expected 2 parts (subject$$$body), got:', parts.length);
+          console.error('Raw response was:', responseContent);
           throw new Error('Invalid response format from API');
         }
-
-        const [subject, email] = parts.map(str => str.trim());
 
         // Return the response as plain text (no HTML sanitization needed for email composer)
         return {
@@ -425,9 +533,26 @@ OUTPUT FORMAT: Subject$$$Body
 
     } catch (error) {
       console.error('Error generating email:', error);
+      
+      // Provide more specific error information
+      let errorMessage = 'An error occurred while generating the email.';
+      if (error.message.includes('Invalid profile data')) {
+        errorMessage = 'Could not get profile information from this LinkedIn page. Please try refreshing the page.';
+      } else if (error.message.includes('Invalid template data')) {
+        errorMessage = 'Email template is not properly configured. Please select a different template or check your template settings.';
+      } else if (error.message.includes('Request timed out')) {
+        errorMessage = 'Email generation timed out. Please try again.';
+      } else if (error.message.includes('API request failed')) {
+        errorMessage = 'Email generation service is temporarily unavailable. Please try again later.';
+      } else if (error.message.includes('Request too large')) {
+        errorMessage = 'Profile data is too large to process. Please try again or contact support.';
+      } else if (error.message.includes('Invalid response format')) {
+        errorMessage = 'Email generation service returned an invalid response. Please try again.';
+      }
+      
       return {
         subject: 'Connection Request',
-        email: 'Hi there! I came across your profile and would love to connect. Best regards!'
+        email: `${errorMessage}\n\nAs a fallback, here's a simple message:\n\nHi there! I came across your profile and would love to connect. Best regards!`
       };
     }
   }
