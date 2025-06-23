@@ -8,7 +8,7 @@ let authState = {
 };
 
 // Apollo API configuration - securely store the API key here  
-const APOLLO_API_KEY = 'L_eA7eU8VzNj9sLmoJkGmg'; // Your Apollo API key
+const APOLLO_API_KEY = 'F9emTuJtuTm33AxHa1U7Nw'; // Your Apollo API key
 const APOLLO_API_URL = 'https://api.apollo.io/api/v1/people/match';
 
 // Test Apollo API key validity
