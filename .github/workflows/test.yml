@@ -52,11 +52,13 @@ jobs:
         echo "Unit tests completed successfully"
     
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage/lcov.info
         flags: unittests
         name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -82,7 +84,7 @@ jobs:
         echo "E2E tests completed successfully"
     
     - name: Upload Playwright Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: playwright-report
@@ -117,7 +119,7 @@ jobs:
         fi
     
     - name: Upload build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: extension-build
         path: linkmail-extension.zip
@@ -168,7 +170,7 @@ jobs:
       run: npm run test:integration || npm test -- --testPathPattern=integration
     
     - name: Post PR comment
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       if: always()
       with:
         script: |
