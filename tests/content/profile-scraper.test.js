@@ -15,10 +15,10 @@ let ProfileScraper;
 beforeAll(() => {
   // Set up browser-like environment
   global.window.ProfileScraper = {};
-  
+
   // Import the module
   require('../../content/profile-scraper');
-  
+
   // Get the module from the global window object
   ProfileScraper = global.window.ProfileScraper || require('../../content/profile-scraper');
 });
@@ -38,38 +38,38 @@ describe('ProfileScraper', () => {
     it('should extract basic profile information from LinkedIn page', async () => {
       // Mock DOM querySelector to return the expected elements
       const originalQuerySelector = document.querySelector;
-             document.querySelector = jest.fn((selector) => {
-         if (selector === 'h1') {
-           return { innerText: 'Jane Smith' };
-         }
-         if (selector === '.text-body-medium') {
-           return { innerText: 'Senior Software Engineer at Google' };
-         }
-         if (selector === '.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed') {
-           return { innerText: 'Senior Software Engineer at Google. Contact me at jane.smith@google.com' };
-         }
-         if (selector === '#experience') {
-           return { 
-             parentElement: { 
-               querySelectorAll: () => [],
-               querySelector: (sel) => {
-                 if (sel === 'li.artdeco-list__item') {
-                   return {
-                     querySelector: (innerSel) => {
-                       if (innerSel === '.t-normal') {
-                         return { textContent: 'Google' };
-                       }
-                       return null;
-                     }
-                   };
-                 }
-                 return null;
-               }
-             } 
-           };
-         }
-         return null;
-       });
+      document.querySelector = jest.fn((selector) => {
+        if (selector === 'h1') {
+          return { innerText: 'Jane Smith' };
+        }
+        if (selector === '.text-body-medium') {
+          return { innerText: 'Senior Software Engineer at Google' };
+        }
+        if (selector === '.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed') {
+          return { innerText: 'Senior Software Engineer at Google. Contact me at jane.smith@google.com' };
+        }
+        if (selector === '#experience') {
+          return {
+            parentElement: {
+              querySelectorAll: () => [],
+              querySelector: (sel) => {
+                if (sel === 'li.artdeco-list__item') {
+                  return {
+                    querySelector: (innerSel) => {
+                      if (innerSel === '.t-normal') {
+                        return { textContent: 'Google' };
+                      }
+                      return null;
+                    }
+                  };
+                }
+                return null;
+              }
+            }
+          };
+        }
+        return null;
+      });
 
       // Mock querySelectorAll for the document
       document.querySelectorAll = jest.fn(() => []);
@@ -79,7 +79,7 @@ describe('ProfileScraper', () => {
       expect(result.name).toBe('Jane Smith');
       expect(result.headline).toBe('Senior Software Engineer at Google');
       expect(result.emailFromAbout).toBe('jane.smith@google.com');
-      
+
       // Restore original function
       document.querySelector = originalQuerySelector;
     });
@@ -87,20 +87,20 @@ describe('ProfileScraper', () => {
     it('should handle missing profile elements gracefully', async () => {
       // Mock DOM querySelector to return minimal elements
       const originalQuerySelector = document.querySelector;
-             document.querySelector = jest.fn((selector) => {
-         if (selector === 'h1') {
-           return { innerText: 'John Doe' };
-         }
-         if (selector === '#experience') {
-           return { 
-             parentElement: { 
-               querySelectorAll: () => [],
-               querySelector: () => null  // No company data for this test
-             } 
-           };
-         }
-         return null;
-       });
+      document.querySelector = jest.fn((selector) => {
+        if (selector === 'h1') {
+          return { innerText: 'John Doe' };
+        }
+        if (selector === '#experience') {
+          return {
+            parentElement: {
+              querySelectorAll: () => [],
+              querySelector: () => null  // No company data for this test
+            }
+          };
+        }
+        return null;
+      });
 
       document.querySelectorAll = jest.fn(() => []);
 
@@ -109,7 +109,7 @@ describe('ProfileScraper', () => {
       expect(result.name).toBe('John Doe');
       expect(result.headline).toBe('');
       expect(result.company).toBe('');
-      
+
       // Restore original function
       document.querySelector = originalQuerySelector;
     });
@@ -117,30 +117,30 @@ describe('ProfileScraper', () => {
     it('should extract email from about section when available', async () => {
       // Mock DOM querySelector to return about section with email
       const originalQuerySelector = document.querySelector;
-             document.querySelector = jest.fn((selector) => {
-         if (selector === 'h1') {
-           return { innerText: 'Test User' };
-         }
-         if (selector === '.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed') {
-           return { innerText: 'Software Engineer at Test Corp. Contact me at test@example.com' };
-         }
-         if (selector === '#experience') {
-           return { 
-             parentElement: { 
-               querySelectorAll: () => [],
-               querySelector: () => null  // No company data for this test
-             } 
-           };
-         }
-         return null;
-       });
+      document.querySelector = jest.fn((selector) => {
+        if (selector === 'h1') {
+          return { innerText: 'Test User' };
+        }
+        if (selector === '.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed') {
+          return { innerText: 'Software Engineer at Test Corp. Contact me at test@example.com' };
+        }
+        if (selector === '#experience') {
+          return {
+            parentElement: {
+              querySelectorAll: () => [],
+              querySelector: () => null  // No company data for this test
+            }
+          };
+        }
+        return null;
+      });
 
       document.querySelectorAll = jest.fn(() => []);
 
       const result = await ProfileScraper.scrapeBasicProfileData();
 
       expect(result.emailFromAbout).toBe('test@example.com');
-      
+
       // Restore original function
       document.querySelector = originalQuerySelector;
     });
@@ -260,7 +260,7 @@ describe('ProfileScraper', () => {
 
     it('should handle API timeouts gracefully', async () => {
       // Mock timeout that rejects after delay
-      fetch.mockImplementationOnce(() => 
+      fetch.mockImplementationOnce(() =>
         Promise.reject(new Error('Request timed out'))
       );
 
@@ -302,7 +302,7 @@ describe('ProfileScraper', () => {
 
       expect(result.subject).toBe('Connection Request');
       expect(result.email).toContain('Hi there');
-      
+
       // Verify fetch was called with truncated data
       const callData = JSON.parse(fetch.mock.calls[0][1].body);
       expect(callData.prompt.length).toBeLessThan(10000);
@@ -373,4 +373,4 @@ describe('ProfileScraper', () => {
       expect(result).toBe('first@test.com');
     });
   });
-}); 
+});

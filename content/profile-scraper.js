@@ -80,6 +80,7 @@ window.ProfileScraper = {
     }
 
     // Copy basic data but remove emailFromAbout property
+    // eslint-disable-next-line no-unused-vars
     const { emailFromAbout, ...resultWithoutEmailFromAbout } = basicData;
 
     const result = {
@@ -237,22 +238,22 @@ window.ProfileScraper = {
     return cleaned.join(' ');
   },
 
-  async generateColdEmail(profileData, templateData) {
+  async generateColdEmail(profileData, _templateData) {
     try {
       // Log input data for debugging
       console.log('Email generation input data:', {
         profileData: profileData,
-        templateData: templateData
+        templateData: _templateData
       });
-      
+
       // Validate inputs
       if (!profileData || !profileData.name) {
         console.error('Profile data validation failed:', profileData);
         throw new Error('Invalid profile data provided');
       }
-      
-      if (!templateData || !templateData.content) {
-        console.error('Template data validation failed:', templateData);
+
+      if (!_templateData || !_templateData.content) {
+        console.error('Template data validation failed:', _templateData);
         throw new Error('Invalid template data provided');
       }
 
@@ -307,7 +308,7 @@ Format: Subject$$$Body (no extra explanations)
 `;
 
       // Helper function to truncate content intelligently
-      const truncateContent = (profileData, userData, templateData) => {
+      const truncateContent = (profileData, userData, _templateData) => {
         // Option B: Smart field truncation
         const truncatedProfileData = { ...profileData };
 
@@ -346,10 +347,10 @@ Format: Subject$$$Body (no extra explanations)
       const buildUserPrompt = (profileData, userData, templateData) => {
         // Extract first name from full name
         const firstName = profileData.name ? profileData.name.split(' ')[0] : '';
-        
+
         // Format user experiences for context
-        const userExperiencesText = userData?.experiences ? 
-          userData.experiences.map(exp => `${exp.title} at ${exp.company}: ${exp.description}`).join('\n') : 
+        const userExperiencesText = userData?.experiences ?
+          userData.experiences.map(exp => `${exp.title} at ${exp.company}: ${exp.description}`).join('\n') :
           'Not provided';
 
         return `TASK: Fill in the email template with personalized content. Replace ALL bracketed placeholders with natural, professional content.
@@ -409,17 +410,18 @@ Remember: Use $$$ as the delimiter between subject and body.
       };
 
       // ---- USER PROMPT ----
-      let userPrompt = buildUserPrompt(sanitizedProfileData, templateData.userData, templateData);
+      let userPrompt = buildUserPrompt(sanitizedProfileData, _templateData.userData, _templateData);
 
       // Check if prompt is too large and truncate if necessary
       if (userPrompt.length > 10000) {
         console.log(`Original prompt length: ${userPrompt.length} characters. Truncating content...`);
 
-        const { truncatedProfileData, truncatedUserData } = truncateContent(sanitizedProfileData, templateData.userData, templateData);
+        const { truncatedProfileData, truncatedUserData } = truncateContent(sanitizedProfileData, _templateData.userData, _templateData);
 
         // Rebuild prompt with truncated data
-        const truncatedTemplateData = { ...templateData, userData: truncatedUserData };
-        userPrompt = buildUserPrompt(truncatedProfileData, truncatedUserData, templateData);
+        // eslint-disable-next-line no-unused-vars
+        const truncatedTemplateData = { ..._templateData, userData: truncatedUserData };
+        userPrompt = buildUserPrompt(truncatedProfileData, truncatedUserData, _templateData);
 
         console.log(`Truncated prompt length: ${userPrompt.length} characters`);
 
@@ -459,7 +461,7 @@ Remember: Use $$$ as the delimiter between subject and body.
 
         // Handle different possible API response structures
         let responseContent = null;
-        
+
         if (data && data.result) {
           responseContent = data.result;
         } else if (data && data.response) {
@@ -490,9 +492,9 @@ Remember: Use $$$ as the delimiter between subject and body.
         const parts = responseContent.split('$$$');
         console.log('Split parts:', parts);
         console.log('Number of parts:', parts.length);
-        
+
         let subject, email;
-        
+
         if (parts.length === 2) {
           // Expected format: Subject$$$Body
           [subject, email] = parts.map(str => str.trim());
@@ -500,7 +502,7 @@ Remember: Use $$$ as the delimiter between subject and body.
           // Fallback: AI didn't use the delimiter, try to extract subject and body
           console.warn('API response missing delimiter, attempting to parse as plain text');
           const response = responseContent.trim();
-          
+
           // Look for a short first line that could be a subject
           const lines = response.split('\n');
           if (lines.length > 1 && lines[0].length < 100) {
@@ -533,7 +535,7 @@ Remember: Use $$$ as the delimiter between subject and body.
 
     } catch (error) {
       console.error('Error generating email:', error);
-      
+
       // Provide more specific error information
       let errorMessage = 'An error occurred while generating the email.';
       if (error.message.includes('Invalid profile data')) {
@@ -549,7 +551,7 @@ Remember: Use $$$ as the delimiter between subject and body.
       } else if (error.message.includes('Invalid response format')) {
         errorMessage = 'Email generation service returned an invalid response. Please try again.';
       }
-      
+
       return {
         subject: 'Connection Request',
         email: `${errorMessage}\n\nAs a fallback, here's a simple message:\n\nHi there! I came across your profile and would love to connect. Best regards!`

@@ -487,7 +487,7 @@ window.UIManager = {
         // Check if extension context is still valid
         if (!chrome.runtime?.id) {
           console.log('Extension context invalidated, cannot sign in');
-          alert('Extension needs to be reloaded. Please refresh the page and try again.');
+          this.showTemporaryMessage('Extension needs to be reloaded. Please refresh the page and try again.', 'error');
           return;
         }
 
@@ -521,11 +521,11 @@ window.UIManager = {
           }
         } else {
           console.error('Authentication failed:', response.error);
-          alert('Authentication failed. Please try again.');
+          this.showTemporaryMessage('Authentication failed. Please try again.', 'error');
         }
       } catch (error) {
         console.error('Error during authentication:', error);
-        alert('Authentication failed. Please try again.');
+        this.showTemporaryMessage('Authentication failed. Please try again.', 'error');
       }
     });
 
@@ -633,6 +633,7 @@ window.UIManager = {
         }
 
         // Add the email to the profile data (remove emailFromAbout to avoid duplication)
+        // eslint-disable-next-line no-unused-vars
         const { emailFromAbout, ...cleanedProfileData } = basicProfileData;
         const profileData = {
           ...cleanedProfileData,
@@ -659,7 +660,7 @@ window.UIManager = {
         }
 
         // Get selected template
-        useTemplate = this.selectedTemplate;
+        let useTemplate = this.selectedTemplate;
 
         console.log('Selected template for email generation:', JSON.stringify(useTemplate, null, 2));
 
@@ -702,7 +703,7 @@ window.UIManager = {
 
         if (response?.email) {
           let emailContent = response.email;
-          
+
           // Check if this is an error message (contains our error format)
           if (emailContent.includes('As a fallback, here\'s a simple message:')) {
             // This is an error message, display it as-is for debugging
@@ -761,7 +762,7 @@ window.UIManager = {
     // Find Email button event listener
     this.elements.findEmailButton.addEventListener('click', async () => {
       console.log('Find Email button clicked');
-      
+
       // Disable button and show loading state
       this.elements.findEmailButton.disabled = true;
       this.elements.findEmailButton.innerHTML = `
@@ -785,7 +786,7 @@ window.UIManager = {
           const recipientInput = document.getElementById('recipientEmailInput');
           if (recipientInput) {
             recipientInput.value = apolloResult.email;
-            
+
             // Cache the email in EmailFinder
             EmailFinder._lastFoundEmail = apolloResult.email;
             EmailFinder._lastProfileUrl = window.location.href;
@@ -801,7 +802,7 @@ window.UIManager = {
           // No email found or error
           const errorMessage = apolloResult.error || 'No email found in Apollo database';
           console.log('Apollo API error:', errorMessage);
-          
+
           this.showTemporaryMessage(errorMessage, 'error');
         }
 
@@ -836,7 +837,7 @@ window.UIManager = {
       const emailContent = this.elements.emailResult.value;
 
       if (!email || !subject || !emailContent) {
-        alert('Please fill in all fields');
+        this.showTemporaryMessage('Please fill in all fields', 'error');
         return;
       }
 
@@ -900,7 +901,7 @@ window.UIManager = {
 
       } catch (error) {
         console.error('Failed to send email:', error);
-        alert('Failed to send email. Please make sure you are logged into Gmail and try again.');
+        this.showTemporaryMessage('Failed to send email. Please make sure you are logged into Gmail and try again.', 'error');
       } finally {
         // Re-enable button
         this.elements.sendGmailButton.disabled = false;
@@ -1545,7 +1546,7 @@ window.UIManager = {
     attachmentsList.innerHTML = '';
 
     // Add each attachment
-    attachments.forEach((attachment, index) => {
+    attachments.forEach((attachment, _index) => {
       const attachmentItem = document.createElement('div');
       attachmentItem.className = 'email-attachment-item';
 

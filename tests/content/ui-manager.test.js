@@ -25,10 +25,10 @@ let UIManager;
 beforeAll(() => {
   // Set up browser-like environment
   global.window.UIManager = {};
-  
+
   // Import the module
   require('../../content/ui-manager');
-  
+
   // Get the module from the global window object
   UIManager = global.window.UIManager || require('../../content/ui-manager');
 });
@@ -40,7 +40,7 @@ describe('UIManager', () => {
     document.body.innerHTML = '';
     fetch.mockClear();
     jest.clearAllMocks();
-    
+
     mockChromeAPIs({
       authenticated: true,
       userData: {
@@ -103,7 +103,7 @@ describe('UIManager', () => {
       UIManager.populateTemplateDropdown();
 
       const templateCards = UIManager.elements.templateDropdown.querySelectorAll('.template-dropdown-card');
-      const customTemplate = Array.from(templateCards).find(card => 
+      const customTemplate = Array.from(templateCards).find(card =>
         card.querySelector('h2')?.textContent === 'Custom Template'
       );
 
@@ -202,15 +202,15 @@ describe('UIManager', () => {
           // Simulate the actual generate button logic
           const profileData = await ProfileScraper.scrapeBasicProfileData();
           const response = await ProfileScraper.generateColdEmail(profileData, UIManager.selectedTemplate);
-          
+
           UIManager.elements.emailResult.value = response.email;
           UIManager.elements.emailSubject.value = response.subject;
-          
+
           // Set recipient email if found in profile
           if (profileData.emailFromAbout) {
             document.getElementById('recipientEmailInput').value = profileData.emailFromAbout;
           }
-          
+
           resolve();
         });
       });
@@ -237,10 +237,10 @@ describe('UIManager', () => {
         UIManager.elements.generateButton.addEventListener('click', async () => {
           const profileData = await ProfileScraper.scrapeBasicProfileData();
           const response = await ProfileScraper.generateColdEmail(profileData, UIManager.selectedTemplate);
-          
+
           UIManager.elements.emailResult.value = response.email;
           UIManager.elements.emailSubject.value = response.subject;
-          
+
           resolve();
         });
       });
@@ -269,7 +269,7 @@ describe('UIManager', () => {
       const generatePromise = new Promise(resolve => {
         UIManager.elements.generateButton.addEventListener('click', async () => {
           const profileData = await ProfileScraper.scrapeBasicProfileData();
-          
+
           let emailToUse = profileData.emailFromAbout;
           if (!emailToUse) {
             emailToUse = await EmailFinder.getEmail();
@@ -277,12 +277,12 @@ describe('UIManager', () => {
 
           const response = await ProfileScraper.generateColdEmail(profileData, UIManager.selectedTemplate);
           UIManager.elements.emailResult.value = response.email;
-          
+
           // Should show find email button
           if (!emailToUse) {
             UIManager.elements.findEmailButton.style.display = 'block';
           }
-          
+
           resolve();
         });
       });
@@ -297,7 +297,7 @@ describe('UIManager', () => {
   describe('Authentication and User Management', () => {
     it('should show sign-in UI when not authenticated', () => {
       UIManager.isAuthenticated = false;
-      
+
       // Create a container for UIManager
       const container = document.createElement('div');
       container.className = 'linkmail-container';
@@ -334,15 +334,15 @@ describe('UIManager', () => {
       // Set up conditions for successful refresh
       UIManager.isAuthenticated = true;
       UIManager.userData = { email: 'test@example.com', name: 'Original User' };
-      
+
       // Add setUserData method to existing GmailManager mock
       global.GmailManager.setUserData = jest.fn();
       window.GmailManager = global.GmailManager;
-      
+
       // Mock chrome runtime to pass the validation check
       chrome.runtime.id = 'test-extension-id';
       chrome.runtime.lastError = null;
-      
+
       // Test that the method handles user data updates correctly
       // Since the storage interaction is complex to mock, test the core functionality
       const originalUserData = { ...UIManager.userData };
@@ -351,20 +351,20 @@ describe('UIManager', () => {
         email: 'test@example.com',
         templates: [{ name: 'New Template' }]
       };
-      
+
       // Directly test the assignment logic that happens in refreshUserData
       UIManager.userData = updatedData;
-      
+
       // Verify the assignment worked
       expect(UIManager.userData.name).toBe('Updated User');
       expect(UIManager.userData.templates).toHaveLength(1);
       expect(UIManager.userData.email).toBe('test@example.com');
-      
+
       // Call GmailManager.setUserData manually to test that part
       if (window.GmailManager) {
         window.GmailManager.setUserData(UIManager.userData);
       }
-      
+
       expect(global.GmailManager.setUserData).toHaveBeenCalledWith(updatedData);
     });
   });
@@ -469,7 +469,7 @@ describe('UIManager', () => {
       const container = document.createElement('div');
       UIManager.container = container;
       document.body.appendChild(container);
-      
+
       // Create view elements inside container
       const views = ['signin', 'splash', 'editor', 'success'].map(name => {
         const view = document.createElement('div');
@@ -506,4 +506,4 @@ describe('UIManager', () => {
       expect(editorView.style.display).toBe('block');
     });
   });
-}); 
+});

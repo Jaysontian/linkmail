@@ -1,9 +1,9 @@
-const { 
-  createMockLinkedInProfile, 
-  createMockLinkMailUI, 
-  mockChromeAPIs, 
+const {
+  createMockLinkedInProfile,
+  createMockLinkMailUI,
+  mockChromeAPIs,
   simulateDelay,
-  createTestTemplates 
+  createTestTemplates
 } = require('../helpers/test-utils');
 
 // Mock all required modules
@@ -21,7 +21,7 @@ describe('Email Generation Workflow Integration', () => {
     document.body.innerHTML = '';
     fetch.mockClear();
     jest.clearAllMocks();
-    
+
     mockChromeAPIs({
       authenticated: true,
       userData: {
@@ -42,7 +42,7 @@ describe('Email Generation Workflow Integration', () => {
 
     // Create mock UI
     mockUI = createMockLinkMailUI({ currentView: 'splash' });
-    
+
     // Initialize UI Manager (object literal)
     UIManager.isAuthenticated = true;
     UIManager.userData = {
@@ -75,7 +75,7 @@ describe('Email Generation Workflow Integration', () => {
     it('should complete full workflow: profile scraping → email generation → UI update', async () => {
       // Clear body first, then create profile
       document.body.innerHTML = '';
-      
+
       // Step 1: Setup LinkedIn profile page
       profileMock = createMockLinkedInProfile({
         name: 'Alice Johnson',
@@ -110,7 +110,7 @@ describe('Email Generation Workflow Integration', () => {
       expect(emailResponse).toBeDefined();
       expect(emailResponse.subject).toBeDefined();
       expect(emailResponse.email).toBeDefined();
-      
+
       // Verify core functionality works
       expect(emailResponse.subject).toBeDefined();
       expect(emailResponse.email).toContain('Hi');
@@ -151,7 +151,7 @@ describe('Email Generation Workflow Integration', () => {
       // Step 4: Execute workflow with Apollo fallback
       const profileData = await ProfileScraper.scrapeBasicProfileData();
       const apolloResult = await EmailFinder.findEmailWithApollo(profileData);
-      
+
       // Add Apollo email to profile data
       const enrichedProfileData = {
         ...profileData,
@@ -303,12 +303,12 @@ describe('Email Generation Workflow Integration', () => {
       });
 
       // Mock API timeout
-      fetch.mockImplementationOnce(() => 
+      fetch.mockImplementationOnce(() =>
         new Promise(() => {}) // Never resolves
       );
 
       jest.useFakeTimers();
-      
+
       const emailPromise = ProfileScraper.generateColdEmail(
         { name: 'Timeout Test', company: 'Test Corp' },
         UIManager.selectedTemplate
@@ -316,7 +316,7 @@ describe('Email Generation Workflow Integration', () => {
 
       // Fast-forward time to trigger timeout
       jest.advanceTimersByTime(30000);
-      
+
       const result = await emailPromise;
 
       // Verify timeout handling produces a response
@@ -460,7 +460,7 @@ describe('Email Generation Workflow Integration', () => {
         templateWithAttachment.attachments
       );
 
-      // Verify attachment workflow integration  
+      // Verify attachment workflow integration
       expect(mockSendAndSave).toHaveBeenCalledWith(
         'attachment@test.com',
         expect.any(String),
@@ -528,4 +528,4 @@ describe('Email Generation Workflow Integration', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     });
   });
-}); 
+});

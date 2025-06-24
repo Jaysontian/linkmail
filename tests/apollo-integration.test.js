@@ -13,7 +13,7 @@ describe('Apollo API Integration Tests', () => {
       sendMessage: jest.fn(),
       lastError: null
     };
-    
+
     global.chrome = {
       runtime: mockChromeRuntime
     };
@@ -22,7 +22,7 @@ describe('Apollo API Integration Tests', () => {
     const fs = require('fs');
     const emailFinderPath = path.join(__dirname, '../content/email-finder.js');
     const emailFinderCode = fs.readFileSync(emailFinderPath, 'utf8');
-    
+
     // Execute the code in the test environment
     eval(emailFinderCode.replace('window.EmailFinder', 'global.EmailFinder'));
   });
@@ -46,7 +46,7 @@ describe('Apollo API Integration Tests', () => {
     mockChromeRuntime.sendMessage.mockImplementation((message, callback) => {
       expect(message.action).toBe('enrichWithApollo');
       expect(message.profileData).toEqual(testProfileData);
-      
+
       callback({
         success: true,
         email: 'john.doe@techcorp.com',
@@ -118,4 +118,4 @@ describe('Apollo API Integration Tests', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe('Insufficient profile data for enrichment');
   });
-}); 
+});

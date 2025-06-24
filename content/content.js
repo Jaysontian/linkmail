@@ -1,5 +1,4 @@
 //content.js
-const BACKEND_URL = 'http://localhost:3000';
 
 // Use a self-executing function with a more robust initialization check
 (function() {
@@ -168,4 +167,9 @@ const BACKEND_URL = 'http://localhost:3000';
       return true; // Required for async response
     }
   });
+
+  // eslint-disable-next-line no-unused-vars
+  function isLinkedInProfilePage() {
+    return window.location.href.match(/^https:\/\/www\.linkedin\.com\/in\/[^/]+\/?$/);
+  }
 })();

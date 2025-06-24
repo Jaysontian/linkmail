@@ -24,6 +24,7 @@ window.URLObserver = {
       };
 
       // Set a timeout to avoid infinite checking
+      // eslint-disable-next-line no-unused-vars
       const timeout = setTimeout(() => {
         reject(new Error('Timed out waiting for profile elements'));
       }, 5000);

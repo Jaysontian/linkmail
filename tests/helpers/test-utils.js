@@ -36,17 +36,17 @@ function createMockLinkedInProfile(profileData = {}) {
     // Create the structure that ProfileScraper looks for
     const aboutContainer = document.createElement('div');
     aboutContainer.className = 'pv-profile-card';
-    
+
     const aboutContent = document.createElement('div');
     aboutContent.className = 'display-flex ph5 pv3';
-    
+
     const aboutText = document.createElement('div');
     aboutText.className = 'inline-show-more-text--is-collapsed';
     aboutText.textContent = `${title} at ${company}. Contact me at ${email}`;
-    
+
     aboutContent.appendChild(aboutText);
     aboutContainer.appendChild(aboutContent);
-    
+
     aboutSection = aboutContainer;
     document.body.appendChild(aboutSection);
   }
@@ -56,29 +56,29 @@ function createMockLinkedInProfile(profileData = {}) {
   const experienceDiv = document.createElement('div');
   experienceDiv.id = 'experience';
   experienceSection.appendChild(experienceDiv);
-  
+
   // Create a parent element for experience
   const experienceParent = document.createElement('div');
   experienceParent.appendChild(experienceSection);
-  
+
   // Add some mock experience items
   const experienceList = document.createElement('ul');
   const experienceItem = document.createElement('li');
   experienceItem.className = 'artdeco-list__item';
-  
+
   const expTitle = document.createElement('span');
   expTitle.className = 't-bold';
   expTitle.textContent = title;
-  
+
   const expCompany = document.createElement('span');
   expCompany.className = 't-normal';
   expCompany.textContent = company;
-  
+
   experienceItem.appendChild(expTitle);
   experienceItem.appendChild(expCompany);
   experienceList.appendChild(experienceItem);
   experienceParent.appendChild(experienceList);
-  
+
   document.body.appendChild(experienceParent);
 
   // Contact info button

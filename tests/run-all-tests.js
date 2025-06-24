@@ -78,7 +78,7 @@ function runTestCategory(category) {
           totalTests += categoryPassed;
           console.log(`✅ ${categoryPassed} tests passed`);
         }
-        
+
         const failedMatches = line.match(/(\d+) failed/);
         if (failedMatches) {
           const categoryFailed = parseInt(failedMatches[1]);
@@ -98,9 +98,9 @@ function runTestCategory(category) {
 
     return true;
   } catch (error) {
-    console.log(`❌ Tests failed with error:`);
+    console.log('❌ Tests failed with error:');
     console.log(error.stdout || error.message);
-    
+
     // Try to extract test counts from error output
     const errorOutput = error.stdout || '';
     const lines = errorOutput.split('\n');
@@ -114,27 +114,27 @@ function runTestCategory(category) {
         }
       }
     }
-    
+
     return false;
   }
 }
 
 function generateCoverageReport() {
   console.log('\n📊 Generating Coverage Report...\n');
-  
+
   try {
     const result = execSync(
       'npx jest --coverage --coverageReporters=text --coverageReporters=html',
       { encoding: 'utf8', stdio: 'pipe' }
     );
-    
+
     console.log('Coverage report generated successfully!');
     console.log('HTML report available at: coverage/index.html\n');
-    
+
     // Extract coverage summary from output
     const lines = result.split('\n');
     let inCoverageSection = false;
-    
+
     for (const line of lines) {
       if (line.includes('Coverage summary')) {
         inCoverageSection = true;
@@ -144,7 +144,7 @@ function generateCoverageReport() {
         break;
       }
     }
-    
+
   } catch (error) {
     console.log('⚠️  Could not generate coverage report');
     console.log(error.message);
@@ -153,10 +153,10 @@ function generateCoverageReport() {
 
 function checkTestFiles() {
   console.log('🔍 Checking test file existence...\n');
-  
+
   const expectedTestFiles = [
     'tests/content/profile-scraper.test.js',
-    'tests/content/ui-manager.test.js', 
+    'tests/content/ui-manager.test.js',
     'tests/content/email-finder.test.js',
     'tests/content/utils.test.js',
     'tests/helpers/test-utils.js',
@@ -164,7 +164,7 @@ function checkTestFiles() {
   ];
 
   let missingFiles = [];
-  
+
   for (const file of expectedTestFiles) {
     if (fs.existsSync(file)) {
       console.log(`✅ ${file}`);
@@ -188,21 +188,21 @@ function printSummary() {
   console.log('\n' + '='.repeat(50));
   console.log('📊 TEST SUMMARY');
   console.log('='.repeat(50));
-  
+
   console.log(`Total Tests: ${totalTests}`);
   console.log(`✅ Passed: ${passedTests}`);
   console.log(`❌ Failed: ${failedTests}`);
   console.log(`⏭️  Skipped: ${skippedTests}`);
-  
+
   const successRate = totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(1) : 0;
   console.log(`📈 Success Rate: ${successRate}%`);
-  
+
   if (failedTests === 0) {
     console.log('\n🎉 All tests passed! Your code is well protected against regressions.');
   } else {
     console.log(`\n⚠️  ${failedTests} tests failed. Please review and fix failing tests.`);
   }
-  
+
   console.log('\n💡 Next steps:');
   console.log('  - Run individual test suites: npx jest <test-file>');
   console.log('  - Run tests in watch mode: npx jest --watch');
@@ -214,7 +214,7 @@ function printSummary() {
 async function main() {
   // Check if all test files exist
   const allFilesPresent = checkTestFiles();
-  
+
   if (!allFilesPresent) {
     console.log('Some test files are missing. Please create them first.');
     process.exit(1);
@@ -222,10 +222,10 @@ async function main() {
 
   // Run all test categories
   console.log('Starting test execution...\n');
-  
+
   for (const category of testCategories) {
     const success = runTestCategory(category);
-    
+
     if (!success) {
       console.log(`\n⚠️  Category "${category.name}" had test failures.`);
     }
@@ -249,4 +249,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runTestCategory, checkTestFiles }; 
+module.exports = { runTestCategory, checkTestFiles };

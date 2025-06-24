@@ -7,7 +7,7 @@ let authState = {
   token: null
 };
 
-// Apollo API configuration - securely store the API key here  
+// Apollo API configuration - securely store the API key here
 const APOLLO_API_KEY = 'F9emTuJtuTm33AxHa1U7Nw'; // Your Apollo API key
 const APOLLO_API_URL = 'https://api.apollo.io/api/v1/people/match';
 
@@ -15,13 +15,13 @@ const APOLLO_API_URL = 'https://api.apollo.io/api/v1/people/match';
 async function testApolloAPIKey() {
   try {
     console.log('Testing Apollo API key...');
-    
+
     // Simple test request with minimal required parameters
     const testParams = new URLSearchParams();
     testParams.append('first_name', 'John');
     testParams.append('last_name', 'Doe');
     testParams.append('reveal_personal_emails', 'false');
-    
+
     const response = await fetch(`${APOLLO_API_URL}?${testParams.toString()}`, {
       method: 'POST',
       headers: {
@@ -31,19 +31,19 @@ async function testApolloAPIKey() {
         'Accept': 'application/json'
       }
     });
-    
+
     console.log('Apollo API test response status:', response.status);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Apollo API test failed:', response.status, response.statusText, errorText);
       return false;
     }
-    
+
     const data = await response.json();
     console.log('Apollo API test successful:', data);
     return true;
-    
+
   } catch (error) {
     console.error('Apollo API test error:', error);
     return false;
@@ -54,10 +54,10 @@ async function testApolloAPIKey() {
 async function enrichPersonWithApollo(profileData) {
   try {
     console.log('Enriching person with Apollo API:', profileData);
-    
+
     // Prepare the request parameters based on available profile data
     const params = new URLSearchParams();
-    
+
     // Use name data
     if (profileData.firstName && profileData.lastName) {
       params.append('first_name', profileData.firstName);
@@ -65,12 +65,12 @@ async function enrichPersonWithApollo(profileData) {
     } else if (profileData.name) {
       params.append('name', profileData.name);
     }
-    
+
     // Use company data to improve matching
     if (profileData.company) {
       // Extract domain from company name if possible
       const companyName = profileData.company.toLowerCase();
-      
+
       // Try to derive domain from common company patterns
       let domain = '';
       if (companyName.includes('.com') || companyName.includes('.org') || companyName.includes('.net')) {
@@ -84,43 +84,43 @@ async function enrichPersonWithApollo(profileData) {
         const cleanCompany = companyName
           .replace(/\s+(inc|inc\.|llc|ltd|limited|corp|corporation|company|co\.).*$/i, '')
           .replace(/[^a-zA-Z0-9]/g, '');
-        
+
         // For well-known companies, we might want to add domain mapping
         // For now, we'll try the simple approach
         if (cleanCompany) {
           domain = `${cleanCompany}.com`;
         }
       }
-      
+
       if (domain) {
         params.append('domain', domain);
       }
-      
+
       // Also send organization name for better matching
       params.append('organization_name', profileData.company);
     }
-    
+
     // Use location data if available
     if (profileData.location) {
       // Apollo might use this for better matching
       params.append('location', profileData.location);
     }
-    
+
     // Use title/headline if available
     if (profileData.headline) {
       params.append('title', profileData.headline);
     }
-    
+
     // Request personal emails and phone numbers
     params.append('reveal_personal_emails', 'true');
     params.append('reveal_phone_number', 'false'); // We only need email
-    
+
     const url = `${APOLLO_API_URL}?${params.toString()}`;
-    
+
     console.log('Apollo API request URL:', url);
     console.log('Apollo API request params:', params.toString());
     console.log('Apollo API key (first 10 chars):', APOLLO_API_KEY.substring(0, 10) + '...');
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -130,7 +130,7 @@ async function enrichPersonWithApollo(profileData) {
         'Accept': 'application/json'
       }
     });
-    
+
     if (!response.ok) {
       // Try to get the error response body for better debugging
       let errorText = '';
@@ -144,10 +144,10 @@ async function enrichPersonWithApollo(profileData) {
       }
       throw new Error(`Apollo API request failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    
+
     const data = await response.json();
     console.log('Apollo API response:', data);
-    
+
     // Extract email from the response
     if (data.person && data.person.email) {
       return {
@@ -163,7 +163,7 @@ async function enrichPersonWithApollo(profileData) {
         source: 'apollo'
       };
     }
-    
+
   } catch (error) {
     console.error('Apollo API error:', error);
     return {

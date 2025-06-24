@@ -117,7 +117,7 @@ window.EmailFinder = {
   async findEmailWithApollo(profileData) {
     try {
       console.log('Attempting to find email with Apollo API');
-      
+
       return new Promise((resolve) => {
         chrome.runtime.sendMessage({
           action: 'enrichWithApollo',
@@ -131,7 +131,7 @@ window.EmailFinder = {
             });
             return;
           }
-          
+
           console.log('Apollo API response:', response);
           resolve(response);
         });
