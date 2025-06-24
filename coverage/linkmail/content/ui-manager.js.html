@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">10.88% </span>
+                <span class="strong">9.79% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>80/735</span>
+                <span class='fraction'>72/735</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11.44% </span>
+                <span class="strong">10.29% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>50/437</span>
+                <span class='fraction'>45/437</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20.23% </span>
+                <span class="strong">17.85% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>17/84</span>
+                <span class='fraction'>15/84</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11% </span>
+                <span class="strong">9.88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>79/718</span>
+                <span class='fraction'>71/718</span>
             </div>
         
             
@@ -1722,7 +1722,8 @@
 <a name='L1657'></a><a href='#L1657'>1657</a>
 <a name='L1658'></a><a href='#L1658'>1658</a>
 <a name='L1659'></a><a href='#L1659'>1659</a>
-<a name='L1660'></a><a href='#L1660'>1660</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1660'></a><a href='#L1660'>1660</a>
+<a name='L1661'></a><a href='#L1661'>1661</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1733,7 +1734,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">27x</span>
+<span class="cline-any cline-yes">34x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2019,19 +2020,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2353,6 +2354,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3677,20 +3679,20 @@ window.UIManager = {
   },
 &nbsp;
   // Add this new method to UIManager to refresh user data
-  async refreshUserData() {
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!this.isAuthenticated || !this.userData || !this.userData.email) {
+<span class="fstat-no" title="function not covered" >  as</span>ync refreshUserData() {
+<span class="cstat-no" title="statement not covered" >    if (!this.isAuthenticated || !this.userData || !this.userData.email) {</span>
 <span class="cstat-no" title="statement not covered" >      console.log('Not authenticated or missing user data, cannot refresh');</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
 &nbsp;
-    console.log('Refreshing user data from storage');
+<span class="cstat-no" title="statement not covered" >    console.log('Refreshing user data from storage');</span>
 &nbsp;
-    return new Promise((resolve) =&gt; {
-      try {
-        <span class="missing-if-branch" title="else path not taken" >E</span>if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, skipping storage refresh');
-          resolve();
-          return;
+<span class="cstat-no" title="statement not covered" >    return new Promise(<span class="fstat-no" title="function not covered" >(r</span>esolve) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+<span class="cstat-no" title="statement not covered" >        if (!chrome.runtime?.id) {</span>
+<span class="cstat-no" title="statement not covered" >          console.log('Extension context invalidated, skipping storage refresh');</span>
+<span class="cstat-no" title="statement not covered" >          resolve();</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
         }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        chrome.storage.local.get([this.userData.email], <span class="fstat-no" title="function not covered" >(r</span>esult) =&gt; {</span>
@@ -3870,7 +3872,7 @@ window.UIManager = {
         // Check if extension context is still valid
 <span class="cstat-no" title="statement not covered" >        if (!chrome.runtime?.id) {</span>
 <span class="cstat-no" title="statement not covered" >          console.log('Extension context invalidated, cannot sign in');</span>
-<span class="cstat-no" title="statement not covered" >          alert('Extension needs to be reloaded. Please refresh the page and try again.');</span>
+<span class="cstat-no" title="statement not covered" >          this.showTemporaryMessage('Extension needs to be reloaded. Please refresh the page and try again.', 'error');</span>
 <span class="cstat-no" title="statement not covered" >          return;</span>
         }
 &nbsp;
@@ -3904,11 +3906,11 @@ window.UIManager = {
           }
         } else {
 <span class="cstat-no" title="statement not covered" >          console.error('Authentication failed:', response.error);</span>
-<span class="cstat-no" title="statement not covered" >          alert('Authentication failed. Please try again.');</span>
+<span class="cstat-no" title="statement not covered" >          this.showTemporaryMessage('Authentication failed. Please try again.', 'error');</span>
         }
       } catch (error) {
 <span class="cstat-no" title="statement not covered" >        console.error('Error during authentication:', error);</span>
-<span class="cstat-no" title="statement not covered" >        alert('Authentication failed. Please try again.');</span>
+<span class="cstat-no" title="statement not covered" >        this.showTemporaryMessage('Authentication failed. Please try again.', 'error');</span>
       }
     });
 &nbsp;
@@ -4016,6 +4018,7 @@ window.UIManager = {
         }
 &nbsp;
         // Add the email to the profile data (remove emailFromAbout to avoid duplication)
+        // eslint-disable-next-line no-unused-vars
         const { emailFromAbout, ...cleanedProfileData } = <span class="cstat-no" title="statement not covered" >basicProfileData;</span>
         const profileData = <span class="cstat-no" title="statement not covered" >{</span>
           ...cleanedProfileData,
@@ -4042,7 +4045,7 @@ window.UIManager = {
         }
 &nbsp;
         // Get selected template
-<span class="cstat-no" title="statement not covered" >        useTemplate = this.selectedTemplate;</span>
+        let useTemplate = <span class="cstat-no" title="statement not covered" >this.selectedTemplate;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        console.log('Selected template for email generation:', JSON.stringify(useTemplate, null, 2));</span>
 &nbsp;
@@ -4085,7 +4088,7 @@ window.UIManager = {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (response?.email) {</span>
           let emailContent = <span class="cstat-no" title="statement not covered" >response.email;</span>
-          
+&nbsp;
           // Check if this is an error message (contains our error format)
 <span class="cstat-no" title="statement not covered" >          if (emailContent.includes('As a fallback, here\'s a simple message:')) {</span>
             // This is an error message, display it as-is for debugging
@@ -4144,7 +4147,7 @@ window.UIManager = {
     // Find Email button event listener
 <span class="cstat-no" title="statement not covered" >    this.elements.findEmailButton.addEventListener('click', <span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      console.log('Find Email button clicked');</span>
-      
+&nbsp;
       // Disable button and show loading state
 <span class="cstat-no" title="statement not covered" >      this.elements.findEmailButton.disabled = true;</span>
 <span class="cstat-no" title="statement not covered" >      this.elements.findEmailButton.innerHTML = `</span>
@@ -4168,7 +4171,7 @@ window.UIManager = {
           const recipientInput = <span class="cstat-no" title="statement not covered" >document.getElementById('recipientEmailInput');</span>
 <span class="cstat-no" title="statement not covered" >          if (recipientInput) {</span>
 <span class="cstat-no" title="statement not covered" >            recipientInput.value = apolloResult.email;</span>
-            
+&nbsp;
             // Cache the email in EmailFinder
 <span class="cstat-no" title="statement not covered" >            EmailFinder._lastFoundEmail = apolloResult.email;</span>
 <span class="cstat-no" title="statement not covered" >            EmailFinder._lastProfileUrl = window.location.href;</span>
@@ -4184,7 +4187,7 @@ window.UIManager = {
           // No email found or error
           const errorMessage = <span class="cstat-no" title="statement not covered" >apolloResult.error || 'No email found in Apollo database';</span>
 <span class="cstat-no" title="statement not covered" >          console.log('Apollo API error:', errorMessage);</span>
-          
+&nbsp;
 <span class="cstat-no" title="statement not covered" >          this.showTemporaryMessage(errorMessage, 'error');</span>
         }
 &nbsp;
@@ -4219,7 +4222,7 @@ window.UIManager = {
       const emailContent = <span class="cstat-no" title="statement not covered" >this.elements.emailResult.value;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      if (!email || !subject || !emailContent) {</span>
-<span class="cstat-no" title="statement not covered" >        alert('Please fill in all fields');</span>
+<span class="cstat-no" title="statement not covered" >        this.showTemporaryMessage('Please fill in all fields', 'error');</span>
 <span class="cstat-no" title="statement not covered" >        return;</span>
       }
 &nbsp;
@@ -4283,7 +4286,7 @@ window.UIManager = {
 &nbsp;
       } catch (error) {
 <span class="cstat-no" title="statement not covered" >        console.error('Failed to send email:', error);</span>
-<span class="cstat-no" title="statement not covered" >        alert('Failed to send email. Please make sure you are logged into Gmail and try again.');</span>
+<span class="cstat-no" title="statement not covered" >        this.showTemporaryMessage('Failed to send email. Please make sure you are logged into Gmail and try again.', 'error');</span>
       } finally {
         // Re-enable button
 <span class="cstat-no" title="statement not covered" >        this.elements.sendGmailButton.disabled = false;</span>
@@ -4928,7 +4931,7 @@ window.UIManager = {
 <span class="cstat-no" title="statement not covered" >    attachmentsList.innerHTML = '';</span>
 &nbsp;
     // Add each attachment
-<span class="cstat-no" title="statement not covered" >    attachments.forEach(<span class="fstat-no" title="function not covered" >(a</span>ttachment, index) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    attachments.forEach(<span class="fstat-no" title="function not covered" >(a</span>ttachment, _index) =&gt; {</span>
       const attachmentItem = <span class="cstat-no" title="statement not covered" >document.createElement('div');</span>
 <span class="cstat-no" title="statement not covered" >      attachmentItem.className = 'email-attachment-item';</span>
 &nbsp;
@@ -5047,7 +5050,7 @@ window.UIManager = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-23T23:47:43.658Z
+                at 2025-06-24T00:48:13.746Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

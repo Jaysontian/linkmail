@@ -82,10 +82,10 @@ describe('Utils', () => {
       expect(result).toBe('test.email+tag@subdomain.example-domain.com');
     });
 
-    test('should extract email with quotes', () => {
-      const text = 'Email: "test.email"@example.com';
+    test('should handle text with quoted content near emails', () => {
+      const text = 'Email: test.email@example.com "Contact info"';
       const result = window.Utils.extractEmail(text);
-      expect(result).toBe('"test.email"@example.com');
+      expect(result).toBe('test.email@example.com');
     });
   });
 

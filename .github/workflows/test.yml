@@ -22,15 +22,13 @@ jobs:
       run: npm ci
     
     - name: Run ESLint
-      run: npm run lint
-      
-    - name: Check for linting errors
       run: |
-        if [ $? -ne 0 ]; then
+        npm run lint
+        if [ $? -eq 0 ]; then
+          echo "✅ Linting passed!"
+        else
           echo "❌ Linting failed. Please fix the errors before merging."
           exit 1
-        else
-          echo "✅ Linting passed!"
         fi
 
   unit-tests:
@@ -48,7 +46,10 @@ jobs:
       run: npm ci
     
     - name: Run unit tests
-      run: npm test -- --coverage --watchAll=false
+      run: |
+        echo "Starting unit tests..."
+        npm test -- --coverage --watchAll=false --verbose
+        echo "Unit tests completed successfully"
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
@@ -75,7 +76,10 @@ jobs:
       run: npx playwright install --with-deps chromium
     
     - name: Run Playwright tests
-      run: npm run test:e2e
+      run: |
+        echo "Starting E2E tests..."
+        npm run test:e2e
+        echo "E2E tests completed successfully"
     
     - name: Upload Playwright Report
       uses: actions/upload-artifact@v3
@@ -104,11 +108,12 @@ jobs:
     
     - name: Verify build artifacts
       run: |
-        if [ ! -f "linkmail-extension.zip" ]; then
+        if [ -f "linkmail-extension.zip" ]; then
+          echo "✅ Build successful - extension package created"
+          echo "Package size: $(du -h linkmail-extension.zip | cut -f1)"
+        else
           echo "❌ Build failed - no zip file generated"
           exit 1
-        else
-          echo "✅ Build successful - extension package created"
         fi
     
     - name: Upload build artifact
@@ -136,11 +141,11 @@ jobs:
     
     - name: Check for vulnerable dependencies
       run: |
-        if [ $? -ne 0 ]; then
+        if npm audit --audit-level high; then
+          echo "✅ No security vulnerabilities found"
+        else
           echo "❌ Security vulnerabilities found. Please update dependencies."
           exit 1
-        else
-          echo "✅ No security vulnerabilities found"
         fi
 
   integration-check:
