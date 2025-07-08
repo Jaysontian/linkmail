@@ -123,7 +123,7 @@ describe('EmailFinder', () => {
       };
 
       // Mock Chrome runtime message for Apollo
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.action === 'enrichWithApollo') {
           callback({
             success: true,
@@ -146,7 +146,7 @@ describe('EmailFinder', () => {
         company: 'Unknown Corp'
       };
 
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.action === 'enrichWithApollo') {
           callback({
             success: false,
@@ -169,7 +169,7 @@ describe('EmailFinder', () => {
 
       // Mock Chrome runtime error
       chrome.runtime.lastError = { message: 'Extension context invalidated' };
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         callback(null);
       });
 
@@ -188,7 +188,7 @@ describe('EmailFinder', () => {
       };
 
       // Mock sendMessage to simulate a timeout/connection failure by calling with null after delay
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         // Simulate a timeout or connection error by calling callback with null response
         setTimeout(() => {
           if (callback) {

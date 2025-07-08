@@ -39,7 +39,7 @@ window.EmailSender = {
           message: body,
           from: {
             email: userEmail,
-            name: this.userData?.name || userEmail.split('@')[0]
+            name: this.userData?.name || ''
           },
           attachments
         })
@@ -108,10 +108,14 @@ window.EmailSender = {
     // Generate a random boundary string for multipart message
     const boundary = 'LinkMail_' + Math.random().toString(36).substring(2);
 
-    // Create email headers
+    // Create email headers with properly quoted sender name
+    const fromHeader = (from?.name && from.name.trim()) 
+      ? `From: "${from.name}" <${from.email}>`  // Properly quote the name if available
+      : `From: ${from?.email || 'me'}`;         // Otherwise just use email
+    
     const headers = [
       'MIME-Version: 1.0',
-      from?.name ? `From: ${from.name} <${from.email}>` : `From: ${from?.email || 'me'}`,
+      fromHeader,
       `To: ${to}`,
       `Subject: ${subject}`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,

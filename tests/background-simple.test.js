@@ -56,7 +56,7 @@ describe('Background Script - Core Functionality', () => {
       tabResult = tab;
     });
 
-    expect(tabResult).toEqual({ id: 123 });
+    expect(tabResult).toEqual({ id: 123, url: 'https://example.com' });
   });
 
   test('should handle auth token requests', async () => {

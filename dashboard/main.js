@@ -1,5 +1,12 @@
 console.log('Main module loaded');
 
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Initialize notifications
 window.notifications = {
   error: function(message) {
@@ -34,6 +41,11 @@ function formatDate(emailDate) {
     return emailDateTime.toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' }) +
            ` at ${emailDateTime.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
   }
+}
+
+// Expose for testing
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+  window.formatDate = formatDate;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -168,6 +180,12 @@ document.addEventListener('DOMContentLoaded', function() {
   let experienceCount = 0;
   const MAX_EXPERIENCES = 5;
 
+  // Initialize experience count based on existing DOM content
+  if (experiencesContainer) {
+    experienceCount = experiencesContainer.querySelectorAll('.experience-card').length;
+    checkExperienceLimit();
+  }
+
   // Function to create a new experience card
   function createExperienceCard(num, data = {}) {
     const card = document.createElement('div');
@@ -229,23 +247,25 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to check if we've reached the max experiences
   function checkExperienceLimit() {
     if (experienceCount >= MAX_EXPERIENCES) {
-      addExperienceButton.disabled = true;
+      addExperienceButton.style.display = 'none';
       experienceLimit.style.display = 'block';
     } else {
-      addExperienceButton.disabled = false;
+      addExperienceButton.style.display = 'block';
       experienceLimit.style.display = 'none';
     }
   }
 
   // Add experience button click handler
-  addExperienceButton.addEventListener('click', function() {
-    if (experienceCount < MAX_EXPERIENCES) {
-      experienceCount++;
-      const card = createExperienceCard(experienceCount);
-      experiencesContainer.appendChild(card);
-      checkExperienceLimit();
-    }
-  });
+  if (addExperienceButton) {
+    addExperienceButton.addEventListener('click', function() {
+      if (experienceCount < MAX_EXPERIENCES) {
+        experienceCount++;
+        const card = createExperienceCard(experienceCount);
+        experiencesContainer.appendChild(card);
+        checkExperienceLimit();
+      }
+    });
+  }
 
   // Function to collect all experiences data
   function collectExperiencesData() {
@@ -344,14 +364,18 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Add event listeners for skills
-  addSkillButton.addEventListener('click', addSkill);
+  if (addSkillButton) {
+    addSkillButton.addEventListener('click', addSkill);
+  }
 
-  skillInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addSkill();
-    }
-  });
+  if (skillInput) {
+    skillInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addSkill();
+      }
+    });
+  }
 
   // Form submission handler
   if (bioForm) {

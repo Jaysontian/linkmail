@@ -162,7 +162,7 @@ window.UIManager = {
         console.log('Extension context invalidated, cannot check auth status');
         this.isAuthenticated = false;
         this.showSignInUI();
-        return;
+        return this.isAuthenticated;
       }
 
       // Check if user is already authenticated
@@ -203,6 +203,7 @@ window.UIManager = {
       this.isAuthenticated = false;
       this.showSignInUI();
     }
+    return this.isAuthenticated;
   },
 
   showSignInUI() {

@@ -72,7 +72,7 @@ describe('GmailManager - Comprehensive Tests', () => {
 
     test('should handle auth token error', async () => {
       // Override the mock to return an error
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.action === 'getAuthToken') {
           callback({ error: { message: 'Authentication failed' } });
         }
@@ -84,7 +84,7 @@ describe('GmailManager - Comprehensive Tests', () => {
 
     test('should handle Chrome runtime errors during token request', async () => {
       // Override the mock to throw an error
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.action === 'getAuthToken') {
           throw new Error('Chrome runtime error');
         }
@@ -505,7 +505,7 @@ describe('GmailManager - Comprehensive Tests', () => {
         });
 
       // Set up storage mock
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback({
           'sender@gmail.com': {
             sentEmails: []
@@ -513,7 +513,7 @@ describe('GmailManager - Comprehensive Tests', () => {
         });
       });
 
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         callback();
       });
 
@@ -546,7 +546,7 @@ describe('GmailManager - Comprehensive Tests', () => {
         });
 
       let savedData = null;
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback({
           'sender@gmail.com': {
             sentEmails: []
@@ -554,7 +554,7 @@ describe('GmailManager - Comprehensive Tests', () => {
         });
       });
 
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         savedData = data;
         callback();
       });
@@ -613,12 +613,12 @@ describe('GmailManager - Comprehensive Tests', () => {
         }
       };
 
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback(existingData);
       });
 
       let savedData = null;
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         savedData = data;
         callback();
       });
@@ -656,12 +656,12 @@ describe('GmailManager - Comprehensive Tests', () => {
           json: () => Promise.resolve(mockProfile)
         });
 
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback({}); // No existing data
       });
 
       let savedData = null;
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         savedData = data;
         callback();
       });
@@ -717,11 +717,11 @@ describe('GmailManager - Comprehensive Tests', () => {
           json: () => Promise.resolve(mockProfile)
         });
 
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback({ 'sender@gmail.com': { sentEmails: [] } });
       });
 
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         callback();
       });
 
@@ -756,7 +756,7 @@ describe('GmailManager - Comprehensive Tests', () => {
         });
 
       // Mock storage error - should call callback with error, not throw directly
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         try {
           callback({});
         } catch (e) {
@@ -842,11 +842,11 @@ describe('GmailManager - Comprehensive Tests', () => {
           json: () => Promise.resolve(mockProfile)
         });
 
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback({ 'sender@gmail.com': { sentEmails: [] } });
       });
 
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         callback();
       });
 
@@ -886,7 +886,7 @@ describe('GmailManager - Comprehensive Tests', () => {
       });
 
       let callCount = 0;
-      chrome.storage.local.get.callsFake((keys, callback) => {
+      chrome.storage.local.get.mockImplementation((keys, callback) => {
         callback({
           'sender@gmail.com': {
             sentEmails: Array(callCount).fill().map((_, i) => ({ id: i }))
@@ -894,7 +894,7 @@ describe('GmailManager - Comprehensive Tests', () => {
         });
       });
 
-      chrome.storage.local.set.callsFake((data, callback) => {
+      chrome.storage.local.set.mockImplementation((data, callback) => {
         callCount++;
         callback();
       });

@@ -11,6 +11,7 @@ global.ProfileScraper = require('../../content/profile-scraper');
 global.EmailFinder = require('../../content/email-finder');
 global.UIManager = require('../../content/ui-manager');
 global.GmailManager = require('../../content/gmail-manager');
+global.EmailGenerator = require('../../generate/email-generator');
 
 describe('Email Generation Workflow Integration', () => {
   let mockUI;
@@ -130,7 +131,7 @@ describe('Email Generation Workflow Integration', () => {
       });
 
       // Step 2: Mock Apollo API success
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.action === 'enrichWithApollo') {
           callback({
             success: true,
@@ -178,7 +179,7 @@ describe('Email Generation Workflow Integration', () => {
       });
 
       // Step 2: Mock Apollo API failure
-      chrome.runtime.sendMessage.callsFake((message, callback) => {
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.action === 'enrichWithApollo') {
           callback({
             success: false,

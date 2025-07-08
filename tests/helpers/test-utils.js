@@ -208,7 +208,7 @@ function createMockLinkMailUI(options = {}) {
 }
 
 /**
- * Mock Chrome APIs with common responses using sinon-chrome
+ * Mock Chrome APIs with common responses using Jest mocks
  * @param {Object} overrides - Override specific API responses
  */
 function mockChromeAPIs(overrides = {}) {
@@ -216,147 +216,192 @@ function mockChromeAPIs(overrides = {}) {
     authenticated: false,
     userData: null,
     storageData: {},
-    authToken: 'mock-token'
+    authToken: 'mock-token',
   };
 
   const config = { ...defaults, ...overrides };
 
-  // Reset all chrome mocks first
-  chrome.flush();
-
-  // Mock runtime.sendMessage
-  chrome.runtime.sendMessage.callsFake((message, callback) => {
-    switch (message.action) {
-    case 'checkAuthStatus':
-      if (callback) callback({
-        isAuthenticated: config.authenticated,
-        userData: config.userData
-      });
-      break;
-    case 'signInWithGoogle':
-      if (callback) callback({
-        success: true,
-        userData: config.userData || { email: 'test@example.com', name: 'Test User' }
-      });
-      break;
-    case 'getAuthToken':
-      if (callback) callback({ token: config.authToken });
-      break;
-    case 'logout':
-      if (callback) callback({ success: true });
-      break;
-    case 'openBioSetupPage':
-      if (callback) callback({ success: true, tabId: 123 });
-      break;
-    default:
-      if (callback) callback({});
-    }
-  });
-
-  // Mock storage.local.get
-  chrome.storage.local.get.callsFake((keys, callback) => {
-    const result = {};
-    if (Array.isArray(keys)) {
-      keys.forEach(key => {
-        if (config.storageData[key]) {
-          result[key] = config.storageData[key];
+  const chromeMock = {
+    runtime: {
+      sendMessage: jest.fn((message, callback) => {
+        if (typeof callback !== 'function') {
+          return Promise.resolve();
         }
-      });
-    } else if (typeof keys === 'string') {
-      if (config.storageData[keys]) {
-        result[keys] = config.storageData[keys];
-      }
-    } else if (keys === null || keys === undefined) {
-      Object.assign(result, config.storageData);
+
+        switch (message.action) {
+          case 'checkAuthStatus':
+            callback({ isAuthenticated: config.authenticated, userData: config.userData });
+            break;
+          case 'signInWithGoogle':
+            callback({ success: true, userData: config.userData || { email: 'test@example.com', name: 'Test User' } });
+            break;
+          case 'getAuthToken':
+            callback({ token: config.authToken });
+            break;
+          case 'logout':
+            callback({ success: true });
+            break;
+          case 'openBioSetupPage':
+            callback({ success: true, tabId: 123 });
+            break;
+          default:
+            callback({});
+        }
+      }),
+      onMessage: {
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        hasListeners: jest.fn(() => true),
+      },
+      lastError: null,
+    },
+    storage: {
+      local: {
+        get: jest.fn((keys, callback) => {
+          const result = {};
+          const requestedKeys = Array.isArray(keys) ? keys : [keys];
+          requestedKeys.forEach(key => {
+            result[key] = config.storageData[key] || null;
+          });
+          if (callback) callback(result);
+          return Promise.resolve(result);
+        }),
+        set: jest.fn((data, callback) => {
+          Object.assign(config.storageData, data);
+          if (callback) callback();
+          return Promise.resolve();
+        }),
+        remove: jest.fn((keys, callback) => {
+          const keysToRemove = Array.isArray(keys) ? keys : [keys];
+          keysToRemove.forEach(key => delete config.storageData[key]);
+          if (callback) callback();
+          return Promise.resolve();
+        }),
+        clear: jest.fn(callback => {
+          config.storageData = {};
+          if (callback) callback();
+          return Promise.resolve();
+        }),
+      },
+      sync: {
+        get: jest.fn((keys, callback) => {
+          if (callback) callback({});
+          return Promise.resolve({});
+        }),
+        set: jest.fn((data, callback) => {
+          if (callback) callback();
+          return Promise.resolve();
+        }),
+      },
+      onChanged: {
+        _listeners: [],
+        addListener: jest.fn(listener => {
+          chromeMock.storage.onChanged._listeners.push(listener);
+        }),
+        removeListener: jest.fn(listener => {
+          const index = chromeMock.storage.onChanged._listeners.indexOf(listener);
+          if (index > -1) {
+            chromeMock.storage.onChanged._listeners.splice(index, 1);
+          }
+        }),
+        trigger: jest.fn((changes, area) => {
+          chromeMock.storage.onChanged._listeners.forEach(listener => {
+            listener(changes, area);
+          });
+        }),
+      },
+    },
+    tabs: {
+      create: jest.fn((createProperties, callback) => {
+        const mockTab = { id: 123, url: createProperties.url };
+        if (callback) callback(mockTab);
+        return Promise.resolve(mockTab);
+      }),
+      query: jest.fn(),
+      sendMessage: jest.fn(),
+    },
+    action: {
+      setBadgeText: jest.fn(),
+      setBadgeBackgroundColor: jest.fn(),
+    },
+    identity: {
+        getAuthToken: jest.fn((options, callback) => {
+            if (callback) callback(config.authToken);
+        }),
+        removeCachedAuthToken: jest.fn((options, callback) => {
+            if (callback) callback();
+        })
     }
-    if (callback) callback(result);
-  });
+  };
 
-  // Mock storage.local.set
-  chrome.storage.local.set.callsFake((items, callback) => {
-    Object.assign(config.storageData, items);
-    if (callback) callback();
-  });
-
-  // Mock tabs.create
-  chrome.tabs.create.callsFake((options, callback) => {
-    if (callback) callback({ id: 123 });
-  });
-
-  // Mock identity.getAuthToken
-  chrome.identity.getAuthToken.callsFake((options, callback) => {
-    if (callback) callback(config.authToken);
-  });
+  global.chrome = chromeMock;
+  return chromeMock;
 }
 
+
 /**
- * Wait for a condition to be true
- * @param {Function} condition - Function that returns boolean
- * @param {number} timeout - Timeout in milliseconds
- * @returns {Promise<boolean>}
+ * Waits for a condition to be true before proceeding.
+ * Useful for tests involving asynchronous UI updates.
+ * @param {Function} condition - A function that returns true when the condition is met.
+ * @param {number} [timeout=5000] - Maximum time to wait in milliseconds.
+ * @param {number} [interval=50] - Time between checks in milliseconds.
+ * @returns {Promise<void>} - A promise that resolves when the condition is met.
+ * @throws {Error} - Throws an error if the timeout is reached.
  */
-async function waitFor(condition, timeout = 5000) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
+async function waitFor(condition, timeout = 5000, interval = 50) {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
     if (condition()) {
-      return true;
+      return;
     }
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, interval));
   }
-  return false;
+  throw new Error('Timeout waiting for condition');
 }
 
 /**
- * Create a test email history
- * @param {number} count - Number of emails to create
- * @returns {Array} - Array of email objects
+ * Creates a mock email history for testing dashboard functionality.
+ * @param {number} [count=3] - The number of email history entries to create.
+ * @returns {Array<Object>} - An array of mock email history objects.
  */
 function createTestEmailHistory(count = 3) {
-  const emails = [];
-  const baseTime = Date.now();
-
+  const history = [];
   for (let i = 0; i < count; i++) {
-    emails.push({
-      id: `email-${i + 1}`,
-      recipientEmail: `recipient${i + 1}@example.com`,
-      recipientName: `Recipient ${i + 1}`,
-      subject: `Test Subject ${i + 1}`,
-      content: `Test email content ${i + 1}`,
-      timestamp: baseTime - (i * 86400000), // 1 day apart
-      profileUrl: `https://www.linkedin.com/in/test-profile-${i + 1}`,
-      status: 'sent'
+    history.push({
+      id: `test-id-${i}`,
+      recipient: `recipient${i}@example.com`,
+      subject: `Test Subject ${i}`,
+      body: `This is test email body ${i}.`,
+      status: i % 2 === 0 ? 'Sent' : 'Opened',
+      timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString()
     });
   }
-
-  return emails;
+  return history;
 }
 
+
 /**
- * Create test templates
- * @param {number} count - Number of templates to create
- * @returns {Array} - Array of template objects
+ * Creates a set of mock templates for testing template functionality.
+ * @param {number} [count=2] - The number of custom templates to create.
+ * @returns {Array<Object>} - An array of mock template objects.
  */
 function createTestTemplates(count = 2) {
   const templates = [];
-
   for (let i = 0; i < count; i++) {
     templates.push({
-      id: `template-${i + 1}`,
-      name: `Test Template ${i + 1}`,
-      description: `Test template description ${i + 1}`,
-      icon: '🔧',
-      purpose: `test purpose ${i + 1}`,
-      subjectLine: `Test Subject ${i + 1}`,
-      content: `Test template content ${i + 1}\n\nBest regards,\n[Sender Name]`
+      id: `template-id-${i}`,
+      name: `Custom Template ${i + 1}`,
+      subject: `Subject for Template ${i + 1}`,
+      body: `This is the body for custom template ${i + 1}.`
     });
   }
-
   return templates;
 }
 
 /**
- * Simulate user interaction delay
- * @param {number} ms - Milliseconds to wait
+ * Simulates a delay using Promises.
+ * @param {number} [ms=100] - The delay in milliseconds.
+ * @returns {Promise<void>} - A promise that resolves after the delay.
  */
 function simulateDelay(ms = 100) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -370,5 +415,5 @@ module.exports = {
   waitFor,
   createTestEmailHistory,
   createTestTemplates,
-  simulateDelay
+  simulateDelay,
 };

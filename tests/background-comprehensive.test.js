@@ -306,7 +306,7 @@ describe('Background Script - Comprehensive Tests', () => {
       });
 
       // Mock chrome.identity.getAuthToken
-      chrome.identity.getAuthToken.callsFake((options, callback) => {
+      chrome.identity.getAuthToken.mockImplementation((options, callback) => {
         callback('mock-auth-token');
       });
 
@@ -361,7 +361,7 @@ describe('Background Script - Comprehensive Tests', () => {
       let responseReceived = null;
 
       // Mock chrome.identity.getAuthToken error
-      chrome.identity.getAuthToken.callsFake((options, callback) => {
+      chrome.identity.getAuthToken.mockImplementation((options, callback) => {
         chrome.runtime.lastError = { message: 'User cancelled' };
         callback(null);
       });
@@ -425,7 +425,7 @@ describe('Background Script - Comprehensive Tests', () => {
       authState.token = null;
 
       // Mock chrome.identity.getAuthToken
-      chrome.identity.getAuthToken.callsFake((options, callback) => {
+      chrome.identity.getAuthToken.mockImplementation((options, callback) => {
         callback('new-auth-token');
       });
 
@@ -507,7 +507,7 @@ describe('Background Script - Comprehensive Tests', () => {
       fetch.mockResolvedValueOnce({ ok: true });
 
       // Mock chrome.identity.removeCachedAuthToken
-      chrome.identity.removeCachedAuthToken.callsFake((options, callback) => {
+      chrome.identity.removeCachedAuthToken.mockImplementation((options, callback) => {
         callback();
       });
 
@@ -548,7 +548,7 @@ describe('Background Script - Comprehensive Tests', () => {
       let responseReceived = null;
 
       // Mock chrome.tabs.create
-      chrome.tabs.create.callsFake((options, callback) => {
+      chrome.tabs.create.mockImplementation((options, callback) => {
         callback({ id: 456 });
       });
 

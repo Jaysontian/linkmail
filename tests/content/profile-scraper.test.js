@@ -12,15 +12,19 @@ global.Utils = {
 
 // Import and set up the ProfileScraper module
 let ProfileScraper;
+let EmailGenerator;
 beforeAll(() => {
   // Set up browser-like environment
   global.window.ProfileScraper = {};
+  global.window.EmailGenerator = {};
 
   // Import the module
   require('../../content/profile-scraper');
+  require('../../generate/email-generator');
 
   // Get the module from the global window object
   ProfileScraper = global.window.ProfileScraper || require('../../content/profile-scraper');
+  EmailGenerator = global.window.EmailGenerator || require('../../generate/email-generator');
 });
 
 describe('ProfileScraper', () => {
