@@ -175,23 +175,43 @@ function initializeTemplatesManagement() {
     });
   }
 
-  // Load existing templates
+  // Load existing templates using TemplateManager
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email');
 
   if (email) {
-    chrome.storage.local.get([email], function(result) {
-      const userData = result[email];
-      if (userData && userData.templates && Array.isArray(userData.templates)) {
-        templates = JSON.parse(JSON.stringify(userData.templates)); // Deep clone to avoid reference issues
-        console.log('Loaded', templates.length, 'templates');
-        updateSidebarTemplates(); // Update sidebar immediately after loading
-      } else {
-        console.log('No existing templates found');
-        templates = []; // Initialize empty array if no templates exist
-        updateSidebarTemplates(); // Update sidebar with empty state
-      }
-    });
+    // Delegate to TemplateManager if available
+    if (window.TemplateManager) {
+      window.TemplateManager.loadTemplates(email).then(result => {
+        if (result.success) {
+          templates = JSON.parse(JSON.stringify(result.templates)); // Deep clone to avoid reference issues
+          console.log('Loaded', templates.length, 'templates via TemplateManager');
+          updateSidebarTemplates(); // Update sidebar immediately after loading
+        } else {
+          console.log('No existing templates found via TemplateManager');
+          templates = result.templates || []; // Use the templates from result
+          updateSidebarTemplates(); // Update sidebar with empty state
+        }
+      }).catch(error => {
+        console.error('Error loading templates via TemplateManager:', error);
+        templates = [];
+        updateSidebarTemplates();
+      });
+    } else {
+      // Fallback to direct Chrome storage
+      chrome.storage.local.get([email], function(result) {
+        const userData = result[email];
+        if (userData && userData.templates && Array.isArray(userData.templates)) {
+          templates = JSON.parse(JSON.stringify(userData.templates)); // Deep clone to avoid reference issues
+          console.log('Loaded', templates.length, 'templates');
+          updateSidebarTemplates(); // Update sidebar immediately after loading
+        } else {
+          console.log('No existing templates found');
+          templates = []; // Initialize empty array if no templates exist
+          updateSidebarTemplates(); // Update sidebar with empty state
+        }
+      });
+    }
   }
 
   // Add click handler for "New Template" button
@@ -479,22 +499,40 @@ function saveTemplates() {
 
   console.log('Saving templates to storage:', templates.length);
 
-  chrome.storage.local.get([email], function(result) {
-    const userData = result[email] || {};
-
-    // Update templates in user data
-    userData.templates = templates;
-
-    // Save back to storage
-    const data = {};
-    data[email] = userData;
-
-    chrome.storage.local.set(data, function() {
-      console.log('Templates saved successfully');
-      // Update sidebar after saving
-      updateSidebarTemplates();
+  // Delegate to TemplateManager if available
+  if (window.TemplateManager) {
+    window.TemplateManager.saveTemplates(email, templates).then(success => {
+      if (success) {
+        console.log('Templates saved successfully via TemplateManager');
+        // Update sidebar after saving
+        updateSidebarTemplates();
+      } else {
+        console.error('Failed to save templates via TemplateManager');
+        window.showError('Failed to save template');
+      }
+    }).catch(error => {
+      console.error('Error saving templates via TemplateManager:', error);
+      window.showError('Failed to save template');
     });
-  });
+  } else {
+    // Fallback to direct Chrome storage
+    chrome.storage.local.get([email], function(result) {
+      const userData = result[email] || {};
+
+      // Update templates in user data
+      userData.templates = templates;
+
+      // Save back to storage
+      const data = {};
+      data[email] = userData;
+
+      chrome.storage.local.set(data, function() {
+        console.log('Templates saved successfully');
+        // Update sidebar after saving
+        updateSidebarTemplates();
+      });
+    });
+  }
 }
 
 // Helper function to escape HTML to prevent XSS

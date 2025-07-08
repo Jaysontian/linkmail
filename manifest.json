@@ -22,6 +22,12 @@
       "content/linkedin-div.html",
       "dashboard.html",
       "dashboard/*.js",
+      "generate/*.js",
+      "apollo/*.js", 
+      "send/*.js",
+      "templates/*.js",
+      "history/*.js",
+      "profile/*.js",
       "assets/*"
     ],
     "matches": ["https://*.linkedin.com/*"]
@@ -56,6 +62,12 @@
       "styles/anim.css"
     ],
     "js": [
+      "profile/profile-manager.js",
+      "apollo/apollo-client.js",
+      "generate/email-generator.js",
+      "send/email-sender.js",
+      "templates/template-manager.js",
+      "history/email-history.js",
       "content/gmail-manager.js",
       "content/utils.js",
       "content/email-finder.js",

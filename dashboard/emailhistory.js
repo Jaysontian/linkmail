@@ -163,11 +163,49 @@ function escapeHtml(unsafe) {
     .replace(/'/g, '&#039;');
 }
 
+// Helper function to display email history using either method
+function displayEmailHistory(emails, searchTerm = '') {
+  // Create userData-like object for compatibility with existing loadEmailHistory function
+  const userData = { sentEmails: emails };
+  loadEmailHistory(userData, searchTerm);
+}
+
 // Initialize email history functionality
 document.addEventListener('DOMContentLoaded', function() {
   const emailSearch = document.getElementById('emailSearch');
   const emailModal = document.getElementById('emailModal');
   const closeModal = document.getElementById('closeModal');
+
+  // Load initial email history
+  const urlParams = new URLSearchParams(window.location.search);
+  const email = urlParams.get('email');
+  
+  if (email) {
+    // Delegate to EmailHistory module if available
+    if (window.EmailHistory) {
+      window.EmailHistory.loadHistory(email).then(result => {
+        if (result.success) {
+          displayEmailHistory(result.emails);
+        } else {
+          console.log('No email history found via EmailHistory');
+          displayEmailHistory([]);
+        }
+      }).catch(error => {
+        console.error('Error loading email history via EmailHistory:', error);
+        displayEmailHistory([]);
+      });
+    } else {
+      // Fallback to direct Chrome storage
+      chrome.storage.local.get([email], function(result) {
+        const userData = result[email];
+        if (userData) {
+          loadEmailHistory(userData);
+        } else {
+          displayEmailHistory([]);
+        }
+      });
+    }
+  }
 
   // Email search functionality
   if (emailSearch) {
@@ -176,12 +214,28 @@ document.addEventListener('DOMContentLoaded', function() {
       const urlParams = new URLSearchParams(window.location.search);
       const email = urlParams.get('email');
 
-      chrome.storage.local.get([email], function(result) {
-        const userData = result[email];
-        if (userData) {
-          loadEmailHistory(userData, searchTerm);
-        }
-      });
+      // Delegate to EmailHistory module if available
+      if (window.EmailHistory) {
+        window.EmailHistory.searchHistory(email, searchTerm).then(result => {
+          if (result.success) {
+            displayEmailHistory(result.emails, searchTerm);
+          } else {
+            console.error('Error searching email history via EmailHistory:', result.error);
+            displayEmailHistory([], searchTerm);
+          }
+        }).catch(error => {
+          console.error('Error searching email history via EmailHistory:', error);
+          displayEmailHistory([], searchTerm);
+        });
+      } else {
+        // Fallback to direct Chrome storage
+        chrome.storage.local.get([email], function(result) {
+          const userData = result[email];
+          if (userData) {
+            loadEmailHistory(userData, searchTerm);
+          }
+        });
+      }
     });
   }
 

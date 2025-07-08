@@ -32,63 +32,69 @@ window.GmailManager = {
   },
 
   async sendEmail(to, subject, body, attachments = []) {
-    try {
-      if (!this.currentToken) {
-        await this.getAuthToken();
-      }
+    // Delegate to EmailSender module if available
+    if (window.EmailSender) {
+      return await window.EmailSender.sendEmail(to, subject, body, attachments);
+    } else {
+      // Fallback implementation
+      try {
+        if (!this.currentToken) {
+          await this.getAuthToken();
+        }
 
-      // Get user profile to use for the From header
-      const userProfile = await this.getUserProfile();
-      const userEmail = userProfile.emailAddress;
+        // Get user profile to use for the From header
+        const userProfile = await this.getUserProfile();
+        const userEmail = userProfile.emailAddress;
 
-      // Create the message with the proper From header and attachments
-      const message = {
-        raw: this.createEmail({
-          to,
-          subject,
-          message: body,
-          from: {
-            email: userEmail,
-            name: this.userData?.name || userEmail.split('@')[0]
+        // Create the message with the proper From header and attachments
+        const message = {
+          raw: this.createEmail({
+            to,
+            subject,
+            message: body,
+            from: {
+              email: userEmail,
+              name: this.userData?.name || userEmail.split('@')[0]
+            },
+            attachments
+          })
+        };
+
+        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.currentToken}`,
+            'Content-Type': 'application/json'
           },
-          attachments
-        })
-      };
+          body: JSON.stringify(message)
+        });
 
-      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.currentToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(message)
-      });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Failed to send email');
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to send email');
+        return await response.json();
+      } catch (error) {
+        if (error.message.includes('401') || error.message.includes('invalid_token')) {
+          // Token expired or invalid, try to get a new one
+          this.currentToken = null;
+          await this.getAuthToken();
+          // Retry the send once
+          return this.sendEmail(to, subject, body, attachments);
+        }
+        throw error;
       }
-
-      return await response.json();
-    } catch (error) {
-      if (error.message.includes('401') || error.message.includes('invalid_token')) {
-        // Token expired or invalid, try to get a new one
-        this.currentToken = null;
-        await this.getAuthToken();
-        // Retry the send once
-        return this.sendEmail(to, subject, body, attachments);
-      }
-      throw error;
     }
   },
 
-  // Update the sendAndSaveEmail method in gmail-manager.js to include a callback to update the status
+  // Send email and save to history - delegates to new modules
   async sendAndSaveEmail(to, subject, body, attachments = []) {
     try {
-      // First send the email
+      // First send the email using delegation
       const result = await this.sendEmail(to, subject, body, attachments);
 
-      // If successful, save to local storage
+      // If successful, save to email history
       if (result) {
         // Get current user email
         const userProfile = await this.getUserProfile();
@@ -99,34 +105,47 @@ window.GmailManager = {
         const recipientName = document.querySelector('h1')?.innerText || '';
 
         // Create email record
-        const emailRecord = {
+        const emailData = {
           recipientEmail: to,
           recipientName: recipientName,
           subject: subject,
           content: body,
           date: new Date().toISOString(),
           linkedInUrl: profileUrl,
-          attachments: attachments.map(a => ({ name: a.name, size: a.size })) // Only store metadata, not the actual file
+          attachments: attachments
         };
 
-        // Get existing user data
-        chrome.storage.local.get([userEmail], (result) => {
-          const userData = result[userEmail] || {};
+        // Delegate to EmailHistory module if available
+        if (window.EmailHistory) {
+          await window.EmailHistory.saveEmail(userEmail, emailData);
+        } else {
+          // Fallback to direct storage manipulation
+          chrome.storage.local.get([userEmail], (result) => {
+            const userData = result[userEmail] || {};
 
-          // Add email to sent emails array
-          userData.sentEmails = userData.sentEmails || [];
-          userData.sentEmails.push(emailRecord);
+            // Add email to sent emails array
+            userData.sentEmails = userData.sentEmails || [];
+            userData.sentEmails.push({
+              ...emailData,
+              attachments: attachments.map(a => ({ name: a.name, size: a.size })) // Only store metadata for fallback
+            });
 
-          // Save back to storage
-          const data = {};
-          data[userEmail] = userData;
-          chrome.storage.local.set(data, () => {
-            // Update the email status after saving
-            if (window.UIManager) {
-              window.UIManager.checkLastEmailSent();
-            }
+            // Save back to storage
+            const data = {};
+            data[userEmail] = userData;
+            chrome.storage.local.set(data, () => {
+              // Update the email status after saving
+              if (window.UIManager) {
+                window.UIManager.checkLastEmailSent();
+              }
+            });
           });
-        });
+        }
+
+        // Update the email status after saving
+        if (window.UIManager) {
+          window.UIManager.checkLastEmailSent();
+        }
 
         return result;
       }

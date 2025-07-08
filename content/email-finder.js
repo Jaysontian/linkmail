@@ -113,35 +113,41 @@ window.EmailFinder = {
     this._lastProfileUrl = null;
   },
 
-  // New method to find email using Apollo API
+  // Find email using Apollo API - delegate to Apollo client
   async findEmailWithApollo(profileData) {
-    try {
-      console.log('Attempting to find email with Apollo API');
+    // Delegate to ApolloClient module if available
+    if (window.ApolloClient) {
+      return await window.ApolloClient.findEmailWithProfile(profileData);
+    } else {
+      // Fallback to direct Chrome runtime message
+      try {
+        console.log('Attempting to find email with Apollo API');
 
-      return new Promise((resolve) => {
-        chrome.runtime.sendMessage({
-          action: 'enrichWithApollo',
-          profileData: profileData
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('Chrome runtime error:', chrome.runtime.lastError);
-            resolve({
-              success: false,
-              error: 'Extension error occurred'
-            });
-            return;
-          }
+        return new Promise((resolve) => {
+          chrome.runtime.sendMessage({
+            action: 'enrichWithApollo',
+            profileData: profileData
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.error('Chrome runtime error:', chrome.runtime.lastError);
+              resolve({
+                success: false,
+                error: 'Extension error occurred'
+              });
+              return;
+            }
 
-          console.log('Apollo API response:', response);
-          resolve(response);
+            console.log('Apollo API response:', response);
+            resolve(response);
+          });
         });
-      });
-    } catch (error) {
-      console.error('Error in findEmailWithApollo:', error);
-      return {
-        success: false,
-        error: 'Failed to connect to Apollo API'
-      };
+      } catch (error) {
+        console.error('Error in findEmailWithApollo:', error);
+        return {
+          success: false,
+          error: 'Failed to connect to Apollo API'
+        };
+      }
     }
   }
 };

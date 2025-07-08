@@ -237,43 +237,66 @@ document.addEventListener('DOMContentLoaded', function() {
         const mode = urlParams.get('mode');
         const isEditMode = mode === 'edit';
 
-        // Get existing user data first to ensure we don't lose templates
-        chrome.storage.local.get([email], function(result) {
-          const existingData = result[email] || {};
+        // Prepare user data
+        const userData = {
+          name: name,
+          college: college,
+          graduationYear: gradYear,
+          email: email,
+          experiences: experiences,
+          skills: window.skills,
+          setupCompleted: true
+        };
 
-          // Prepare user data
-          const userData = {
-            name: name,
-            college: college,
-            graduationYear: gradYear,
-            email: email,
-            experiences: experiences,
-            skills: window.skills,
-            setupCompleted: true
-          };
+        // Delegate to ProfileManager if available
+        if (window.ProfileManager) {
+          window.ProfileManager.updateProfile(email, userData).then(result => {
+            if (result.success) {
+              // Show success message
+              window.showSuccess('Profile saved successfully!');
 
-          // Merge with other existing data (like sent emails and templates)
-          const mergedData = {
-            ...existingData,
-            ...userData
-          };
-
-          // Store the data
-          const data = {};
-          data[email] = mergedData;
-
-          chrome.storage.local.set(data, function() {
-            // Show success message
-            window.showSuccess('Profile saved successfully!');
-
-            // If not in edit mode, close the tab after a delay
-            if (!isEditMode) {
-              setTimeout(() => {
-                window.close();
-              }, 2000);
+              // If not in edit mode, close the tab after a delay
+              if (!isEditMode) {
+                setTimeout(() => {
+                  window.close();
+                }, 2000);
+              }
+            } else {
+              console.error('Failed to save profile via ProfileManager:', result.error);
+              window.showError(`Error saving profile: ${result.error}`);
             }
+          }).catch(error => {
+            console.error('Error saving profile via ProfileManager:', error);
+            window.showError(`Error saving profile: ${error.message}`);
           });
-        });
+        } else {
+          // Fallback to direct Chrome storage
+          chrome.storage.local.get([email], function(result) {
+            const existingData = result[email] || {};
+
+            // Merge with other existing data (like sent emails and templates)
+            const mergedData = {
+              ...existingData,
+              ...userData
+            };
+
+            // Store the data
+            const data = {};
+            data[email] = mergedData;
+
+            chrome.storage.local.set(data, function() {
+              // Show success message
+              window.showSuccess('Profile saved successfully!');
+
+              // If not in edit mode, close the tab after a delay
+              if (!isEditMode) {
+                setTimeout(() => {
+                  window.close();
+                }, 2000);
+              }
+            });
+          });
+        }
       } catch (error) {
         console.error('Error saving profile:', error);
         const actionText = isEditMode ? 'updating' : 'saving';
@@ -289,57 +312,90 @@ document.addEventListener('DOMContentLoaded', function() {
   const isEditMode = mode === 'edit';
 
   if (isEditMode && email) {
-    chrome.storage.local.get([email], function(result) {
-      const userData = result[email];
-      if (userData) {
-        // Load experiences
-        if (userData.experiences && Array.isArray(userData.experiences)) {
-          userData.experiences.forEach((exp, index) => {
-            window.experienceCount++;
-            const card = createExperienceCard(window.experienceCount, exp);
-            experiencesContainer.appendChild(card);
-          });
-          checkExperienceLimit();
+    // Delegate to ProfileManager if available
+    if (window.ProfileManager) {
+      window.ProfileManager.getProfile(email).then(result => {
+        if (result.success && result.profile) {
+          const userData = result.profile;
+          loadProfileData(userData);
+        } else {
+          console.log('No profile data found via ProfileManager, creating default UI');
+          // Add one empty experience card by default
+          window.experienceCount++;
+          const card = createExperienceCard(window.experienceCount);
+          experiencesContainer.appendChild(card);
+        }
+      }).catch(error => {
+        console.error('Error loading profile via ProfileManager:', error);
+        // Add one empty experience card by default on error
+        window.experienceCount++;
+        const card = createExperienceCard(window.experienceCount);
+        experiencesContainer.appendChild(card);
+      });
+    } else {
+      // Fallback to direct Chrome storage
+      chrome.storage.local.get([email], function(result) {
+        const userData = result[email];
+        if (userData) {
+          loadProfileData(userData);
         } else {
           // Add one empty experience card by default
           window.experienceCount++;
           const card = createExperienceCard(window.experienceCount);
           experiencesContainer.appendChild(card);
         }
-
-        // Load skills
-        if (userData.skills && Array.isArray(userData.skills)) {
-          window.skills = [...userData.skills];
-
-          // Create skill tags
-          window.skills.forEach(skill => {
-            const tagElement = document.createElement('div');
-            tagElement.className = 'skill-tag';
-            tagElement.innerHTML = `
-              ${escapeHtml(skill)}
-              <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
-            `;
-
-            // Add click event to remove button
-            tagElement.querySelector('.remove-skill').addEventListener('click', function() {
-              const skillToRemove = this.getAttribute('data-skill');
-              removeSkill(skillToRemove);
-              tagElement.remove();
-              updateSkillsDisplay();
-            });
-
-            // Add to container
-            document.getElementById('skillsTagsContainer').appendChild(tagElement);
-          });
-
-          updateSkillsDisplay();
-        }
-      }
-    });
+      });
+    }
   } else {
     // Add one empty experience card by default for new users
     window.experienceCount++;
     const card = createExperienceCard(window.experienceCount);
     experiencesContainer.appendChild(card);
+  }
+
+  // Helper function to load profile data into the UI
+  function loadProfileData(userData) {
+    // Load experiences
+    if (userData.experiences && Array.isArray(userData.experiences)) {
+      userData.experiences.forEach((exp, index) => {
+        window.experienceCount++;
+        const card = createExperienceCard(window.experienceCount, exp);
+        experiencesContainer.appendChild(card);
+      });
+      checkExperienceLimit();
+    } else {
+      // Add one empty experience card by default
+      window.experienceCount++;
+      const card = createExperienceCard(window.experienceCount);
+      experiencesContainer.appendChild(card);
+    }
+
+    // Load skills
+    if (userData.skills && Array.isArray(userData.skills)) {
+      window.skills = [...userData.skills];
+
+      // Create skill tags
+      window.skills.forEach(skill => {
+        const tagElement = document.createElement('div');
+        tagElement.className = 'skill-tag';
+        tagElement.innerHTML = `
+          ${escapeHtml(skill)}
+          <span class="remove-skill" data-skill="${escapeHtml(skill)}">&times;</span>
+        `;
+
+        // Add click event to remove button
+        tagElement.querySelector('.remove-skill').addEventListener('click', function() {
+          const skillToRemove = this.getAttribute('data-skill');
+          removeSkill(skillToRemove);
+          tagElement.remove();
+          updateSkillsDisplay();
+        });
+
+        // Add to container
+        document.getElementById('skillsTagsContainer').appendChild(tagElement);
+      });
+
+      updateSkillsDisplay();
+    }
   }
 });
