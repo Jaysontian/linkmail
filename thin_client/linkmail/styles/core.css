@@ -1,0 +1,465 @@
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+:root {
+  --primary-color: #0B66C2;
+  --primary-hover: #084e96;
+  --text-color: #37352f;
+  --text-light: #6b6b6b;
+  --border-color: #EBEBEA;
+  --bg-light: #F7F6F3;
+  --bg-light-hover: #EBEBEA;
+  --border-radius: 8px;
+  --button-radius: 8px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --transition: all 0.15s ease;
+}
+
+/* ==========================================================================
+   Plasmo Container Overrides
+   ========================================================================== */
+#plasmo-shadow-container {
+  width: 100% !important;
+  max-width: none !important;
+  position: relative !important;
+  z-index: 2147483647 !important;
+}
+
+#plasmo-inline {
+  width: 100% !important;
+  max-width: none !important;
+  position: relative !important;
+  top: 0px !important;
+  left: 0px !important;
+}
+
+.plasmo-csui-container {
+  width: 100% !important;
+  max-width: none !important;
+  position: relative !important;
+  display: flex !important;
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+.linkmail {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #37352f;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 300px !important;
+}
+
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+.linkmail-container {
+  display: flex;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 300px !important;
+  flex-direction: column;
+  height: fit-content;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  animation: lm-fadeIn 0.3s ease;
+  box-sizing: border-box !important;
+}
+
+.linkmail-header {
+  font-size: 14pt;
+  font-weight: 600;
+  text-align: center;
+  color: #37352f;
+  margin-bottom: 8px;
+}
+
+.linkmail p {
+  font-size: 10.5pt;
+  font-weight: 400;
+  color: #6b6b6b;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Form Elements
+   ========================================================================== */
+.lm-input, .lm-textarea {
+  width: 100% !important;
+  padding: 8px 10px !important;
+  border: 1px solid #EBEBEA !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  background-color: #fff !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+  outline: none !important;
+}
+
+.lm-input::placeholder, .lm-textarea::placeholder {
+  color: #6b6b6b !important;
+  opacity: 0.5 !important;
+}
+
+.lm-input:hover, .lm-textarea:hover {
+  background-color: #F7F6F3 !important;
+}
+
+.lm-input:focus, .lm-textarea:focus {
+  outline: none !important;
+  border-color: #0B66C2 !important;
+  background-color: #fff !important;
+}
+
+.lm-textarea {
+  min-height: 80px !important;
+  resize: vertical !important;
+  font-family: inherit !important;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.lm-btn {
+  background-color: #0B66C2 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 550 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.lm-btn:hover {
+  background-color: #084e96 !important;
+}
+
+.lm-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.lm-btn-2 {
+  background-color: #F7F6F3 !important;
+  color: #37352f !important;
+  border: 1px solid #EBEBEA !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 550 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.lm-btn-2:hover {
+  background-color: #EBEBEA !important;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+@keyframes lm-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lm-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(11, 102, 194, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(11, 102, 194, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(11, 102, 194, 0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+/* ==========================================================================
+   Template Dropdown
+   ========================================================================== */
+.template-dropdown {
+  background-color: rgb(244, 244, 244);
+  border-radius: 12px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.template-dropdown-card {
+  background-color: rgba(255, 255, 255, 0);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 6px 2px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0);
+  transition: all 0.05s ease-in;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.template-dropdown-card:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.template-dropdown-card.selected {
+  background-color: #0B66C2 !important;
+  color: white !important;
+}
+
+.template-dropdown-card.selected h2 {
+  color: white !important;
+}
+
+.template-dropdown-card.selected .template-dropdown-icon {
+  color: white !important;
+}
+
+.template-dropdown-icon {
+  font-size: 14pt !important;
+  width: fit-content;
+  text-align: center;
+  margin: 0px 8px;
+  height: fit-content;
+  flex-shrink: 0 !important;
+}
+
+.template-dropdown-card h2 {
+  font-size: 11pt;
+  font-weight: 500;
+  margin: 0;
+  color: inherit;
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* ==========================================================================
+   Account Dropdown
+   ========================================================================== */
+.account-dropdown {
+  margin-top: 16px;
+}
+
+.account-dropdown-con {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-email {
+  font-size: 12px;
+  color: #6b6b6b;
+  margin: 0;
+}
+
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.menu-toggle-btn:hover {
+  background-color: #F7F6F3;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: white;
+  min-width: 150px;
+  box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
+  z-index: 1000;
+  border-radius: 8px;
+  border: 1px solid #EBEBEA;
+  transition: all 0.15s ease;
+}
+
+.dropdown-menu.active {
+  display: block;
+}
+
+.dropdown-item {
+  color: #37352f;
+  padding: 6px 8px;
+  margin: 4px;
+  text-decoration: none;
+  display: block;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #F7F6F3;
+}
+
+/* ==========================================================================
+   Email Status
+   ========================================================================== */
+.linkmail-last-email-status {
+  border: 1px solid #0B66C2;
+  color: #0B66C2 !important;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-align: center;
+  margin: 12px 0;
+  font-style: normal !important;
+}
+
+/* ==========================================================================
+   Email Attachments
+   ========================================================================== */
+.email-attachments {
+  margin: 8px 0;
+  border: 1px solid #EBEBEA;
+  border-radius: 8px;
+  background-color: #F7F6F3;
+  padding: 10px;
+  animation: lm-fadeIn 0.3s ease;
+}
+
+.attachments-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #6b6b6b;
+  font-size: 11pt;
+  gap: 8px;
+}
+
+.email-attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.email-attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+  border: 1px solid #EBEBEA;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attachment-name {
+  font-size: 10pt;
+  margin: 0;
+  font-weight: 500;
+}
+
+.attachment-size {
+  font-size: 9pt;
+  color: #6b6b6b;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+/* ==========================================================================
+   Additional Container Overrides
+   ========================================================================== */
+.linkmail * {
+  box-sizing: border-box !important;
+}
+
+.linkmail-container * {
+  box-sizing: border-box !important;
+}
+
+/* Ensure all LinkMail elements can grow properly */
+.linkmail-container,
+.linkmail-container > *,
+.linkmail > * {
+  min-width: 0 !important;
+  max-width: none !important;
+}
