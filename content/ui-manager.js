@@ -165,29 +165,32 @@ window.UIManager = {
         return this.isAuthenticated;
       }
 
-      // Check if user is already authenticated
-      const authStatus = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'checkAuthStatus' }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('Chrome runtime error:', chrome.runtime.lastError);
-            resolve({ isAuthenticated: false });
-            return;
-          }
-          resolve(response);
-        });
-      });
+      // Check backend authentication status
+      if (!window.BackendAPI) {
+        console.log('Backend API not available');
+        this.isAuthenticated = false;
+        this.showSignInUI();
+        return this.isAuthenticated;
+      }
 
-      if (authStatus.isAuthenticated) {
+      // Initialize BackendAPI and check auth status (will only poll backend if not already authenticated)
+      await window.BackendAPI.init();
+      
+      if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
         this.isAuthenticated = true;
-        this.userData = authStatus.userData;
+        this.userData = {
+          email: window.BackendAPI.userData.email,
+          name: window.BackendAPI.userData.name,
+          picture: window.BackendAPI.userData.picture
+        };
 
-        // Check if user exists in storage
+        // Check if user exists in local storage for bio setup completion
         const userExists = await this.checkUserInStorage(this.userData.email);
 
         if (userExists) {
-          // Get complete user data from storage
+          // Get complete user data from storage (bio, templates, etc.)
           const storedUserData = await this.getUserFromStorage(this.userData.email);
-          // Merge with existing userData
+          // Merge with backend userData
           this.userData = { ...this.userData, ...storedUserData };
           this.showAuthenticatedUI();
         } else {
@@ -482,7 +485,7 @@ window.UIManager = {
       }
     });
 
-    // Google Sign-in button
+    // Google Sign-in button - now uses backend authentication
     this.elements.signInButton.addEventListener('click', async () => {
       try {
         // Check if extension context is still valid
@@ -492,74 +495,146 @@ window.UIManager = {
           return;
         }
 
-        const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ action: 'signInWithGoogle' }, (response) => {
-            if (chrome.runtime.lastError) {
-              console.log('Chrome runtime error during sign in:', chrome.runtime.lastError);
-              resolve({ success: false, error: 'Extension context invalidated' });
-              return;
-            }
-            resolve(response);
-          });
-        });
-
-        if (response.success) {
-          this.isAuthenticated = true;
-          this.userData = response.userData;
-
-          // Check if user exists in storage
-          const userExists = await this.checkUserInStorage(this.userData.email);
-
-          if (userExists) {
-            // Get complete user data from storage
-            const storedUserData = await this.getUserFromStorage(this.userData.email);
-            // Merge with existing userData
-            this.userData = { ...this.userData, ...storedUserData };
-            this.showAuthenticatedUI();
-          } else {
-            // Redirect to bio setup page
-            this.redirectToBioSetup(this.userData.email);
-          }
-        } else {
-          console.error('Authentication failed:', response.error);
-          this.showTemporaryMessage('Authentication failed. Please try again.', 'error');
+        // Check if BackendAPI is available
+        if (!window.BackendAPI) {
+          console.error('Backend API not available');
+          this.showTemporaryMessage('Service unavailable. Please try again later.', 'error');
+          return;
         }
+
+        // Show loading message
+        this.showTemporaryMessage('Opening authentication page...', 'info');
+        
+        // Start backend authentication flow
+        await window.BackendAPI.startAuthFlow();
+        
+        // Show instructions to user
+        this.showTemporaryMessage('Please complete authentication in the new tab and return here.', 'info');
+        
+        // Set up a listener for when authentication completes
+        let authCheckCount = 0;
+        const maxAuthChecks = 30; // 2 minutes at 4-second intervals
+        
+        const checkAuthInterval = setInterval(async () => {
+          try {
+            authCheckCount++;
+            console.log(`Checking for authentication... (${authCheckCount}/${maxAuthChecks})`);
+            
+            // Check BackendAPI for auth status (it will poll backend only if not already authenticated)
+            await window.BackendAPI.init();
+            
+            if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
+              clearInterval(checkAuthInterval);
+              console.log('Authentication detected! Setting up user data...');
+              
+              this.isAuthenticated = true;
+              this.userData = {
+                email: window.BackendAPI.userData.email,
+                name: window.BackendAPI.userData.name,
+                picture: window.BackendAPI.userData.picture
+              };
+
+              // Check if user exists in storage
+              const userExists = await this.checkUserInStorage(this.userData.email);
+
+              if (userExists) {
+                // Get complete user data from storage
+                const storedUserData = await this.getUserFromStorage(this.userData.email);
+                // Merge with backend userData
+                this.userData = { ...this.userData, ...storedUserData };
+                this.showAuthenticatedUI();
+                this.showTemporaryMessage('Authentication successful!', 'success');
+              } else {
+                // Redirect to bio setup page
+                this.redirectToBioSetup(this.userData.email);
+              }
+            } else if (authCheckCount >= maxAuthChecks) {
+              // Stop checking after max attempts
+              clearInterval(checkAuthInterval);
+              console.log('Auth check timeout - stopping polling');
+              this.showTemporaryMessage('Authentication timeout. Please try again.', 'error');
+            }
+          } catch (error) {
+            console.log('Auth check error:', error);
+            if (authCheckCount >= maxAuthChecks) {
+              clearInterval(checkAuthInterval);
+            }
+          }
+        }, 4000); // Check every 4 seconds
+        
+        // Also listen for storage changes (in case auth data is stored while we're waiting)
+        const storageListener = (changes, namespace) => {
+          if (namespace === 'local' && (changes.backendToken || changes.backendUserData)) {
+            console.log('Auth storage changed detected, checking authentication...');
+            // Trigger an immediate auth check
+            setTimeout(async () => {
+              try {
+                await window.BackendAPI.init();
+                if (window.BackendAPI.isAuthenticated) {
+                  clearInterval(checkAuthInterval);
+                  chrome.storage.onChanged.removeListener(storageListener);
+                  
+                  this.isAuthenticated = true;
+                  this.userData = {
+                    email: window.BackendAPI.userData.email,
+                    name: window.BackendAPI.userData.name,
+                    picture: window.BackendAPI.userData.picture
+                  };
+                  
+                  const userExists = await this.checkUserInStorage(this.userData.email);
+                  if (userExists) {
+                    const storedUserData = await this.getUserFromStorage(this.userData.email);
+                    this.userData = { ...this.userData, ...storedUserData };
+                    this.showAuthenticatedUI();
+                    this.showTemporaryMessage('Authentication successful!', 'success');
+                  } else {
+                    this.redirectToBioSetup(this.userData.email);
+                  }
+                }
+              } catch (error) {
+                console.log('Storage change auth check error:', error);
+              }
+            }, 100);
+          }
+        };
+        
+        chrome.storage.onChanged.addListener(storageListener);
+        
       } catch (error) {
         console.error('Error during authentication:', error);
         this.showTemporaryMessage('Authentication failed. Please try again.', 'error');
       }
     });
 
-    // Sign out button
+    // Sign out button - now uses backend logout
     this.elements.signOutButton.addEventListener('click', async () => {
       try {
-        const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ action: 'logout' }, (response) => {
-            resolve(response);
-          });
-        });
-
-        if (response.success) {
-          this.isAuthenticated = false;
-          this.userData = null;
-
-          // Hide all views first
-          document.querySelector('#linkmail-editor').style.display = 'none';
-          document.querySelector('#linkmail-success').style.display = 'none';
-          document.querySelector('#linkmail-splash').style.display = 'none';
-
-          // Show sign-in view
-          this.showSignInUI();
-
-          // Clear form fields
-          if (this.elements.emailResult) this.elements.emailResult.value = '';
-          if (this.elements.emailSubject) this.elements.emailSubject.value = '';
-          document.getElementById('recipientEmailInput').value = '';
-        } else {
-          console.error('Logout failed:', response.error);
+        // Use backend logout
+        if (window.BackendAPI) {
+          await window.BackendAPI.signOut();
         }
+
+        // Clear local state
+        this.isAuthenticated = false;
+        this.userData = null;
+
+        // Hide all views first
+        document.querySelector('#linkmail-editor').style.display = 'none';
+        document.querySelector('#linkmail-success').style.display = 'none';
+        document.querySelector('#linkmail-splash').style.display = 'none';
+
+        // Show sign-in view
+        this.showSignInUI();
+
+        // Clear form fields
+        if (this.elements.emailResult) this.elements.emailResult.value = '';
+        if (this.elements.emailSubject) this.elements.emailSubject.value = '';
+        document.getElementById('recipientEmailInput').value = '';
+        
+        this.showTemporaryMessage('Signed out successfully', 'success');
       } catch (error) {
         console.error('Error during logout:', error);
+        this.showTemporaryMessage('Error signing out', 'error');
       }
     });
 
