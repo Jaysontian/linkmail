@@ -3,24 +3,26 @@ window.GmailManager = {
   currentToken: null,
   userData: null, // Add this to store the user data
 
-  async getAuthToken() {
+  async getBackendAuth() {
     try {
-      const response = await new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          { action: 'getAuthToken' },
-          (response) => resolve(response)
-        );
-      });
-
-      if (response.error) {
-        console.log('could not get auth token!');
-        throw new Error(response.error.message);
+      // Check if backend API is available and authenticated
+      if (!window.BackendAPI) {
+        throw new Error('Backend API not available');
       }
 
-      this.currentToken = response.token;
-      return response.token;
+      // Initialize backend API if needed
+      await window.BackendAPI.init();
+
+      if (!window.BackendAPI.isAuthenticated) {
+        throw new Error('User not authenticated with backend');
+      }
+
+      return {
+        token: window.BackendAPI.userToken,
+        userData: window.BackendAPI.userData
+      };
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('Backend auth error:', error);
       throw error;
     }
   },
@@ -42,56 +44,15 @@ window.GmailManager = {
     if (window.EmailSender) {
       return await window.EmailSender.sendEmail(to, subject, body, attachments);
     } else {
-      // Fallback implementation
+      // Use backend API for email sending
       try {
-        if (!this.currentToken) {
-          await this.getAuthToken();
-        }
+        const auth = await this.getBackendAuth();
 
-        // Get user profile to use for the From header
-        const userProfile = await this.getUserProfile();
-        const userEmail = userProfile.emailAddress;
+        // Use backend API to send email
+        const response = await window.BackendAPI.sendEmail(to, subject, body, attachments);
 
-        // Create the message with the proper From header and attachments
-        // Use name from profile, or leave blank if not available
-        const senderName = this.userData?.name || '';
-        
-        const message = {
-          raw: this.createEmail({
-            to,
-            subject,
-            message: body,
-            from: {
-              email: userEmail,
-              name: senderName
-            },
-            attachments
-          })
-        };
-
-        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.currentToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(message)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || 'Failed to send email');
-        }
-
-        return await response.json();
+        return response;
       } catch (error) {
-        if (error.message.includes('401') || error.message.includes('invalid_token')) {
-          // Token expired or invalid, try to get a new one
-          this.currentToken = null;
-          await this.getAuthToken();
-          // Retry the send once
-          return this.sendEmail(to, subject, body, attachments);
-        }
         throw error;
       }
     }
@@ -279,32 +240,18 @@ window.GmailManager = {
 
   async getUserProfile() {
     try {
-      if (!this.currentToken) {
-        await this.getAuthToken();
-      }
-
-      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.currentToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to fetch user profile');
-      }
-
-      return await response.json();
+      const auth = await this.getBackendAuth();
+      
+      // Use backend user data to construct a profile
+      const userData = auth.userData;
+      
+      // Return a profile object that matches what the calling code expects
+      return {
+        emailAddress: userData.email,
+        messagesTotal: 0, // We don't have this info from backend
+        threadsTotal: 0   // We don't have this info from backend
+      };
     } catch (error) {
-      if (error.message.includes('401') || error.message.includes('invalid_token')) {
-        // Token expired or invalid, try to get a new one
-        this.currentToken = null;
-        await this.getAuthToken();
-        // Retry the fetch once
-        return this.getUserProfile();
-      }
       throw error;
     }
   }
