@@ -3,7 +3,7 @@
 
 window.ApolloClient = {
   // Configuration constants
-  API_KEY: 'F9emTuJtuTm33AxHa1U7Nw', // Apollo API key
+  API_KEY: 'Z8v_SYe2ByFcVLF3H1bfiA', // Apollo API key
   API_URL: 'https://api.apollo.io/api/v1/people/match',
 
   /**
@@ -15,19 +15,21 @@ window.ApolloClient = {
       console.log('Testing Apollo API key...');
 
       // Simple test request with minimal required parameters
-      const testParams = new URLSearchParams();
-      testParams.append('first_name', 'John');
-      testParams.append('last_name', 'Doe');
-      testParams.append('reveal_personal_emails', 'false');
+      const testBody = {
+        first_name: 'John',
+        last_name: 'Doe',
+        reveal_personal_emails: false
+      };
 
-      const response = await fetch(`${this.API_URL}?${testParams.toString()}`, {
+      const response = await fetch(this.API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
           'x-api-key': this.API_KEY,
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify(testBody)
       });
 
       console.log('Apollo API test response status:', response.status);
@@ -58,22 +60,21 @@ window.ApolloClient = {
       console.log('Enriching person with Apollo API:', profileData);
 
       // Prepare the request parameters based on available profile data
-      const params = this._buildRequestParams(profileData);
+      const requestBody = this._buildRequestParams(profileData);
 
-      const url = `${this.API_URL}?${params.toString()}`;
-
-      console.log('Apollo API request URL:', url);
-      console.log('Apollo API request params:', params.toString());
+      console.log('Apollo API request URL:', this.API_URL);
+      console.log('Apollo API request body:', requestBody);
       console.log('Apollo API key (first 10 chars):', this.API_KEY.substring(0, 10) + '...');
 
-      const response = await fetch(url, {
+      const response = await fetch(this.API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
           'x-api-key': this.API_KEY,
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -109,42 +110,48 @@ window.ApolloClient = {
   /**
    * Build request parameters from profile data
    * @param {Object} profileData - Profile data from LinkedIn
-   * @returns {URLSearchParams} Request parameters
+   * @returns {Object} Request body object for JSON POST
    */
   _buildRequestParams(profileData) {
-    const params = new URLSearchParams();
+    const params = {};
 
     // Use name data
     if (profileData.firstName && profileData.lastName) {
-      params.append('first_name', profileData.firstName);
-      params.append('last_name', profileData.lastName);
+      params.first_name = profileData.firstName;
+      params.last_name = profileData.lastName;
     } else if (profileData.name) {
-      params.append('name', profileData.name);
+      params.name = profileData.name;
+    }
+
+    // Add LinkedIn profile URL for better matching
+    const linkedinUrl = window.location.href;
+    if (linkedinUrl && linkedinUrl.includes('linkedin.com/in/')) {
+      params.linkedin_url = linkedinUrl.split('?')[0]; // Remove query parameters
     }
 
     // Use company data to improve matching
     if (profileData.company) {
       const domain = this._deriveDomainFromCompany(profileData.company);
       if (domain) {
-        params.append('domain', domain);
+        params.domain = domain;
       }
       // Also send organization name for better matching
-      params.append('organization_name', profileData.company);
+      params.organization_name = profileData.company;
     }
 
     // Use location data if available
     if (profileData.location) {
-      params.append('location', profileData.location);
+      params.location = profileData.location;
     }
 
     // Use title/headline if available
     if (profileData.headline) {
-      params.append('title', profileData.headline);
+      params.title = profileData.headline;
     }
 
     // Request personal emails and phone numbers
-    params.append('reveal_personal_emails', 'true');
-    params.append('reveal_phone_number', 'false'); // We only need email
+    params.reveal_personal_emails = true;
+    params.reveal_phone_number = false; // We only need email
 
     return params;
   },

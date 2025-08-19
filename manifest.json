@@ -52,6 +52,7 @@
       "backend/backend-api.js",
       "profile/profile-manager.js",
       "apollo/apollo-client.js",
+      "apollo/apollo-people-search.js",
       "generate/email-generator.js",
       "send/email-sender.js",
       "templates/template-manager.js",

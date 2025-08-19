@@ -49,7 +49,8 @@ window.ProfileScraper = {
       company: cleanedCompany,
       location: location,
       experience: cleanedExperience,
-      emailFromAbout: emailFromAbout // Include this for reference
+      emailFromAbout: emailFromAbout, // Include this for reference
+      linkedinUrl: window.location.href // Add LinkedIn URL for Apollo matching
     };
 
     console.log('ProfileScraper: Basic profile data scraping complete');
