@@ -6,6 +6,8 @@ window.UIManager = {
   _selectedTemplate: {},
   container: null, // Add this line to store the container reference
   instanceId: Math.random().toString(36).substring(2, 15),
+  // Track which emails have already triggered the bio setup tab to avoid duplicates
+  _bioSetupOpenedByEmail: {},
 
   // Add getter and setter for selectedTemplate to track changes
   get selectedTemplate() {
@@ -124,6 +126,28 @@ window.UIManager = {
 
   // Add this method to redirect to the bio setup page
   redirectToBioSetup(email) {
+    // Prevent opening duplicate tabs for the same email
+    if (email && this._bioSetupOpenedByEmail[email]) {
+      console.log('Bio setup tab already opened for:', email);
+      // Still update the UI messaging but do not open another tab
+      this.showSignInUI();
+      const signInView = document.querySelector('#linkmail-signin');
+      if (signInView) {
+        const header = signInView.querySelector('.linkmail-header');
+        const paragraph = signInView.querySelector('p');
+        if (header) header.textContent = 'Complete Your Profile';
+        if (paragraph) paragraph.textContent = 'Please complete your profile in the tab that opened. Return here when finished.';
+        const signInButton = signInView.querySelector('#googleSignInButton');
+        if (signInButton) signInButton.style.display = 'none';
+      }
+      return;
+    }
+
+    // Mark as opened for this email
+    if (email) {
+      this._bioSetupOpenedByEmail[email] = true;
+    }
+
     const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(email)}`);
 
     // Open the bio setup page in a new tab
