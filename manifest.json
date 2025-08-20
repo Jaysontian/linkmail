@@ -32,6 +32,7 @@
   }],
   "host_permissions": [
     "https://linkmail-api.vercel.app/*",
+    "https://linkmail-sending.vercel.app/*",
     "https://api.apollo.io/*",
     "*://*.linkedin.com/*"
   ],

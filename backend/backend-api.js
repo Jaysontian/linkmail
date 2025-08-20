@@ -3,7 +3,7 @@
 
 window.BackendAPI = {
   // Backend configuration
-  baseURL: 'http://localhost:3000',
+  baseURL: 'https://linkmail-sending.vercel.app',
   
   // User authentication state
   isAuthenticated: false,
