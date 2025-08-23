@@ -6,6 +6,7 @@ window.UIManager = {
   _selectedTemplate: {},
   container: null, // Add this line to store the container reference
   instanceId: Math.random().toString(36).substring(2, 15),
+  _isCreatingUI: false,
   // Track which emails have already triggered the bio setup tab to avoid duplicates
   _bioSetupOpenedByEmail: {},
 
@@ -49,28 +50,49 @@ window.UIManager = {
     const recipientInput = document.getElementById('recipientEmailInput');
     const nameElement = document.getElementById('profileName');
 
-    // Get basic profile data without opening contact info overlay
-    const profileData = await ProfileScraper.scrapeBasicProfileData();
+    // Check page type - treat own-profile same as feed page
+    const pageType = window.currentPageType || 'other-profile';
+    const shouldShowEmailInterface = pageType === 'other-profile';
 
-    // Check if we already have a cached email
-    const cachedEmail = EmailFinder._lastFoundEmail;
+    if (shouldShowEmailInterface) {
+      // Profile page logic - get basic profile data without opening contact info overlay
+      const profileData = await ProfileScraper.scrapeBasicProfileData();
 
-    if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
-      // Use the cached email if available
-      recipientInput.value = cachedEmail;
-      // Hide find email button since we have an email
-      if (this.elements.findEmailButton) {
-        this.elements.findEmailButton.style.display = 'none';
+      // Check if we already have a cached email
+      const cachedEmail = EmailFinder._lastFoundEmail;
+
+      if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
+        // Use the cached email if available
+        recipientInput.value = cachedEmail;
+        // Hide find email button since we have an email
+        if (this.elements.findEmailButton) {
+          this.elements.findEmailButton.style.display = 'none';
+        }
+      } else {
+        // No cached email - show the Find Email button if we're in editor view
+        if (this.elements.findEmailButton && document.querySelector('#linkmail-editor').style.display === 'block') {
+          this.elements.findEmailButton.style.display = 'block';
+        }
+      }
+
+      if (nameElement) {
+        nameElement.textContent = `Generate an outreach email to ${profileData.name || ''} with AI instantly.`;
       }
     } else {
-      // No cached email - show the Find Email button if we're in editor view
-      if (this.elements.findEmailButton && document.querySelector('#linkmail-editor').style.display === 'block') {
-        this.elements.findEmailButton.style.display = 'block';
+      // Feed page and own-profile logic - no specific profile data
+      if (recipientInput) {
+        recipientInput.value = '';
+        recipientInput.placeholder = 'Enter recipient email address';
       }
-    }
+      
+      // Always hide find email button on feed page and own profile
+      if (this.elements.findEmailButton) {
+        this.elements.findEmailButton.style.display = 'none'; // Hide by default, user needs to enter email manually
+      }
 
-    if (nameElement) {
-      nameElement.textContent = `Generate an outreach email to ${profileData.name || ''} with AI instantly.`;
+      if (nameElement) {
+        nameElement.textContent = 'Generate personalized emails with AI instantly.';
+      }
     }
   },
 
@@ -276,13 +298,35 @@ window.UIManager = {
         this.elements.signInView.style.display = 'none';
       }
 
-      // Only show splash view if we're not preserving the current view
+      // Check page type - treat own-profile same as feed page
+      const pageType = window.currentPageType || 'other-profile';
+      const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
+
+      // Only show appropriate view if we're not preserving the current view
       if (!preserveCurrentView) {
-        if (this.elements.splashView) {
-          this.elements.splashView.style.display = 'flex';
+        if (shouldShowPeopleSuggestions) {
+          // Feed page and own-profile: Show people suggestions
+          if (this.elements.peopleSuggestionsView) {
+            this.elements.peopleSuggestionsView.style.display = 'block';
+            // Load people suggestions
+            this.loadPeopleSuggestions();
+          }
+          // Hide splash view on feed page and own-profile
+          if (this.elements.splashView) {
+            this.elements.splashView.style.display = 'none';
+          }
+        } else {
+          // Other profile page: Show splash view
+          if (this.elements.splashView) {
+            this.elements.splashView.style.display = 'flex';
+          }
+          // Hide people suggestions on other profile page
+          if (this.elements.peopleSuggestionsView) {
+            this.elements.peopleSuggestionsView.style.display = 'none';
+          }
         }
       } else {
-        console.log('Preserving current view, not changing to splash view');
+        console.log('Preserving current view, not changing view');
       }
 
       // Display user info if available
@@ -377,6 +421,13 @@ window.UIManager = {
         return;
       }
 
+      // Concurrency guard for UI creation
+      if (this._isCreatingUI) {
+        console.log('UI creation already in progress, skipping');
+        return;
+      }
+      this._isCreatingUI = true;
+
       const templateHtml = await this.loadHTML();
       console.log('HTML template loaded successfully');
 
@@ -397,19 +448,29 @@ window.UIManager = {
       const injectedDiv = temp.firstElementChild;
       if (!injectedDiv) {
         console.error('No first element found in template');
+        this._isCreatingUI = false;
         return;
       }
 
       this.container = injectedDiv; // Store the reference to the container
 
 
-      // Set the recipient name
+      // Set the recipient name based on page type
       const nameElement = injectedDiv.querySelector('#title');
       if (nameElement) {
-        const h1Element = document.querySelector('h1');
-        const fullName = h1Element?.innerText || '';
-        const firstName = fullName.split(' ')[0]?.charAt(0).toUpperCase() + fullName.split(' ')[0]?.slice(1) || '';
-        nameElement.textContent = `Draft an email to ${firstName}`;
+                // Check page type - treat own-profile same as feed page
+        const pageType = window.currentPageType || 'other-profile';
+        const shouldUseManualEmail = pageType === 'feed' || pageType === 'own-profile';
+
+        if (shouldUseManualEmail) {
+          nameElement.textContent = 'Draft personalized emails with AI';
+        } else {
+          // Profile page logic
+          const h1Element = document.querySelector('h1');
+          const fullName = h1Element?.innerText || '';
+          const firstName = fullName.split(' ')[0]?.charAt(0).toUpperCase() + fullName.split(' ')[0]?.slice(1) || '';
+          nameElement.textContent = `Draft an email to ${firstName}`;
+        }
       }
 
 
@@ -419,10 +480,18 @@ window.UIManager = {
       const asideElement = document.querySelector('aside.scaffold-layout__aside');
       console.log('Aside element found:', asideElement);
       if (asideElement) {
-        asideElement.prepend(injectedDiv);
+        // Double-check right before injection
+        if (!document.querySelector('.linkmail-container')) {
+          asideElement.prepend(injectedDiv);
+        } else {
+          console.log('LinkMail UI already present at inject time; aborting duplicate injection');
+          this._isCreatingUI = false;
+          return;
+        }
         console.log('UI successfully injected');
       } else {
         console.error('Target aside element not found.');
+        this._isCreatingUI = false;
         return;
       }
 
@@ -432,6 +501,7 @@ window.UIManager = {
         signInButton: injectedDiv.querySelector('#googleSignInButton'),
         signInView: injectedDiv.querySelector('#linkmail-signin'),
         splashView: injectedDiv.querySelector('#linkmail-splash'),
+        peopleSuggestionsView: injectedDiv.querySelector('#linkmail-people-suggestions'),
         generateButton: injectedDiv.querySelector('#generateButton'),
         loadingIndicator: injectedDiv.querySelector('#loadingIndicator'),
         emailSubject: injectedDiv.querySelector('#emailSubject'),
@@ -443,7 +513,8 @@ window.UIManager = {
         templateDropdown: injectedDiv.querySelector('#template-dropdown'),
         menuToggle: injectedDiv.querySelector('#menuToggle'),
         menuContent: injectedDiv.querySelector('#menuContent'),
-        findEmailButton: injectedDiv.querySelector('#findEmailButton')
+        findEmailButton: injectedDiv.querySelector('#findEmailButton'),
+        retryPeopleSearchButton: injectedDiv.querySelector('#retry-people-search')
       };
 
       // Check that required elements exist
@@ -484,6 +555,8 @@ window.UIManager = {
       } catch (fallbackError) {
         console.error('Failed to create fallback UI:', fallbackError);
       }
+    } finally {
+      this._isCreatingUI = false;
     }
   },
 
@@ -716,46 +789,75 @@ window.UIManager = {
       }
 
       try {
-        // First get basic profile data (no contact info overlay)
-        const basicProfileData = await ProfileScraper.scrapeBasicProfileData();
+        // Check page type - treat own-profile same as feed page  
+        const pageType = window.currentPageType || 'other-profile';
+        const shouldScrapeProfile = pageType === 'other-profile';
+        let profileData = {};
+        let emailToUse = null;
 
-        // Prefer email from about section if available
-        let emailToUse = basicProfileData.emailFromAbout;
+        if (shouldScrapeProfile) {
+          // Profile page logic - get basic profile data (no contact info overlay)
+          const basicProfileData = await ProfileScraper.scrapeBasicProfileData();
 
-        // Only look for email via contact info if not found in about section
-        if (!emailToUse) {
-          const foundEmail = await EmailFinder.getEmail();
+          // Prefer email from about section if available
+          emailToUse = basicProfileData.emailFromAbout;
 
-          // Clean up the email if it has any extra text
-          if (foundEmail) {
-            emailToUse = ProfileScraper.cleanupEmail(foundEmail);
+          // Only look for email via contact info if not found in about section
+          if (!emailToUse) {
+            const foundEmail = await EmailFinder.getEmail();
+
+            // Clean up the email if it has any extra text
+            if (foundEmail) {
+              emailToUse = ProfileScraper.cleanupEmail(foundEmail);
+            }
           }
+
+          // Add the email to the profile data (remove emailFromAbout to avoid duplication)
+          // eslint-disable-next-line no-unused-vars
+          const { emailFromAbout, ...cleanedProfileData } = basicProfileData;
+          profileData = {
+            ...cleanedProfileData,
+            email: emailToUse
+          };
+
+          // Log the complete profile data with email
+          console.log('Complete Profile Data (with email):', JSON.stringify(profileData, null, 2));
+        } else {
+          // Feed page logic - use recipient email from input field
+          const recipientInput = document.getElementById('recipientEmailInput');
+          emailToUse = recipientInput ? recipientInput.value.trim() : '';
+          
+          if (!emailToUse) {
+            this.showTemporaryMessage('Please enter a recipient email address', 'error');
+            return;
+          }
+
+          // Create minimal profile data for feed page and own-profile
+          profileData = {
+            email: emailToUse,
+            name: '', // We don't have the recipient's name on feed page or own-profile
+            company: '',
+            headline: '',
+            location: ''
+          };
+          console.log('Feed Page/Own Profile Email Generation - Minimal data, recipient:', emailToUse);
         }
 
-        // Add the email to the profile data (remove emailFromAbout to avoid duplication)
-        // eslint-disable-next-line no-unused-vars
-        const { emailFromAbout, ...cleanedProfileData } = basicProfileData;
-        const profileData = {
-          ...cleanedProfileData,
-          email: emailToUse
-        };
+        // Update the recipient email field (only for other-profile pages)
+        if (shouldScrapeProfile) {
+          const recipientInput = document.getElementById('recipientEmailInput');
 
-        // Log the complete profile data with email
-        console.log('Complete Profile Data (with email):', JSON.stringify(profileData, null, 2));
-
-        // Update the recipient email field
-        const recipientInput = document.getElementById('recipientEmailInput');
-
-        if (recipientInput && emailToUse) {  // Changed email to emailToUse
-          recipientInput.value = emailToUse;  // Changed email to emailToUse
-          // Hide find email button since we have an email
-          if (this.elements.findEmailButton) {
-            this.elements.findEmailButton.style.display = 'none';
-          }
-        } else {
-          // No email found - show the Find Email button
-          if (this.elements.findEmailButton) {
-            this.elements.findEmailButton.style.display = 'block';
+          if (recipientInput && emailToUse) {
+            recipientInput.value = emailToUse;
+            // Hide find email button since we have an email
+            if (this.elements.findEmailButton) {
+              this.elements.findEmailButton.style.display = 'none';
+            }
+          } else {
+            // No email found - show the Find Email button
+            if (this.elements.findEmailButton) {
+              this.elements.findEmailButton.style.display = 'block';
+            }
           }
         }
 
@@ -1011,6 +1113,14 @@ window.UIManager = {
         this.elements.sendGmailButton.textContent = 'Send Email';
       }
     });
+
+    // Retry People Search button
+    if (this.elements.retryPeopleSearchButton) {
+      this.elements.retryPeopleSearchButton.addEventListener('click', () => {
+        console.log('Retry people search clicked');
+        this.loadPeopleSuggestions();
+      });
+    }
   },
 
   // REPLACE the setupStorageListener method in ui-manager.js with this one
@@ -1080,9 +1190,10 @@ window.UIManager = {
     const successView = this.container.querySelector('#linkmail-success');
     const splashView = this.container.querySelector('#linkmail-splash');
     const signInView = this.container.querySelector('#linkmail-signin');
+    const peopleSuggestionsView = this.container.querySelector('#linkmail-people-suggestions');
 
     // Hide ALL views first
-    [editorView, successView, splashView, signInView].forEach(view => {
+    [editorView, successView, splashView, signInView, peopleSuggestionsView].forEach(view => {
       if (view) view.style.display = 'none';
     });
 
@@ -1120,8 +1231,20 @@ window.UIManager = {
           const storedUserData = await this.getUserFromStorage(this.userData.email);
           this.userData = { ...this.userData, ...storedUserData };
 
-          // Show splash view
-          if (splashView) splashView.style.display = 'flex';
+          // Check page type - treat own-profile same as feed page
+          const pageType = window.currentPageType || 'other-profile';
+          const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
+
+          if (shouldShowPeopleSuggestions) {
+            // Feed page and own-profile: Show people suggestions
+            if (peopleSuggestionsView) {
+              peopleSuggestionsView.style.display = 'block';
+              this.loadPeopleSuggestions();
+            }
+          } else {
+            // Other profile page: Show splash view
+            if (splashView) splashView.style.display = 'flex';
+          }
 
           // Show user info
           const accountInfo = this.container.querySelector('.linkmail-account-info');
@@ -1149,18 +1272,31 @@ window.UIManager = {
       if (accountInfo) accountInfo.style.display = 'none';
     }
 
-    // Update the title with the current profile name
+    // Update the title based on page type
     const nameElement = this.container.querySelector('#title');
     if (nameElement) {
-      const h1Element = document.querySelector('h1');
-      const profileName = h1Element ? h1Element.innerText : '';
-      const firstName = profileName.split(' ')[0] || '';
-      nameElement.textContent = `Draft an email to ${firstName}`;
+      const pageType = window.currentPageType || 'other-profile';
+      const shouldShowGenericTitle = pageType === 'feed' || pageType === 'own-profile';
+
+      if (shouldShowGenericTitle) {
+        nameElement.textContent = 'Draft personalized emails with AI';
+      } else {
+        // Other profile page logic
+        // Try to extract the correct profile name from LinkedIn's DOM
+        let profileName = '';
+        const h1Element = document.querySelector('h1');
+        if (h1Element) {
+          profileName = h1Element.innerText || '';
+        }
+        const firstName = profileName.split(' ')[0] || '';
+        nameElement.textContent = `Draft an email to ${firstName}`;
+      }
     }
 
     // Ensure templates are populated and one is selected
     this.populateTemplateDropdown();
 
+    // Make sure the view matches the page type after auth check
     await this.checkLastEmailSent();
 
     // Re-populate the form with the profile's email
@@ -1181,7 +1317,8 @@ window.UIManager = {
       '#linkmail-signin',
       '#linkmail-splash',
       '#linkmail-editor',
-      '#linkmail-success'
+      '#linkmail-success',
+      '#linkmail-people-suggestions'
     ];
 
     // Hide all views first
@@ -1204,6 +1341,11 @@ window.UIManager = {
         targetView.style.display = 'block';
       }
       console.log(`Displayed view: ${viewName}`);
+      
+      // If showing people suggestions, load the suggestions
+      if (viewName === '#linkmail-people-suggestions') {
+        this.loadPeopleSuggestions();
+      }
     } else {
       console.error(`Target view not found: ${viewName}`);
     }
@@ -1682,10 +1824,20 @@ window.UIManager = {
     try {
       console.log('Checking last email sent...');
 
-      // First check if we're on a LinkedIn profile page
+      // Check if we're on a supported page (profile or feed)
       const currentProfileUrl = window.location.href;
-      if (!currentProfileUrl.includes('/in/')) {
-        console.log('Not on a LinkedIn profile page, skipping email status check');
+      const isOnProfilePage = currentProfileUrl.includes('/in/');
+      const isOnFeedPage = currentProfileUrl.includes('/feed/');
+      
+      if (!isOnProfilePage && !isOnFeedPage) {
+        console.log('Not on a supported LinkedIn page, skipping email status check');
+        return;
+      }
+
+      // Only check email history for other-profile pages (feed page and own-profile don't have specific profile context)
+      const pageType = window.currentPageType || 'other-profile';
+      if (pageType !== 'other-profile') {
+        console.log('On feed page or own profile, skipping profile-specific email status check');
         return;
       }
 
@@ -1948,6 +2100,257 @@ window.UIManager = {
     setTimeout(() => {
       clearInterval(refreshInterval);
     }, 10000);
+  },
+
+  // Load people suggestions for feed page
+  async loadPeopleSuggestions() {
+    try {
+      console.log('Loading people suggestions...');
+
+      // Show loading state
+      const loadingEl = this.container.querySelector('#people-suggestions-loading');
+      const errorEl = this.container.querySelector('#people-suggestions-error');
+      const containerEl = this.container.querySelector('#suggested-people-container');
+
+      if (loadingEl) loadingEl.style.display = 'block';
+      if (errorEl) errorEl.style.display = 'none';
+      if (containerEl) containerEl.innerHTML = '';
+
+      // Get user profile information for Apollo search
+      const userProfileData = await this.getUserProfileDataForSearch();
+      
+      if (!userProfileData) {
+        this.showPeopleSuggestionsError('Unable to load your profile information');
+        return;
+      }
+
+      console.log('User profile data for Apollo search:', userProfileData);
+
+      // Call Apollo People Search API
+      const searchResult = await this.findPeopleUsingApollo(userProfileData);
+      
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      if (searchResult.success && searchResult.allSuggestions && searchResult.allSuggestions.length > 0) {
+        this.displayPeopleSuggestions(searchResult.allSuggestions.slice(0, 3)); // Show top 3
+      } else {
+        const errorMessage = searchResult.error || 'No relevant people found at the moment';
+        this.showPeopleSuggestionsError(errorMessage);
+      }
+
+    } catch (error) {
+      console.error('Error loading people suggestions:', error);
+      const loadingEl = this.container.querySelector('#people-suggestions-loading');
+      if (loadingEl) loadingEl.style.display = 'none';
+      this.showPeopleSuggestionsError('Failed to load suggestions. Please try again.');
+    }
+  },
+
+  // Get user profile data for Apollo search
+  async getUserProfileDataForSearch() {
+    try {
+      // Get user data from storage which contains their bio information
+      if (!this.userData || !this.userData.email) {
+        console.log('No user data available for search');
+        return null;
+      }
+
+      // Extract useful information from user data
+      const userProfile = {
+        name: this.userData.name || '',
+        email: this.userData.email,
+        college: this.userData.college || '',
+        graduationYear: this.userData.graduationYear || '',
+        skills: this.userData.skills || [],
+        experiences: this.userData.experiences || []
+      };
+
+      // Derive company and job title from most recent experience
+      let company = '';
+      let headline = '';
+      
+      if (userProfile.experiences && userProfile.experiences.length > 0) {
+        const mostRecentExp = userProfile.experiences[0]; // Assuming first is most recent
+        company = mostRecentExp.company || '';
+        headline = mostRecentExp.position || '';
+      }
+
+      // If no experience, try to use college information
+      if (!company && userProfile.college) {
+        company = userProfile.college;
+        headline = 'Student'; // Default headline for students
+      }
+
+      return {
+        name: userProfile.name,
+        company: company,
+        headline: headline,
+        location: '', // We don't have location info from bio setup
+        linkedinUrl: this.userData.linkedinUrl || '', // Use the user's LinkedIn URL from profile
+        isUserProfile: true // Flag to indicate this is the user's own profile
+      };
+
+    } catch (error) {
+      console.error('Error getting user profile data for search:', error);
+      return null;
+    }
+  },
+
+  // Find people using Apollo API (similar to existing implementation but for user's profile)
+  async findPeopleUsingApollo(userProfileData) {
+    try {
+      console.log('Finding people with Apollo People Search API for user:', userProfileData);
+
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+          action: 'findSimilarPeople',
+          contactedPersonData: userProfileData
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Chrome runtime error in people search:', chrome.runtime.lastError);
+            resolve({
+              success: false,
+              error: 'Extension error occurred'
+            });
+            return;
+          }
+
+          console.log('Apollo People Search response for user:', response);
+          resolve(response);
+        });
+      });
+    } catch (error) {
+      console.error('Error in findPeopleUsingApollo:', error);
+      return {
+        success: false,
+        error: 'Failed to connect to Apollo People Search API'
+      };
+    }
+  },
+
+  // Display people suggestions in the UI
+  displayPeopleSuggestions(suggestions) {
+    try {
+      console.log('Displaying people suggestions:', suggestions);
+
+      const containerEl = this.container.querySelector('#suggested-people-container');
+      if (!containerEl) {
+        console.error('Suggested people container not found');
+        return;
+      }
+
+      // Clear existing content
+      containerEl.innerHTML = '';
+
+      suggestions.forEach((person, index) => {
+        const personCard = this.createPersonCard(person, index);
+        containerEl.appendChild(personCard);
+      });
+
+      console.log('People suggestions displayed successfully');
+
+    } catch (error) {
+      console.error('Error displaying people suggestions:', error);
+      this.showPeopleSuggestionsError('Error displaying suggestions');
+    }
+  },
+
+  // Create a person card element
+  createPersonCard(person, index) {
+    const card = document.createElement('div');
+    card.className = 'suggested-person-card';
+    card.style.cssText = `
+      background: #f8f9fa;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    `;
+
+    // Generate avatar initials
+    const name = person.name || person.first_name + ' ' + person.last_name || 'Unknown';
+    const initials = name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+
+    // Create display info
+    const title = person.title || person.headline || 'No title available';
+    const company = person.organization?.name || person.organization_name || '';
+    const displayTitle = company ? `${title} at ${company}` : title;
+
+    // Set reason text
+    let reasonText = '';
+    switch (person.similarity_reason) {
+      case 'same_company_and_role':
+        reasonText = '🎯 Same company & role';
+        break;
+      case 'same_company':
+        reasonText = '🏢 Same company';
+        break;
+      case 'same_role':
+        reasonText = '💼 Same role';
+        break;
+      default:
+        reasonText = '🔍 Relevant connection';
+    }
+
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: #0066cc; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
+          ${initials}
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${name}
+          </div>
+          <div style="font-size: 11px; color: #666; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${displayTitle}
+          </div>
+          <div style="font-size: 10px; color: #0066cc; font-weight: 500;">
+            ${reasonText}
+          </div>
+        </div>
+        <div style="color: #0066cc; font-size: 14px; flex-shrink: 0;">
+          →
+        </div>
+      </div>
+    `;
+
+    // Add click handler to navigate to LinkedIn profile
+    card.addEventListener('click', () => {
+      if (person.linkedin_url) {
+        console.log('Navigating to LinkedIn profile:', person.linkedin_url);
+        window.open(person.linkedin_url, '_blank');
+      } else {
+        console.warn('No LinkedIn URL available for person:', person.name);
+        this.showTemporaryMessage('LinkedIn profile not available', 'error');
+      }
+    });
+
+    // Add hover effects
+    card.addEventListener('mouseenter', () => {
+      card.style.backgroundColor = '#e8f4f8';
+      card.style.transform = 'translateY(-1px)';
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.backgroundColor = '#f8f9fa';
+      card.style.transform = 'translateY(0)';
+    });
+
+    return card;
+  },
+
+
+
+  // Show error state for people suggestions
+  showPeopleSuggestionsError(errorMessage) {
+    const loadingEl = this.container.querySelector('#people-suggestions-loading');
+    const errorEl = this.container.querySelector('#people-suggestions-error');
+    const errorTextEl = errorEl?.querySelector('p');
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'block';
+    if (errorTextEl) errorTextEl.textContent = errorMessage;
   },
 
   // Show temporary message to user

@@ -221,15 +221,30 @@ document.addEventListener('DOMContentLoaded', function() {
       const name = document.getElementById('name').value;
       const college = document.getElementById('college').value;
       const gradYear = document.getElementById('gradYear').value;
+      const linkedinUrl = document.getElementById('linkedinUrl').value;
 
-      if (!name || !college || !gradYear) {
+      if (!name || !college || !gradYear || !linkedinUrl) {
         window.showError('Please fill in all required fields');
         return;
       }
 
+      // Validate LinkedIn URL format
+      if (!linkedinUrl.includes('linkedin.com')) {
+        window.showError('Please enter a valid LinkedIn profile URL');
+        return;
+      }
+
+      // Collect experiences data for validation
+      const experiences = collectExperiencesData();
+      
+      // Validate that at least one experience is added
+      if (!experiences || experiences.length === 0) {
+        window.showError('Please add at least one experience');
+        return;
+      }
+
       try {
-        // Collect experiences data
-        const experiences = collectExperiencesData();
+        // Experiences already collected and validated above
 
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -242,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
           name: name,
           college: college,
           graduationYear: gradYear,
+          linkedinUrl: linkedinUrl,
           email: email,
           experiences: experiences,
           skills: window.skills,

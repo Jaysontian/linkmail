@@ -10,6 +10,7 @@ window.ProfileManager = (function() {
     email: '',
     college: '',
     graduationYear: '',
+    linkedinUrl: '',
     experiences: [],
     skills: [],
     templates: [],
@@ -238,6 +239,17 @@ window.ProfileManager = (function() {
         errors.push('Valid graduation year is required');
       }
 
+      if (!profileData.linkedinUrl || profileData.linkedinUrl.trim() === '') {
+        errors.push('LinkedIn profile URL is required');
+      } else if (!operations.isValidLinkedInUrl(profileData.linkedinUrl)) {
+        errors.push('Valid LinkedIn profile URL is required');
+      }
+
+      // Validate that at least one experience is provided
+      if (!profileData.experiences || !Array.isArray(profileData.experiences) || profileData.experiences.length === 0) {
+        errors.push('At least one experience is required');
+      }
+
       // Validate experiences if provided
       if (profileData.experiences && Array.isArray(profileData.experiences)) {
         profileData.experiences.forEach((exp, index) => {
@@ -276,6 +288,14 @@ window.ProfileManager = (function() {
       return !isNaN(numYear) && numYear >= 1950 && numYear <= currentYear + 10;
     },
 
+    // LinkedIn URL validation helper
+    isValidLinkedInUrl(url) {
+      if (!url || typeof url !== 'string') return false;
+      const trimmedUrl = url.trim().toLowerCase();
+      return trimmedUrl.includes('linkedin.com') && 
+             (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') || trimmedUrl.startsWith('www.') || trimmedUrl.includes('/in/'));
+    },
+
     // Get profile summary/stats
     getProfileSummary(profileData) {
       if (!profileData) {
@@ -287,6 +307,7 @@ window.ProfileManager = (function() {
         email: profileData.email,
         college: profileData.college,
         graduationYear: profileData.graduationYear,
+        linkedinUrl: profileData.linkedinUrl,
         experienceCount: profileData.experiences ? profileData.experiences.length : 0,
         skillsCount: profileData.skills ? profileData.skills.length : 0,
         templatesCount: profileData.templates ? profileData.templates.length : 0,
@@ -568,6 +589,7 @@ window.ProfileManager = (function() {
     validateProfile: operations.validateProfile,
     isValidEmail: operations.isValidEmail,
     isValidGraduationYear: operations.isValidGraduationYear,
+    isValidLinkedInUrl: operations.isValidLinkedInUrl,
 
     // Profile management
     getProfileSummary: operations.getProfileSummary,

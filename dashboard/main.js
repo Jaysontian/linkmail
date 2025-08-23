@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (document.getElementById('name')) document.getElementById('name').value = userData.name || '';
         if (document.getElementById('college')) document.getElementById('college').value = userData.college || '';
         if (document.getElementById('gradYear')) document.getElementById('gradYear').value = userData.graduationYear || '';
+        if (document.getElementById('linkedinUrl')) document.getElementById('linkedinUrl').value = userData.linkedinUrl || '';
 
         // Update user profile in sidebar
         updateUserProfileInSidebar(userData);
@@ -385,15 +386,28 @@ document.addEventListener('DOMContentLoaded', function() {
       const name = document.getElementById('name').value;
       const college = document.getElementById('college').value;
       const gradYear = document.getElementById('gradYear').value;
+      const linkedinUrl = document.getElementById('linkedinUrl').value;
 
-      if (!name || !college || !gradYear) {
+      if (!name || !college || !gradYear || !linkedinUrl) {
         showError('Please fill in all required fields');
+        return;
+      }
+
+      // Validate LinkedIn URL format
+      if (!linkedinUrl.includes('linkedin.com')) {
+        showError('Please enter a valid LinkedIn profile URL');
         return;
       }
 
       try {
         // Collect experiences data
         const experiences = collectExperiencesData();
+        
+        // Validate that at least one experience is added
+        if (!experiences || experiences.length === 0) {
+          showError('Please add at least one experience');
+          return;
+        }
 
         // Collect skills data
         const skillsData = typeof window.skills !== 'undefined' ? window.skills : skills;
@@ -427,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
             name: name,
             college: college,
             graduationYear: gradYear,
+            linkedinUrl: linkedinUrl,
             email: email,
             experiences: experiences,
             skills: skillsData,
