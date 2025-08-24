@@ -14,14 +14,20 @@ const filesToInclude = [
   'manifest.json',
   'background.js',
   'dashboard.html',
-  'dashboard.js',
   'assets/',
+  'backend/',
+  'apollo/',
   'content/',
+  'dashboard/',
+  'generate/',
+  'history/',
+  'profile/',
+  'send/',
   'styles/',
+  'templates/',
   'utils/',
   'vendor/',
-  'scripts/',
-  'dashboard/'
+  'scripts/'
 ];
 
 // Create web store build

@@ -7,276 +7,225 @@ let backendAuthState = {
   token: null
 };
 
-// Apollo People Search integration for finding similar people
+// Apollo People Search integration for finding similar people - OPTIMIZED FOR SINGLE API CALL
 async function findSimilarPeopleWithApollo(contactedPersonData, options = {}) {
   try {
-    console.log('Finding similar people with Apollo People Search API (service worker context):', contactedPersonData);
+    console.log('🚀 OPTIMIZED Apollo People Search - Finding similar people with SINGLE API call:', contactedPersonData);
 
     // Extract company domain and job title for searching
     const companyDomain = extractCompanyDomain(contactedPersonData.company);
     const jobTitle = normalizeJobTitle(contactedPersonData.headline);
+    const normalizedCompanyName = normalizeCompanyName(contactedPersonData.company);
 
-    console.log('=== APOLLO PEOPLE SEARCH DEBUG ===');
+    console.log('=== OPTIMIZED APOLLO SEARCH DEBUG ===');
     console.log('Input data:', contactedPersonData);
     console.log('Extracted company domain:', companyDomain);
     console.log('Extracted job title:', jobTitle);
-    console.log('Original company name:', contactedPersonData.company);
-    console.log('Original headline:', contactedPersonData.headline);
+    console.log('Normalized company name:', normalizedCompanyName);
 
-    // Skip access test to save 1 API call per search - will fail gracefully if no access
-    console.log('🔐 Skipping access test to save Apollo credits - will fail gracefully if no access');
-
-    // Quick test: Let's try multiple Apollo API calls to understand the issue
-    // Removed test calls to reduce Apollo API usage
-
-    const similarPeople = [];
     const maxResults = typeof options.maxResults === 'number' && options.maxResults > 0 ? options.maxResults : 3;
-    const perPageForSearch = maxResults === 1 ? 1 : 5;
-    let foundSameCompanyAndRole = [];
-    let foundSameCompanyOnly = [];
-    let foundSameRoleOnly = [];
+    // Request more results in single call to increase chances of finding good matches
+    const perPageForSearch = Math.max(10, maxResults * 3);
 
-    // 1. PRIORITY 1: Same company AND same role (highest similarity)
+    // 🎯 SINGLE OPTIMIZED API CALL STRATEGY:
+    // Instead of multiple API calls, make one smart call with broader criteria
+    // then rank and filter results on client side to save Apollo credits
+    
+    let searchParams;
+    let searchStrategy = 'unknown';
+    
     if (companyDomain && jobTitle) {
-      console.log(`\n🎯 PRIORITY 1: Searching for same company (${companyDomain}) AND same role (${jobTitle})`);
-      
-      // For major companies, add additional filters to narrow results under Apollo's 50k limit
-      const isMajorCompany = ['google.com', 'microsoft.com', 'apple.com', 'meta.com', 'amazon.com'].includes(companyDomain?.toLowerCase());
-      
-      const normalizedCompanyName = normalizeCompanyName(contactedPersonData.company);
-
-      const searchParams = {
+      // Strategy 1: Company-focused search with broader title matching
+      searchStrategy = 'company_focused';
+      searchParams = {
         q_organization_domains_list: [companyDomain],
         organization_name: normalizedCompanyName || undefined,
+        person_titles: [jobTitle], 
+        include_similar_titles: true, // Cast wider net for similar roles
+        per_page: perPageForSearch,
+        page: 1
+      };
+      
+      console.log(`🎯 Using COMPANY-FOCUSED strategy for domain: ${companyDomain}`);
+      
+    } else if (jobTitle) {
+      // Strategy 2: Role-focused search (no company info available)
+      searchStrategy = 'role_focused';
+      searchParams = {
         person_titles: [jobTitle],
         include_similar_titles: true,
         per_page: perPageForSearch,
         page: 1
       };
       
-      // Add additional filters for major companies to narrow results
-      if (isMajorCompany) {
-        console.log(`🔍 Major company detected (${companyDomain}) - adding filters to narrow search`);
-        
-        // Add location filters (major tech hubs)
-        searchParams.person_locations = ['california', 'washington', 'new york', 'texas'];
-        
-        // Add seniority filters (exclude very senior roles to get more contacts)
-        searchParams.person_seniorities = ['senior', 'entry', 'manager'];
-        
-        // Reduce similar titles for more precise matching
-        searchParams.include_similar_titles = false;
-        
-        console.log('🔍 Added major company filters:', {
-          locations: searchParams.person_locations,
-          seniorities: searchParams.person_seniorities,
-          similar_titles: searchParams.include_similar_titles
-        });
-      }
+      console.log(`🎯 Using ROLE-FOCUSED strategy for title: ${jobTitle}`);
       
-      console.log('Search parameters:', JSON.stringify(searchParams, null, 2));
-      
-      foundSameCompanyAndRole = await searchPeopleWithCriteria(searchParams);
-      
-      console.log(`Raw API response: ${foundSameCompanyAndRole.length} people found`);
-      
-      // Log first few API results to understand what we're getting
-      if (foundSameCompanyAndRole.length > 0) {
-        console.log('📋 First few API results:');
-        foundSameCompanyAndRole.slice(0, 3).forEach((person, index) => {
-          console.log(`  ${index + 1}. ${person.name} - ${person.title} at ${person.organization?.name || person.organization_name}`);
-          console.log(`     Domain: ${person.organization?.primary_domain || 'N/A'}`);
-          console.log(`     LinkedIn: ${person.linkedin_url || 'N/A'}`);
-        });
-        
-        // Filter out the original contacted person
-        const filtered = foundSameCompanyAndRole.filter(person => {
-          const isSame = isSameLinkedInProfile(person.linkedin_url, contactedPersonData.linkedinUrl);
-          if (isSame) {
-            console.log(`  ❌ Filtered out original person: ${person.name}`);
-          }
-          return !isSame;
-        });
-        
-        console.log(`After filtering original person: ${filtered.length} people remain`);
-        
-        const neededCountP1 = Math.max(0, maxResults - similarPeople.length);
-        const toAdd = filtered.slice(0, neededCountP1);
-        similarPeople.push(...toAdd.map(person => ({
-          ...person,
-          similarity_reason: 'same_company_and_role',
-          similarity_score: 3
-        })));
-        
-        console.log(`✅ Added ${toAdd.length} people with same company and role`);
-        toAdd.forEach((person, index) => {
-          console.log(`  ${index + 1}. ${person.name} - ${person.title} at ${person.organization?.name || person.organization_name}`);
-        });
-      } else {
-        console.log(`❌ No people found with same company and role for domain: ${companyDomain}`);
-        console.log(`❌ This suggests either:`);
-        console.log(`   1. Apollo has no employees for domain "${companyDomain}"`);
-        console.log(`   2. The API request failed silently`);
-        console.log(`   3. The search parameters are incorrect`);
-        console.log(`   4. Apollo plan restricts access to major company employees`);
-      }
-    } else {
-      console.log(`❌ Skipping priority 1 search - missing companyDomain (${companyDomain}) or jobTitle (${jobTitle})`);
-    }
-
-    // Early exit if we have enough results after Priority 1
-    if (similarPeople.length >= maxResults) {
-      console.log(`✅ Early exit: Found ${similarPeople.length} results after Priority 1, skipping remaining searches to save Apollo credits`);
-    } else {
-      // 2. PRIORITY 2: Same company only (if we need more suggestions)
-      if (companyDomain && similarPeople.length < maxResults) {
-      console.log(`Searching for people with same company only (${companyDomain})...`);
-      
-      const normalizedCompanyNameP2 = normalizeCompanyName(contactedPersonData.company);
-
-      const searchParams = {
+    } else if (companyDomain) {
+      // Strategy 3: Company-only search (no job title available)
+      searchStrategy = 'company_only';
+      searchParams = {
         q_organization_domains_list: [companyDomain],
-        organization_name: normalizedCompanyNameP2 || undefined,
+        organization_name: normalizedCompanyName || undefined,
         per_page: perPageForSearch,
         page: 1
       };
       
-      // Add additional filters for major companies to narrow results
-      const isMajorCompany = ['google.com', 'microsoft.com', 'apple.com', 'meta.com', 'amazon.com'].includes(companyDomain?.toLowerCase());
-      if (isMajorCompany) {
-        console.log(`🔍 Major company detected (${companyDomain}) - adding filters for P2 search`);
-        
-        // Add location and seniority filters
-        searchParams.person_locations = ['california', 'washington', 'new york', 'texas'];
-        searchParams.person_seniorities = ['senior', 'entry', 'manager', 'director'];
-        
-        console.log('🔍 Added P2 major company filters');
-      }
+      console.log(`🎯 Using COMPANY-ONLY strategy for domain: ${companyDomain}`);
       
-      foundSameCompanyOnly = await searchPeopleWithCriteria(searchParams);
-
-      console.log(`Found ${foundSameCompanyOnly.length} people at same company`);
-
-      // Filter out people with the same job title (already found above) and original person
-      const filtered = foundSameCompanyOnly.filter(person => {
-        // Exclude the original contacted person
-        if (isSameLinkedInProfile(person.linkedin_url, contactedPersonData.linkedinUrl)) {
-          return false;
-        }
-        
-        // Exclude people with the same job title that we already found
-        if (jobTitle && person.title) {
-          const personTitleLower = person.title.toLowerCase();
-          const jobTitleLower = jobTitle.toLowerCase();
-          // More sophisticated title matching
-          if (personTitleLower.includes(jobTitleLower) || jobTitleLower.includes(personTitleLower)) {
-            return false;
-          }
-        }
-        
-        return true;
-      });
-
-      const neededCount = Math.max(0, maxResults - similarPeople.length);
-      if (filtered.length > 0 && neededCount > 0) {
-        similarPeople.push(...filtered.slice(0, neededCount).map(person => ({
-          ...person,
-          similarity_reason: 'same_company',
-          similarity_score: 2
-        })));
-        
-        console.log(`Added ${Math.min(filtered.length, neededCount)} people with same company only`);
-      }
-      }
-
-      // 3. PRIORITY 3: Same role only (if we still need more suggestions)
-      if (jobTitle && similarPeople.length < maxResults) {
-      console.log(`Searching for people with same role only (${jobTitle})...`);
-      foundSameRoleOnly = await searchPeopleWithCriteria({
-        person_titles: [jobTitle],
-        include_similar_titles: true,
-        per_page: perPageForSearch,
-        page: 1
-      });
-
-      console.log(`Found ${foundSameRoleOnly.length} people with same role`);
-
-      // Filter out people from the same company (already found above) and original person
-      const filtered = foundSameRoleOnly.filter(person => {
-        // Exclude the original contacted person
-        if (isSameLinkedInProfile(person.linkedin_url, contactedPersonData.linkedinUrl)) {
-          return false;
-        }
-        
-        // Exclude people from the same company (already found above)
-        if (companyDomain && person.organization && person.organization.primary_domain) {
-          if (person.organization.primary_domain.toLowerCase() === companyDomain.toLowerCase()) {
-            return false;
-          }
-        }
-        
-        // Also check organization_name for broader company matching
-        if (companyDomain && person.organization_name) {
-          const personCompanyLower = person.organization_name.toLowerCase();
-          const contactedCompanyLower = (contactedPersonData.company || '').toLowerCase();
-          if (personCompanyLower === contactedCompanyLower) {
-            return false;
-          }
-        }
-        
-        return true;
-      });
-
-      const neededCount = Math.max(0, maxResults - similarPeople.length);
-      if (filtered.length > 0 && neededCount > 0) {
-        similarPeople.push(...filtered.slice(0, neededCount).map(person => ({
-          ...person,
-          similarity_reason: 'same_role',
-          similarity_score: 1
-        })));
-        
-        console.log(`Added ${Math.min(filtered.length, neededCount)} people with same role only`);
-      }
-      }
+    } else {
+      // Strategy 4: Fallback - search by location or other criteria
+      searchStrategy = 'fallback';
+      console.log('❌ Insufficient data for targeted search - using fallback strategy');
+      return {
+        success: false,
+        error: 'Insufficient profile data for finding similar people',
+        source: 'apollo_people_search'
+      };
+    }
+    
+    // For major companies, add location filters to narrow results under Apollo's 50k limit
+    const majorCompanies = ['google.com', 'microsoft.com', 'apple.com', 'meta.com', 'amazon.com', 'alphabet.com'];
+    const isMajorCompany = majorCompanies.includes(companyDomain?.toLowerCase());
+    
+    if (isMajorCompany && (searchStrategy === 'company_focused' || searchStrategy === 'company_only')) {
+      console.log(`🔍 Major company detected (${companyDomain}) - adding filters to narrow search`);
+      
+      // Add location filters to reduce result set size
+      searchParams.person_locations = ['california', 'washington', 'new york', 'texas', 'massachusetts'];
+      searchParams.person_seniorities = ['senior', 'entry', 'manager', 'director'];
+      
+      console.log('🔍 Applied major company filters to avoid 50k+ result limits');
     }
 
-    // Final deduplication (just in case)
-    const uniquePeople = deduplicateAndSort(similarPeople, contactedPersonData.linkedinUrl);
+    console.log(`🔍 SINGLE API CALL with strategy "${searchStrategy}":`, JSON.stringify(searchParams, null, 2));
     
-    // Return the top suggestion with detailed logging
-    const topSuggestion = uniquePeople.length > 0 ? uniquePeople[0] : null;
+    // 🚀 MAKE SINGLE OPTIMIZED APOLLO API CALL
+    const allResults = await searchPeopleWithCriteria(searchParams);
     
-    console.log('=== FINAL SIMILARITY RESULTS ===');
-    console.log(`Total unique suggestions: ${uniquePeople.length}`);
-    uniquePeople.forEach((person, index) => {
-      console.log(`${index + 1}. ${person.name} - ${person.title} at ${person.organization?.name || person.organization_name} (${person.similarity_reason})`);
+    console.log(`📡 Single API call returned ${allResults.length} total results`);
+
+    // 🧠 CLIENT-SIDE INTELLIGENT RANKING AND FILTERING
+    // Now rank all results by similarity instead of making multiple API calls
+    
+    // Filter out the original contacted person first
+    const filteredResults = allResults.filter(person => {
+      const isSame = isSameLinkedInProfile(person.linkedin_url, contactedPersonData.linkedinUrl);
+      if (isSame) {
+        console.log(`  ❌ Filtered out original person: ${person.name}`);
+      }
+      return !isSame;
+    });
+    
+    console.log(`After filtering original person: ${filteredResults.length} results remain`);
+    
+    // Rank results by similarity score (client-side ranking instead of multiple API calls)
+    const rankedResults = filteredResults.map(person => {
+      let similarityScore = 0;
+      let similarityReason = 'basic_match';
+      
+      const personCompanyDomain = person.organization?.primary_domain?.toLowerCase();
+      const personCompanyName = person.organization?.name?.toLowerCase() || person.organization_name?.toLowerCase() || '';
+      const personTitle = person.title?.toLowerCase() || '';
+      const contactedCompanyLower = (contactedPersonData.company || '').toLowerCase();
+      const jobTitleLower = (jobTitle || '').toLowerCase();
+      
+      // Highest priority: Same company AND similar role
+      if (companyDomain && jobTitle) {
+        const sameCompany = personCompanyDomain === companyDomain.toLowerCase() || 
+                          personCompanyName.includes(contactedCompanyLower.split(' ')[0]) ||
+                          contactedCompanyLower.includes(personCompanyName.split(' ')[0]);
+        
+        const similarRole = personTitle.includes(jobTitleLower) || 
+                          jobTitleLower.includes(personTitle) ||
+                          haveSimilarTitles(personTitle, jobTitleLower);
+        
+        if (sameCompany && similarRole) {
+          similarityScore = 3;
+          similarityReason = 'same_company_and_role';
+        } else if (sameCompany) {
+          similarityScore = 2;
+          similarityReason = 'same_company';
+        } else if (similarRole) {
+          similarityScore = 1;
+          similarityReason = 'same_role';
+        }
+      } else if (companyDomain) {
+        // Company-only matching
+        const sameCompany = personCompanyDomain === companyDomain.toLowerCase() || 
+                          personCompanyName.includes(contactedCompanyLower.split(' ')[0]);
+        if (sameCompany) {
+          similarityScore = 2;
+          similarityReason = 'same_company';
+        }
+      } else if (jobTitle) {
+        // Role-only matching
+        const similarRole = personTitle.includes(jobTitleLower) || 
+                          jobTitleLower.includes(personTitle);
+        if (similarRole) {
+          similarityScore = 1;
+          similarityReason = 'same_role';
+        }
+      }
+      
+      return {
+        ...person,
+        similarity_score: similarityScore,
+        similarity_reason: similarityReason
+      };
+    });
+    
+    // Sort by similarity score (highest first), then by relevance
+    const sortedResults = rankedResults
+      .filter(person => person.similarity_score > 0) // Only include matches
+      .sort((a, b) => {
+        if (a.similarity_score !== b.similarity_score) {
+          return b.similarity_score - a.similarity_score;
+        }
+        // Secondary sort by name for consistency
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    
+    // Take top results based on maxResults
+    const finalResults = sortedResults.slice(0, maxResults);
+    
+    console.log(`🏆 CLIENT-SIDE RANKING: ${sortedResults.length} valid matches, taking top ${finalResults.length}`);
+    finalResults.forEach((person, index) => {
+      console.log(`  ${index + 1}. ${person.name} - ${person.title} at ${person.organization?.name || person.organization_name} (${person.similarity_reason})`);
     });
 
-    console.log('Found similar people:', uniquePeople.length, 'Top suggestion:', topSuggestion);
+    // Return the top suggestion with detailed logging
+    const topSuggestion = finalResults.length > 0 ? finalResults[0] : null;
+    
+    console.log('=== FINAL OPTIMIZED RESULTS ===');
+    console.log(`🎯 Single API call strategy: ${searchStrategy}`);
+    console.log(`📊 Total API results: ${allResults.length}`);
+    console.log(`🔍 Valid matches: ${sortedResults.length}`);
+    console.log(`🏆 Final suggestions: ${finalResults.length}`);
+    console.log(`💰 Apollo credits saved: ~${2}` + (isMajorCompany ? ' (major company filters applied)' : ''));
 
-    // Create debug info to send back to UI
+    // Create debug info to send back to UI  
     const debugInfo = {
       originalCompany: contactedPersonData.company,
       extractedDomain: companyDomain,
       originalJobTitle: contactedPersonData.headline,
       normalizedJobTitle: jobTitle,
-      searchResults: {
-        sameCompanyAndRole: foundSameCompanyAndRole.length,
-        sameCompanyOnly: foundSameCompanyOnly.length,
-        sameRoleOnly: foundSameRoleOnly.length
+      searchStrategy: searchStrategy,
+      singleAPICall: {
+        totalResults: allResults.length,
+        validMatches: sortedResults.length,
+        creditsSaved: '~2 API calls',
+        optimization: 'Client-side ranking instead of multiple API calls'
       },
-      finalSuggestions: uniquePeople.map(p => ({
+      finalSuggestions: finalResults.map(p => ({
         name: p.name,
         title: p.title,
         company: p.organization?.name || p.organization_name,
-        reason: p.similarity_reason
+        reason: p.similarity_reason,
+        score: p.similarity_score
       }))
     };
 
     // Check if we applied special filtering for major companies
-    const majorCompanies = ['google.com', 'microsoft.com', 'apple.com', 'meta.com', 'amazon.com', 'alphabet.com'];
-    const isMajorCompany = majorCompanies.includes(companyDomain?.toLowerCase());
-    
     if (isMajorCompany) {
       console.log(`📊 Applied major company filtering for: ${companyDomain}`);
       debugInfo.majorCompanyFiltering = {
@@ -289,19 +238,48 @@ async function findSimilarPeopleWithApollo(contactedPersonData, options = {}) {
     return {
       success: true,
       suggestion: topSuggestion,
-      allSuggestions: uniquePeople.slice(0, 3),
+      allSuggestions: finalResults.slice(0, 3),
       source: 'apollo_people_search',
       debug: debugInfo
     };
 
   } catch (error) {
-    console.error('Apollo People Search error:', error);
+    console.error('🚀 OPTIMIZED Apollo People Search error:', error);
     return {
       success: false,
       error: error.message || 'Failed to find similar people',
       source: 'apollo_people_search'
     };
   }
+}
+
+// Helper function to check if two job titles are similar
+function haveSimilarTitles(title1, title2) {
+  if (!title1 || !title2) return false;
+  
+  const t1 = title1.toLowerCase();
+  const t2 = title2.toLowerCase();
+  
+  // Common title synonyms
+  const synonyms = {
+    'engineer': ['developer', 'programmer', 'coder'],
+    'developer': ['engineer', 'programmer', 'coder'],
+    'manager': ['lead', 'director', 'head'],
+    'lead': ['manager', 'senior', 'principal'],
+    'senior': ['lead', 'principal'],
+    'principal': ['senior', 'lead', 'staff'],
+    'product': ['pm', 'product manager'],
+    'marketing': ['mktg', 'growth'],
+    'sales': ['business development', 'account executive', 'bd']
+  };
+  
+  // Check for synonym matches
+  for (const [key, values] of Object.entries(synonyms)) {
+    if (t1.includes(key) && values.some(v => t2.includes(v))) return true;
+    if (t2.includes(key) && values.some(v => t1.includes(v))) return true;
+  }
+  
+  return false;
 }
 
 // Helper function to test if API key has access to People Search endpoint

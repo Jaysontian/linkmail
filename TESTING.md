@@ -36,9 +36,6 @@ This document provides comprehensive information about testing the LinkMail Chro
 ```bash
 # Install dependencies
 npm install
-
-# Setup test environment
-node scripts/test-runner.js setup
 ```
 
 ### Running Tests
@@ -46,14 +43,14 @@ node scripts/test-runner.js setup
 ```bash
 # Run all tests
 npm run test:all
-# or
-node scripts/test-runner.js all
 
 # Run specific test types
 npm test                    # Unit tests
+npm run test:coverage       # Coverage report
 npm run test:e2e           # E2E tests
+npm run test:e2e:headed    # E2E tests with browser UI
 npm run lint               # Code linting
-node scripts/test-runner.js coverage  # Coverage report
+npm run lint:fix           # Fix linting issues
 ```
 
 ## Test Commands Reference
@@ -296,7 +293,7 @@ npx playwright test --debug tests/e2e/extension-basic.spec.js
 - Check existing tests for examples
 - Review test utilities in `tests/helpers/`
 - Consult Jest and Playwright documentation
-- Use the test runner's help: `node scripts/test-runner.js help`
+- Check Jest and Playwright documentation for detailed options
 
 ## Feature Development Workflow
 
@@ -321,13 +318,13 @@ When adding new features:
 3. **Verify Before Committing**
    ```bash
    # Run pre-commit checks
-   node scripts/test-runner.js pre-commit
+   npm run test:all && npm run lint
    ```
 
 4. **Integration Testing**
    ```bash
    # Run full test suite
-   node scripts/test-runner.js all
+   npm run test:all
    ```
 
 ## Conclusion
@@ -343,10 +340,9 @@ The testing strategy provides confidence when adding new features and ensures th
 
 ## Next Steps
 
-1. Run the initial test setup: `node scripts/test-runner.js setup`
-2. Install dependencies: `npm install`
-3. Run the complete test suite: `node scripts/test-runner.js all`
-4. Set up pre-commit hooks for automated testing
-5. Configure CI/CD pipeline for automated testing on commits
+1. Install dependencies: `npm install`
+2. Run the complete test suite: `npm run test:all`
+3. Set up pre-commit hooks for automated testing
+4. Configure CI/CD pipeline for automated testing on commits
 
 Happy testing! 🧪✨ 
