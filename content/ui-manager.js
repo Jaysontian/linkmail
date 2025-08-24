@@ -476,9 +476,16 @@ window.UIManager = {
 
       console.log('Injecting UI into page...');
 
-      // Insert into the page
-      const asideElement = document.querySelector('aside.scaffold-layout__aside');
-      console.log('Aside element found:', asideElement);
+      // Insert into the page (wait for LinkedIn aside to be present)
+      let asideElement = document.querySelector('aside.scaffold-layout__aside');
+      let attempts = 0;
+      const maxAttempts = 10; // ~3s total at 300ms intervals
+      while (!asideElement && attempts < maxAttempts) {
+        attempts++;
+        await new Promise(r => setTimeout(r, 300));
+        asideElement = document.querySelector('aside.scaffold-layout__aside');
+      }
+      console.log('Aside element found after attempts:', attempts, !!asideElement);
       if (asideElement) {
         // Double-check right before injection
         if (!document.querySelector('.linkmail-container')) {
@@ -490,7 +497,7 @@ window.UIManager = {
         }
         console.log('UI successfully injected');
       } else {
-        console.error('Target aside element not found.');
+        console.error('Target aside element not found after waiting. Aborting injection for now.');
         this._isCreatingUI = false;
         return;
       }

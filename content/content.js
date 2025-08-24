@@ -8,7 +8,7 @@
   // Function to get LinkedIn profile ID from URL
   function getProfileIdFromUrl() {
     const url = window.location.href;
-    const match = url.match(/linkedin\.com\/in\/([^\/]+)/);
+    const match = url.match(/linkedin\.com\/in\/([^\/?#]+)/);
     return match ? match[1] : null;
   }
 
@@ -130,62 +130,66 @@
     }
     isInitializing = true;
 
-    // Only proceed if we're on a supported LinkedIn page (profile or feed)
-    if (!isSupportedLinkedInPage()) {
-      console.log('Not on a supported LinkedIn page');
-      return;
-    }
-
-    const pageType = await getPageType();
-    const profileId = getProfileIdFromUrl();
-    
-    console.log('Page type:', pageType);
-
-    // Check if this is a different profile than before, or if we're switching between feed and profile
-    const currentPageId = profileId || 'feed';
-    const isNewPage = currentPageId !== currentProfileId;
-    currentProfileId = currentPageId;
-
-    // Store page type for UI manager to use
-    window.currentPageType = pageType;
-
-    // Wait for the DOM to be fully loaded
-    if (document.readyState === 'loading') {
-      await new Promise(resolve => {
-        document.addEventListener('DOMContentLoaded', resolve);
-      });
-    }
-
-    // Wait a bit more to ensure LinkedIn's dynamic content is loaded
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // If page changed, clear the cached email
-    if (isNewPage && window.EmailFinder) {
-      console.log('New page detected, clearing cached email');
-      window.EmailFinder.clearCachedEmail();
-    }
-
-    // If UI exists but page changed, reset UI
-    const existingUI = document.querySelector('.linkmail-container');
-    if (existingUI && isNewPage) {
-      console.log('Detected navigation to a new page, resetting UI');
-      forceResetUIState();
-      window.UIManager.resetUI();
-      return;
-    }
-
-    // If no UI exists, create it
-    if (!existingUI) {
-      console.log('No UI found, creating new UI');
-      try {
-        await window.UIManager.init();
-      } catch (e) {
-        console.error('Error during UI initialization:', e);
+    try {
+      // Only proceed if we're on a supported LinkedIn page (profile or feed)
+      if (!isSupportedLinkedInPage()) {
+        console.log('Not on a supported LinkedIn page');
+        return;
       }
-    }
 
-    // Release guard
-    isInitializing = false;
+      const pageType = await getPageType();
+      const profileId = getProfileIdFromUrl();
+      
+      console.log('Page type:', pageType);
+
+      // Check if this is a different profile than before, or if we're switching between feed and profile
+      const currentPageId = profileId || 'feed';
+      const isNewPage = currentPageId !== currentProfileId;
+      currentProfileId = currentPageId;
+
+      // Store page type for UI manager to use
+      window.currentPageType = pageType;
+
+      // Wait for the DOM to be fully loaded
+      if (document.readyState === 'loading') {
+        await new Promise(resolve => {
+          document.addEventListener('DOMContentLoaded', resolve);
+        });
+      }
+
+      // Wait a bit more to ensure LinkedIn's dynamic content is loaded
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // If page changed, clear the cached email
+      if (isNewPage && window.EmailFinder) {
+        console.log('New page detected, clearing cached email');
+        window.EmailFinder.clearCachedEmail();
+      }
+
+      // If UI exists but page changed, reset UI
+      const existingUI = document.querySelector('.linkmail-container');
+      if (existingUI && isNewPage) {
+        console.log('Detected navigation to a new page, resetting UI');
+        forceResetUIState();
+        if (window.UIManager && typeof window.UIManager.resetUI === 'function') {
+          await window.UIManager.resetUI();
+        }
+        return;
+      }
+
+      // If no UI exists, create it
+      if (!existingUI) {
+        console.log('No UI found, creating new UI');
+        try {
+          await window.UIManager.init();
+        } catch (e) {
+          console.error('Error during UI initialization:', e);
+        }
+      }
+    } finally {
+      // Always release guard
+      isInitializing = false;
+    }
   }
 
   // Function to observe URL changes
