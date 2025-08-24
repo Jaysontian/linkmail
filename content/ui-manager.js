@@ -1710,7 +1710,8 @@ window.UIManager = {
         
         chrome.runtime.sendMessage({
           action: 'findSimilarPeople',
-          contactedPersonData: contactedPersonData
+          contactedPersonData: contactedPersonData,
+          options: { maxResults: 1 }
         }, (response) => {
           if (chrome.runtime.lastError) {
             console.error('❌ Chrome runtime error in similar people search:', chrome.runtime.lastError);
@@ -2166,6 +2167,14 @@ window.UIManager = {
     try {
       console.log('Loading people suggestions...');
 
+      // Debounce: prevent rapid consecutive calls
+      if (this._loadPeopleSuggestionsTimeout) {
+        clearTimeout(this._loadPeopleSuggestionsTimeout);
+      }
+      await new Promise(resolve => {
+        this._loadPeopleSuggestionsTimeout = setTimeout(resolve, 200);
+      });
+
       // Show loading state
       const loadingEl = this.container.querySelector('#people-suggestions-loading');
       const errorEl = this.container.querySelector('#people-suggestions-error');
@@ -2185,13 +2194,36 @@ window.UIManager = {
 
       console.log('User profile data for Apollo search:', userProfileData);
 
+      // Caching: use cached suggestions if fresh
+      const cacheKey = `peopleSuggestions:${this.userData.email}`;
+      const now = Date.now();
+      const maxAgeMs = 2 * 60 * 60 * 1000; // 2 hours - longer cache to reduce Apollo API calls
+      try {
+        const stored = await new Promise(resolve => chrome.storage.local.get([cacheKey], r => resolve(r[cacheKey])));
+        if (stored && stored.timestamp && Array.isArray(stored.suggestions) && (now - stored.timestamp) < maxAgeMs) {
+          console.log('Using cached people suggestions');
+          if (loadingEl) loadingEl.style.display = 'none';
+          this.displayPeopleSuggestions(stored.suggestions.slice(0, 3));
+          return;
+        }
+      } catch (e) {
+        console.log('Cache read error (non-fatal):', e);
+      }
+
       // Call Apollo People Search API
       const searchResult = await this.findPeopleUsingApollo(userProfileData);
       
       if (loadingEl) loadingEl.style.display = 'none';
 
       if (searchResult.success && searchResult.allSuggestions && searchResult.allSuggestions.length > 0) {
-        this.displayPeopleSuggestions(searchResult.allSuggestions.slice(0, 3)); // Show top 3
+        const topThree = searchResult.allSuggestions.slice(0, 3);
+        // Write to cache
+        try {
+          await new Promise(resolve => chrome.storage.local.set({ [cacheKey]: { suggestions: topThree, timestamp: Date.now() } }, resolve));
+        } catch (e) {
+          console.log('Cache write error (non-fatal):', e);
+        }
+        this.displayPeopleSuggestions(topThree); // Show top 3
       } else {
         const errorMessage = searchResult.error || 'No relevant people found at the moment';
         this.showPeopleSuggestionsError(errorMessage);
@@ -2263,7 +2295,8 @@ window.UIManager = {
       return new Promise((resolve) => {
         chrome.runtime.sendMessage({
           action: 'findSimilarPeople',
-          contactedPersonData: userProfileData
+          contactedPersonData: userProfileData,
+          options: { maxResults: 3 } // Optimize feed page to use early exit
         }, (response) => {
           if (chrome.runtime.lastError) {
             console.error('Chrome runtime error in people search:', chrome.runtime.lastError);

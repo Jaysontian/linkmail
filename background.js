@@ -8,7 +8,7 @@ let backendAuthState = {
 };
 
 // Apollo People Search integration for finding similar people
-async function findSimilarPeopleWithApollo(contactedPersonData) {
+async function findSimilarPeopleWithApollo(contactedPersonData, options = {}) {
   try {
     console.log('Finding similar people with Apollo People Search API (service worker context):', contactedPersonData);
 
@@ -23,113 +23,15 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
     console.log('Original company name:', contactedPersonData.company);
     console.log('Original headline:', contactedPersonData.headline);
 
-    // First, test if we have access to the People Search endpoint
-    console.log('🔐 Testing Apollo People Search API access...');
-    const hasAccess = await testPeopleSearchAccess();
-    console.log(`🔐 API access check result: ${hasAccess}`);
-    
-    if (!hasAccess) {
-      console.log('❌ People Search endpoint not accessible - API key requires paid Apollo plan');
-      return {
-        success: false,
-        error: 'People Search requires a paid Apollo plan. Please upgrade your Apollo subscription to use this feature.',
-        errorType: 'api_access_denied',
-        source: 'apollo_people_search'
-      };
-    }
-    
-    console.log('✅ Apollo People Search API access confirmed - proceeding with searches...');
+    // Skip access test to save 1 API call per search - will fail gracefully if no access
+    console.log('🔐 Skipping access test to save Apollo credits - will fail gracefully if no access');
 
     // Quick test: Let's try multiple Apollo API calls to understand the issue
-    console.log('🧪 === TESTING APOLLO API CALLS ===');
-    
-    // Test 1: Search by google.com domain
-    console.log('🧪 Test 1: Searching google.com domain...');
-    const test1 = await searchPeopleWithCriteria({
-      q_organization_domains_list: ['google.com'],
-      per_page: 3,
-      page: 1
-    });
-    console.log(`🧪 Test 1 result: ${test1.length} people found`);
-    
-    // Test 2: Search by organization name "Google"
-    console.log('🧪 Test 2: Searching organization name "Google"...');
-    const test2 = await searchPeopleWithCriteria({
-      organization_name: 'Google',
-      per_page: 3,
-      page: 1
-    });
-    console.log(`🧪 Test 2 result: ${test2.length} people found`);
-    
-    // Test 3: Search for software engineers everywhere
-    console.log('🧪 Test 3: Searching for software engineers (any company)...');
-    const test3 = await searchPeopleWithCriteria({
-      person_titles: ['software engineer'],
-      per_page: 3,
-      page: 1
-    });
-    console.log(`🧪 Test 3 result: ${test3.length} people found`);
-    if (test3.length > 0) {
-      console.log('🧪 Sample software engineer:', test3[0]);
-    }
-    
-    // Test 4: Try different Google domain variations
-    const googleVariations = ['google.com', 'alphabet.com', 'google.co.uk', 'abc.xyz'];
-    for (const domain of googleVariations) {
-      console.log(`🧪 Testing domain variation: ${domain}`);
-      const testVar = await searchPeopleWithCriteria({
-        q_organization_domains_list: [domain],
-        per_page: 1,
-        page: 1
-      });
-      console.log(`🧪 ${domain}: ${testVar.length} results`);
-    }
-    
-    // Test 5: Check if this affects other major tech companies
-    console.log('🧪 Test 5: Testing other major tech companies...');
-    const majorTechCompanies = ['microsoft.com', 'apple.com', 'meta.com', 'amazon.com'];
-    for (const domain of majorTechCompanies) {
-      console.log(`🧪 Testing major tech company: ${domain}`);
-      const testTech = await searchPeopleWithCriteria({
-        q_organization_domains_list: [domain],
-        per_page: 1,
-        page: 1
-      });
-      console.log(`🧪 ${domain}: ${testTech.length} contacts returned (but may have totalEntries)`);
-    }
-    
-    // Test 6: Test smaller companies to confirm they work
-    console.log('🧪 Test 6: Testing smaller companies...');
-    const smallerCompanies = ['talkdesk.com', 'shopify.com', 'zoom.us'];
-    for (const domain of smallerCompanies) {
-      console.log(`🧪 Testing smaller company: ${domain}`);
-      const testSmall = await searchPeopleWithCriteria({
-        q_organization_domains_list: [domain],
-        per_page: 1,
-        page: 1
-      });
-      console.log(`🧪 ${domain}: ${testSmall.length} contacts returned`);
-    }
-    
-    console.log('🧪 === END APOLLO API TESTS ===');
-    
-    // Test 7: Try narrowed Google search with location filters
-    console.log('🧪 Test 7: Testing narrowed Google search with location filters...');
-    const testNarrowed = await searchPeopleWithCriteria({
-      q_organization_domains_list: ['google.com'],
-      person_titles: ['software engineer'],
-      person_locations: ['california'],
-      person_seniorities: ['senior', 'entry'],
-      include_similar_titles: false,
-      per_page: 5,
-      page: 1
-    });
-    console.log(`🧪 Test 7 (narrowed Google search): ${testNarrowed.length} contacts returned`);
-    if (testNarrowed.length > 0) {
-      console.log('🧪 First narrowed result:', testNarrowed[0].name, '-', testNarrowed[0].title);
-    }
+    // Removed test calls to reduce Apollo API usage
 
     const similarPeople = [];
+    const maxResults = typeof options.maxResults === 'number' && options.maxResults > 0 ? options.maxResults : 3;
+    const perPageForSearch = maxResults === 1 ? 1 : 5;
     let foundSameCompanyAndRole = [];
     let foundSameCompanyOnly = [];
     let foundSameRoleOnly = [];
@@ -148,7 +50,7 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
         organization_name: normalizedCompanyName || undefined,
         person_titles: [jobTitle],
         include_similar_titles: true,
-        per_page: 10,
+        per_page: perPageForSearch,
         page: 1
       };
       
@@ -198,7 +100,8 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
         
         console.log(`After filtering original person: ${filtered.length} people remain`);
         
-        const toAdd = filtered.slice(0, 3);
+        const neededCountP1 = Math.max(0, maxResults - similarPeople.length);
+        const toAdd = filtered.slice(0, neededCountP1);
         similarPeople.push(...toAdd.map(person => ({
           ...person,
           similarity_reason: 'same_company_and_role',
@@ -221,8 +124,12 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
       console.log(`❌ Skipping priority 1 search - missing companyDomain (${companyDomain}) or jobTitle (${jobTitle})`);
     }
 
-    // 2. PRIORITY 2: Same company only (if we need more suggestions)
-    if (companyDomain && similarPeople.length < 3) {
+    // Early exit if we have enough results after Priority 1
+    if (similarPeople.length >= maxResults) {
+      console.log(`✅ Early exit: Found ${similarPeople.length} results after Priority 1, skipping remaining searches to save Apollo credits`);
+    } else {
+      // 2. PRIORITY 2: Same company only (if we need more suggestions)
+      if (companyDomain && similarPeople.length < maxResults) {
       console.log(`Searching for people with same company only (${companyDomain})...`);
       
       const normalizedCompanyNameP2 = normalizeCompanyName(contactedPersonData.company);
@@ -230,7 +137,7 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
       const searchParams = {
         q_organization_domains_list: [companyDomain],
         organization_name: normalizedCompanyNameP2 || undefined,
-        per_page: 15, // Get more results since we need to filter heavily
+        per_page: perPageForSearch,
         page: 1
       };
       
@@ -270,7 +177,7 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
         return true;
       });
 
-      const neededCount = 3 - similarPeople.length;
+      const neededCount = Math.max(0, maxResults - similarPeople.length);
       if (filtered.length > 0 && neededCount > 0) {
         similarPeople.push(...filtered.slice(0, neededCount).map(person => ({
           ...person,
@@ -280,15 +187,15 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
         
         console.log(`Added ${Math.min(filtered.length, neededCount)} people with same company only`);
       }
-    }
+      }
 
-    // 3. PRIORITY 3: Same role only (if we still need more suggestions)
-    if (jobTitle && similarPeople.length < 3) {
+      // 3. PRIORITY 3: Same role only (if we still need more suggestions)
+      if (jobTitle && similarPeople.length < maxResults) {
       console.log(`Searching for people with same role only (${jobTitle})...`);
       foundSameRoleOnly = await searchPeopleWithCriteria({
         person_titles: [jobTitle],
         include_similar_titles: true,
-        per_page: 15, // Get more results since we need to filter
+        per_page: perPageForSearch,
         page: 1
       });
 
@@ -320,7 +227,7 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
         return true;
       });
 
-      const neededCount = 3 - similarPeople.length;
+      const neededCount = Math.max(0, maxResults - similarPeople.length);
       if (filtered.length > 0 && neededCount > 0) {
         similarPeople.push(...filtered.slice(0, neededCount).map(person => ({
           ...person,
@@ -329,6 +236,7 @@ async function findSimilarPeopleWithApollo(contactedPersonData) {
         })));
         
         console.log(`Added ${Math.min(filtered.length, neededCount)} people with same role only`);
+      }
       }
     }
 
@@ -1041,7 +949,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // Handle Apollo People Search for finding similar people
   else if (request.action === 'findSimilarPeople') {
-    findSimilarPeopleWithApollo(request.contactedPersonData)
+    findSimilarPeopleWithApollo(request.contactedPersonData, request.options || {})
       .then(result => {
         sendResponse(result);
       })
