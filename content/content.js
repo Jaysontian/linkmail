@@ -87,30 +87,14 @@
   function forceResetUIState() {
     console.log('Forcing UI state reset for new profile');
     if (window.UIManager) {
-      // Find the success view
+      // Hide all views to avoid flicker; actual view will be decided by resetUI
       const container = document.querySelector('.linkmail-container');
       if (container) {
-        const successView = container.querySelector('#linkmail-success');
-        const splashView = container.querySelector('#linkmail-splash');
-
-        // If success view is visible, hide it and show splash
-        if (successView && successView.style.display === 'block') {
-          console.log('Found success view visible, resetting to splash view');
-          successView.style.display = 'none';
-
-          if (splashView) {
-            splashView.style.display = 'flex';
-
-            // Update the title with the new profile name
-            const nameElement = container.querySelector('#title');
-            if (nameElement) {
-              const h1Element = document.querySelector('h1');
-              const profileName = h1Element ? h1Element.innerText : '';
-              const firstName = profileName.split(' ')[0] || '';
-              nameElement.textContent = `Draft an email to ${firstName}`;
-            }
-          }
-        }
+        ['#linkmail-signin', '#linkmail-splash', '#linkmail-editor', '#linkmail-success', '#linkmail-people-suggestions']
+          .forEach(selector => {
+            const view = container.querySelector(selector);
+            if (view) view.style.display = 'none';
+          });
       }
 
       setTimeout(() => {

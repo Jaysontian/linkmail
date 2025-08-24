@@ -7,6 +7,39 @@ window.UIManager = {
   container: null, // Add this line to store the container reference
   instanceId: Math.random().toString(36).substring(2, 15),
   _isCreatingUI: false,
+  _ownProfileId: null,
+  // Determine page type safely even if content script hasn't set window.currentPageType yet
+  getSafePageType() {
+    try {
+      // Prefer reliable page type if explicitly set to feed/own-profile
+      const cp = window.currentPageType;
+      if (cp === 'feed' || cp === 'own-profile') return cp;
+
+      const href = window.location.href || '';
+      if (href.includes('/feed/')) return 'feed';
+      if (href.includes('/in/')) {
+        const currentMatch = href.match(/linkedin\.com\/in\/([^\/?#]+)/i);
+        const currentId = currentMatch ? currentMatch[1].toLowerCase() : null;
+        const storedId = this._ownProfileId;
+        if (currentId && storedId && currentId === storedId) return 'own-profile';
+        return 'other-profile';
+      }
+      return 'other-profile';
+    } catch (_e) {
+      return window.currentPageType || 'other-profile';
+    }
+  },
+
+  updateOwnProfileIdFromUserData() {
+    try {
+      const storedUrl = this.userData?.linkedinUrl || '';
+      const storedMatch = storedUrl.match(/linkedin\.com\/in\/([^\/?#]+)/i);
+      this._ownProfileId = storedMatch ? storedMatch[1].toLowerCase() : null;
+    } catch (_e) {
+      this._ownProfileId = null;
+    }
+  },
+
   // Track which emails have already triggered the bio setup tab to avoid duplicates
   _bioSetupOpenedByEmail: {},
 
@@ -51,7 +84,7 @@ window.UIManager = {
     const nameElement = document.getElementById('profileName');
 
     // Check page type - treat own-profile same as feed page
-    const pageType = window.currentPageType || 'other-profile';
+    const pageType = this.getSafePageType();
     const shouldShowEmailInterface = pageType === 'other-profile';
 
     if (shouldShowEmailInterface) {
@@ -230,6 +263,9 @@ window.UIManager = {
           picture: window.BackendAPI.userData.picture
         };
 
+        // Keep cached own-profile id updated for stable page-type detection
+        this.updateOwnProfileIdFromUserData();
+
         // Check if user exists in local storage for bio setup completion
         const userExists = await this.checkUserInStorage(this.userData.email);
 
@@ -238,6 +274,7 @@ window.UIManager = {
           const storedUserData = await this.getUserFromStorage(this.userData.email);
           // Merge with backend userData
           this.userData = { ...this.userData, ...storedUserData };
+          this.updateOwnProfileIdFromUserData();
           this.showAuthenticatedUI();
         } else {
           // Redirect to bio setup page
@@ -299,7 +336,7 @@ window.UIManager = {
       }
 
       // Check page type - treat own-profile same as feed page
-      const pageType = window.currentPageType || 'other-profile';
+      const pageType = this.getSafePageType();
       const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
 
       // Only show appropriate view if we're not preserving the current view
@@ -459,7 +496,7 @@ window.UIManager = {
       const nameElement = injectedDiv.querySelector('#title');
       if (nameElement) {
                 // Check page type - treat own-profile same as feed page
-        const pageType = window.currentPageType || 'other-profile';
+        const pageType = this.getSafePageType();
         const shouldUseManualEmail = pageType === 'feed' || pageType === 'own-profile';
 
         if (shouldUseManualEmail) {
@@ -532,6 +569,21 @@ window.UIManager = {
           generateButton: !!this.elements.generateButton
         });
         return;
+      }
+
+      // Prevent flicker: hide all views immediately after injection
+      const editorViewAtInit = injectedDiv.querySelector('#linkmail-editor');
+      const successViewAtInit = injectedDiv.querySelector('#linkmail-success');
+      [this.elements.signInView, this.elements.splashView, this.elements.peopleSuggestionsView, editorViewAtInit, successViewAtInit]
+        .forEach(view => { if (view) view.style.display = 'none'; });
+
+      // If we're on feed or own-profile, pre-show the people suggestions view with a loading state
+      const initialPageType = window.currentPageType || 'other-profile';
+      const isFeedLikePage = initialPageType === 'feed' || initialPageType === 'own-profile';
+      if (isFeedLikePage && this.elements.peopleSuggestionsView) {
+        this.elements.peopleSuggestionsView.style.display = 'block';
+        const loadingEl = injectedDiv.querySelector('#people-suggestions-loading');
+        if (loadingEl) loadingEl.style.display = 'block';
       }
 
       // Check authentication status
@@ -1239,7 +1291,7 @@ window.UIManager = {
           this.userData = { ...this.userData, ...storedUserData };
 
           // Check page type - treat own-profile same as feed page
-          const pageType = window.currentPageType || 'other-profile';
+          const pageType = this.getSafePageType();
           const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
 
           if (shouldShowPeopleSuggestions) {
@@ -1282,7 +1334,7 @@ window.UIManager = {
     // Update the title based on page type
     const nameElement = this.container.querySelector('#title');
     if (nameElement) {
-      const pageType = window.currentPageType || 'other-profile';
+      const pageType = this.getSafePageType();
       const shouldShowGenericTitle = pageType === 'feed' || pageType === 'own-profile';
 
       if (shouldShowGenericTitle) {
