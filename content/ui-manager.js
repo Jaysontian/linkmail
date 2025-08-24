@@ -1,5 +1,20 @@
 //ui-manager.js
-window.UIManager = {
+// Load split helpers during tests (Node), no effect in browser
+try {
+  if (typeof module !== 'undefined' && module.exports) {
+    require('./ui/helpers.js');
+    require('./ui/auth.js');
+    require('./ui/similar.js');
+    require('./ui/people.js');
+    require('./ui/templates.js');
+    require('./ui/history.js');
+    require('./ui/messages.js');
+    require('./ui/views.js');
+    require('./ui/bootstrap.js');
+  }
+} catch (_e) {}
+const __existingUI = window.UIManager || {};
+window.UIManager = Object.assign(__existingUI, {
   elements: {},
   userData: null,
   isAuthenticated: false,
@@ -8,37 +23,6 @@ window.UIManager = {
   instanceId: Math.random().toString(36).substring(2, 15),
   _isCreatingUI: false,
   _ownProfileId: null,
-  // Determine page type safely even if content script hasn't set window.currentPageType yet
-  getSafePageType() {
-    try {
-      // Prefer reliable page type if explicitly set to feed/own-profile
-      const cp = window.currentPageType;
-      if (cp === 'feed' || cp === 'own-profile') return cp;
-
-      const href = window.location.href || '';
-      if (href.includes('/feed/')) return 'feed';
-      if (href.includes('/in/')) {
-        const currentMatch = href.match(/linkedin\.com\/in\/([^\/?#]+)/i);
-        const currentId = currentMatch ? currentMatch[1].toLowerCase() : null;
-        const storedId = this._ownProfileId;
-        if (currentId && storedId && currentId === storedId) return 'own-profile';
-        return 'other-profile';
-      }
-      return 'other-profile';
-    } catch (_e) {
-      return window.currentPageType || 'other-profile';
-    }
-  },
-
-  updateOwnProfileIdFromUserData() {
-    try {
-      const storedUrl = this.userData?.linkedinUrl || '';
-      const storedMatch = storedUrl.match(/linkedin\.com\/in\/([^\/?#]+)/i);
-      this._ownProfileId = storedMatch ? storedMatch[1].toLowerCase() : null;
-    } catch (_e) {
-      this._ownProfileId = null;
-    }
-  },
 
   // Track which emails have already triggered the bio setup tab to avoid duplicates
   _bioSetupOpenedByEmail: {},
@@ -324,12 +308,6 @@ window.UIManager = {
     try {
       console.log('Showing authenticated UI, preserveCurrentView:', preserveCurrentView);
 
-      // Check if extension context is still valid
-      if (!chrome.runtime?.id) {
-        console.log('Extension context invalidated, cannot show authenticated UI');
-        return;
-      }
-
       // Always hide the sign-in view
       if (this.elements.signInView) {
         this.elements.signInView.style.display = 'none';
@@ -540,26 +518,8 @@ window.UIManager = {
       }
 
 
-      // Store references to elements
-      this.elements = {
-        signInButton: injectedDiv.querySelector('#googleSignInButton'),
-        signInView: injectedDiv.querySelector('#linkmail-signin'),
-        splashView: injectedDiv.querySelector('#linkmail-splash'),
-        peopleSuggestionsView: injectedDiv.querySelector('#linkmail-people-suggestions'),
-        generateButton: injectedDiv.querySelector('#generateButton'),
-        loadingIndicator: injectedDiv.querySelector('#loadingIndicator'),
-        emailSubject: injectedDiv.querySelector('#emailSubject'),
-        emailResult: injectedDiv.querySelector('#emailResult'),
-        copyButton: injectedDiv.querySelector('#copyButton'),
-        sendGmailButton: injectedDiv.querySelector('#sendGmailButton'),
-        signOutButton: injectedDiv.querySelector('#signOutButton'),
-        editProfileButton: injectedDiv.querySelector('#editProfileButton'),
-        templateDropdown: injectedDiv.querySelector('#template-dropdown'),
-        menuToggle: injectedDiv.querySelector('#menuToggle'),
-        menuContent: injectedDiv.querySelector('#menuContent'),
-        findEmailButton: injectedDiv.querySelector('#findEmailButton'),
-        retryPeopleSearchButton: injectedDiv.querySelector('#retry-people-search')
-      };
+      // Store references to elements in a centralized way
+      this._cacheElements(injectedDiv);
 
       // Check that required elements exist
       if (!this.elements.signInButton || !this.elements.splashView || !this.elements.generateButton) {
@@ -1182,7 +1142,6 @@ window.UIManager = {
     }
   },
 
-  // REPLACE the setupStorageListener method in ui-manager.js with this one
   setupStorageListener() {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       // Skip storage listener updates if we're in the email success state
@@ -1251,10 +1210,8 @@ window.UIManager = {
     const signInView = this.container.querySelector('#linkmail-signin');
     const peopleSuggestionsView = this.container.querySelector('#linkmail-people-suggestions');
 
-    // Hide ALL views first
-    [editorView, successView, splashView, signInView, peopleSuggestionsView].forEach(view => {
-      if (view) view.style.display = 'none';
-    });
+    // Hide ALL views first (centralized)
+    this._hideAllViews();
 
     // Reset form fields
     const emailResult = this.container.querySelector('#emailResult');
@@ -1371,14 +1328,8 @@ window.UIManager = {
       return;
     }
 
-    // Define all possible views
-    const allViews = [
-      '#linkmail-signin',
-      '#linkmail-splash',
-      '#linkmail-editor',
-      '#linkmail-success',
-      '#linkmail-people-suggestions'
-    ];
+    // Define all possible views (centralized)
+    const allViews = this.ALL_VIEWS;
 
     // Hide all views first
     allViews.forEach(selector => {
@@ -1411,7 +1362,6 @@ window.UIManager = {
   },
 
   // Update the populateTemplateDropdown method in UI-manager.js
-
   populateTemplateDropdown() {
     const templateContainer = this.elements.templateDropdown;
 
@@ -1627,259 +1577,9 @@ window.UIManager = {
     }
   },
 
-  // Find and show similar person suggestion
-  async findAndShowSimilarPerson() {
-    try {
-      console.log('Finding similar person suggestion...');
+  // similar person logic is in content/ui/similar.js
 
-      // Get the current profile data
-      const profileData = await ProfileScraper.scrapeBasicProfileData();
-      console.log('Current profile data for similar person search:', profileData);
-
-      // Call Apollo People Search API
-      const searchResult = await this.findSimilarPeopleUsingApollo(profileData);
-      console.log('Similar person search result:', searchResult);
-
-      // Log debug information if available
-                if (searchResult.debug) {
-            console.log('🔍 === APOLLO SEARCH DEBUG INFO ===');
-            console.log('🏢 Original company:', searchResult.debug.originalCompany);
-            console.log('🌐 Extracted domain:', searchResult.debug.extractedDomain);
-            console.log('💼 Original job title:', searchResult.debug.originalJobTitle);
-            console.log('📝 Normalized job title:', searchResult.debug.normalizedJobTitle);
-            console.log('📊 Search results by priority:');
-            console.log('  🎯 Same company + role:', searchResult.debug.searchResults.sameCompanyAndRole);
-            console.log('  🏢 Same company only:', searchResult.debug.searchResults.sameCompanyOnly);
-            console.log('  💼 Same role only:', searchResult.debug.searchResults.sameRoleOnly);
-            console.log('✨ Final suggestions:');
-            searchResult.debug.finalSuggestions.forEach((suggestion, index) => {
-              console.log(`  ${index + 1}. ${suggestion.name} - ${suggestion.title} at ${suggestion.company} (${suggestion.reason})`);
-            });
-            
-            // Show major company filtering info if applied
-            if (searchResult.debug.majorCompanyFiltering && searchResult.debug.majorCompanyFiltering.applied) {
-              console.log('📊 MAJOR COMPANY FILTERING INFO:');
-              console.log(`   Company: ${searchResult.debug.majorCompanyFiltering.company}`);
-              console.log(`   Reason: ${searchResult.debug.majorCompanyFiltering.reason}`);
-              console.log('   Note: Applied location and seniority filters to narrow search results');
-            }
-            
-            console.log('🔍 === END DEBUG INFO ===');
-          }
-
-      if (searchResult.success && searchResult.suggestion) {
-        // Check if we applied major company filtering
-        const hasMajorFiltering = searchResult.debug && 
-                                  searchResult.debug.majorCompanyFiltering && 
-                                  searchResult.debug.majorCompanyFiltering.applied;
-        
-        this.showSimilarPersonSuggestion(searchResult.suggestion, hasMajorFiltering);
-      } else {
-        console.log('No similar person found or error occurred:', searchResult.error);
-        
-        // Check if it's an API access error
-        if (searchResult.errorType === 'api_access_denied') {
-          this.showSimilarPersonUpgradeMessage();
-        } else {
-          // Hide the similar person section for other errors
-          const similarPersonSection = this.container.querySelector('#similar-person-section');
-          if (similarPersonSection) {
-            similarPersonSection.style.display = 'none';
-          }
-        }
-      }
-
-    } catch (error) {
-      console.error('Error finding similar person:', error);
-      // Hide the similar person section on error
-      const similarPersonSection = this.container.querySelector('#similar-person-section');
-      if (similarPersonSection) {
-        similarPersonSection.style.display = 'none';
-      }
-    }
-  },
-
-  // Call Apollo People Search API through background script
-  async findSimilarPeopleUsingApollo(contactedPersonData) {
-    try {
-      console.log('📡 Calling Apollo People Search API through background script');
-      console.log('📡 Sending profile data:', contactedPersonData);
-
-      return new Promise((resolve) => {
-        console.log('📡 Sending Chrome runtime message...');
-        
-        chrome.runtime.sendMessage({
-          action: 'findSimilarPeople',
-          contactedPersonData: contactedPersonData,
-          options: { maxResults: 1 }
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('❌ Chrome runtime error in similar people search:', chrome.runtime.lastError);
-            resolve({
-              success: false,
-              error: 'Extension error occurred'
-            });
-            return;
-          }
-
-          console.log('📡 Received Apollo People Search response:', response);
-          
-          // Log the raw response structure
-          if (response && response.debug) {
-            console.log('📡 Background script debug info received:');
-            console.log('   - Original company:', response.debug.originalCompany);
-            console.log('   - Extracted domain:', response.debug.extractedDomain);
-            console.log('   - Search results:', response.debug.searchResults);
-            
-            // Check for major company filtering
-            if (response.debug.majorCompanyFiltering && response.debug.majorCompanyFiltering.applied) {
-              console.log('📊 MAJOR COMPANY FILTERING APPLIED');
-              console.log('   - Company:', response.debug.majorCompanyFiltering.company);
-              console.log('   - Reason:', response.debug.majorCompanyFiltering.reason);
-            }
-          } else {
-            console.log('📡 No debug info in response');
-          }
-          
-          resolve(response);
-        });
-      });
-    } catch (error) {
-      console.error('❌ Error in findSimilarPeopleUsingApollo:', error);
-      return {
-        success: false,
-        error: 'Failed to connect to Apollo People Search API'
-      };
-    }
-  },
-
-  // Show upgrade message when Apollo API access is denied
-  showSimilarPersonUpgradeMessage() {
-    try {
-      console.log('Showing Apollo upgrade message');
-
-      const similarPersonSection = this.container.querySelector('#similar-person-section');
-      const similarPersonCard = this.container.querySelector('#similar-person-card');
-
-      if (!similarPersonSection || !similarPersonCard) {
-        console.error('Similar person UI elements not found for upgrade message');
-        return;
-      }
-
-      // Replace the card content with upgrade message
-      similarPersonCard.innerHTML = `
-        <div style="text-align: center; padding: 8px;">
-          <div style="font-size: 16px; margin-bottom: 6px;">🚀</div>
-          <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 4px;">
-            Upgrade to Apollo Pro
-          </div>
-          <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
-            Find similar people to contact next
-          </div>
-          <div style="font-size: 10px; color: #0066cc; cursor: pointer; text-decoration: underline;" onclick="window.open('https://apollo.io/pricing', '_blank')">
-            View pricing →
-          </div>
-        </div>
-      `;
-
-      // Remove click handler and hover effects since this is now an upgrade message
-      similarPersonCard.onclick = null;
-      similarPersonCard.style.cursor = 'default';
-
-      // Show the section
-      similarPersonSection.style.display = 'block';
-      console.log('Apollo upgrade message displayed successfully');
-
-    } catch (error) {
-      console.error('Error showing Apollo upgrade message:', error);
-    }
-  },
-
-  // Show similar person suggestion in the UI
-  showSimilarPersonSuggestion(suggestion, hasMajorFiltering = false) {
-    try {
-      console.log('Showing similar person suggestion:', suggestion);
-
-      const similarPersonSection = this.container.querySelector('#similar-person-section');
-      const similarPersonCard = this.container.querySelector('#similar-person-card');
-      const avatarElement = this.container.querySelector('#similar-person-avatar');
-      const nameElement = this.container.querySelector('#similar-person-name');
-      const titleElement = this.container.querySelector('#similar-person-title');
-      const reasonElement = this.container.querySelector('#similar-person-reason');
-
-      if (!similarPersonSection || !similarPersonCard || !avatarElement || !nameElement || !titleElement || !reasonElement) {
-        console.error('Similar person UI elements not found');
-        return;
-      }
-
-      // Populate the suggestion data
-      const name = suggestion.name || suggestion.first_name + ' ' + suggestion.last_name || 'Unknown';
-      const title = suggestion.title || suggestion.headline || 'No title available';
-      const company = suggestion.organization?.name || suggestion.organization_name || '';
-      
-      // Create display title with company if available
-      const displayTitle = company ? `${title} at ${company}` : title;
-
-      // Generate avatar initials
-      const initials = name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-
-      // Set similarity reason text
-      let reasonText = '';
-      switch (suggestion.similarity_reason) {
-        case 'same_company_and_role':
-          reasonText = '🎯 Same company & role';
-          break;
-        case 'same_company':
-          reasonText = '🏢 Same company';
-          break;
-        case 'same_role':
-          reasonText = '💼 Same role';
-          // Add note for narrowed major company search
-          if (hasMajorFiltering) {
-            reasonText += ' (filtered search)';
-          }
-          break;
-        default:
-          reasonText = '🔍 Similar profile';
-      }
-
-      // Populate UI elements
-      avatarElement.textContent = initials;
-      nameElement.textContent = name;
-      titleElement.textContent = displayTitle;
-      reasonElement.textContent = reasonText;
-
-      // Add click handler to navigate to LinkedIn
-      similarPersonCard.onclick = () => {
-        if (suggestion.linkedin_url) {
-          console.log('Navigating to LinkedIn profile:', suggestion.linkedin_url);
-          window.open(suggestion.linkedin_url, '_blank');
-        } else {
-          console.warn('No LinkedIn URL available for suggestion');
-        }
-      };
-
-      // Add hover effect
-      similarPersonCard.addEventListener('mouseenter', () => {
-        similarPersonCard.style.backgroundColor = '#f0f4f8';
-        similarPersonCard.style.transform = 'translateY(-1px)';
-      });
-
-      similarPersonCard.addEventListener('mouseleave', () => {
-        similarPersonCard.style.backgroundColor = 'transparent';
-        similarPersonCard.style.transform = 'translateY(0)';
-      });
-
-      // Show the similar person section
-      similarPersonSection.style.display = 'block';
-      console.log('Similar person suggestion displayed successfully');
-
-    } catch (error) {
-      console.error('Error showing similar person suggestion:', error);
-    }
-  },
-
-  // Add this method to the UIManager object in ui-manager.js
+  // Email history logic remains here (extracted helpers used elsewhere)
   async checkLastEmailSent() {
     try {
       console.log('Checking last email sent...');
@@ -2038,7 +1738,7 @@ window.UIManager = {
     });
   },
 
-  // Add this method to UIManager
+  // Focus refresh listener
   setupFocusRefresh() {
     // Set up a handler to refresh templates when the window regains focus
     window.addEventListener('focus', () => {
@@ -2162,288 +1862,7 @@ window.UIManager = {
     }, 10000);
   },
 
-  // Load people suggestions for feed page
-  async loadPeopleSuggestions() {
-    try {
-      console.log('Loading people suggestions...');
-
-      // Debounce: prevent rapid consecutive calls
-      if (this._loadPeopleSuggestionsTimeout) {
-        clearTimeout(this._loadPeopleSuggestionsTimeout);
-      }
-      await new Promise(resolve => {
-        this._loadPeopleSuggestionsTimeout = setTimeout(resolve, 200);
-      });
-
-      // Show loading state
-      const loadingEl = this.container.querySelector('#people-suggestions-loading');
-      const errorEl = this.container.querySelector('#people-suggestions-error');
-      const containerEl = this.container.querySelector('#suggested-people-container');
-
-      if (loadingEl) loadingEl.style.display = 'block';
-      if (errorEl) errorEl.style.display = 'none';
-      if (containerEl) containerEl.innerHTML = '';
-
-      // Get user profile information for Apollo search
-      const userProfileData = await this.getUserProfileDataForSearch();
-      
-      if (!userProfileData) {
-        this.showPeopleSuggestionsError('Unable to load your profile information');
-        return;
-      }
-
-      console.log('User profile data for Apollo search:', userProfileData);
-
-      // Caching: use cached suggestions if fresh
-      const cacheKey = `peopleSuggestions:${this.userData.email}`;
-      const now = Date.now();
-      const maxAgeMs = 2 * 60 * 60 * 1000; // 2 hours - longer cache to reduce Apollo API calls
-      try {
-        const stored = await new Promise(resolve => chrome.storage.local.get([cacheKey], r => resolve(r[cacheKey])));
-        if (stored && stored.timestamp && Array.isArray(stored.suggestions) && (now - stored.timestamp) < maxAgeMs) {
-          console.log('Using cached people suggestions');
-          if (loadingEl) loadingEl.style.display = 'none';
-          this.displayPeopleSuggestions(stored.suggestions.slice(0, 3));
-          return;
-        }
-      } catch (e) {
-        console.log('Cache read error (non-fatal):', e);
-      }
-
-      // Call Apollo People Search API
-      const searchResult = await this.findPeopleUsingApollo(userProfileData);
-      
-      if (loadingEl) loadingEl.style.display = 'none';
-
-      if (searchResult.success && searchResult.allSuggestions && searchResult.allSuggestions.length > 0) {
-        const topThree = searchResult.allSuggestions.slice(0, 3);
-        // Write to cache
-        try {
-          await new Promise(resolve => chrome.storage.local.set({ [cacheKey]: { suggestions: topThree, timestamp: Date.now() } }, resolve));
-        } catch (e) {
-          console.log('Cache write error (non-fatal):', e);
-        }
-        this.displayPeopleSuggestions(topThree); // Show top 3
-      } else {
-        const errorMessage = searchResult.error || 'No relevant people found at the moment';
-        this.showPeopleSuggestionsError(errorMessage);
-      }
-
-    } catch (error) {
-      console.error('Error loading people suggestions:', error);
-      const loadingEl = this.container.querySelector('#people-suggestions-loading');
-      if (loadingEl) loadingEl.style.display = 'none';
-      this.showPeopleSuggestionsError('Failed to load suggestions. Please try again.');
-    }
-  },
-
-  // Get user profile data for Apollo search
-  async getUserProfileDataForSearch() {
-    try {
-      // Get user data from storage which contains their bio information
-      if (!this.userData || !this.userData.email) {
-        console.log('No user data available for search');
-        return null;
-      }
-
-      // Extract useful information from user data
-      const userProfile = {
-        name: this.userData.name || '',
-        email: this.userData.email,
-        college: this.userData.college || '',
-        graduationYear: this.userData.graduationYear || '',
-        skills: this.userData.skills || [],
-        experiences: this.userData.experiences || []
-      };
-
-      // Derive company and job title from most recent experience
-      let company = '';
-      let headline = '';
-      
-      if (userProfile.experiences && userProfile.experiences.length > 0) {
-        const mostRecentExp = userProfile.experiences[0]; // Assuming first is most recent
-        company = mostRecentExp.company || '';
-        headline = mostRecentExp.position || '';
-      }
-
-      // If no experience, try to use college information
-      if (!company && userProfile.college) {
-        company = userProfile.college;
-        headline = 'Student'; // Default headline for students
-      }
-
-      return {
-        name: userProfile.name,
-        company: company,
-        headline: headline,
-        location: '', // We don't have location info from bio setup
-        linkedinUrl: this.userData.linkedinUrl || '', // Use the user's LinkedIn URL from profile
-        isUserProfile: true // Flag to indicate this is the user's own profile
-      };
-
-    } catch (error) {
-      console.error('Error getting user profile data for search:', error);
-      return null;
-    }
-  },
-
-  // Find people using Apollo API (similar to existing implementation but for user's profile)
-  async findPeopleUsingApollo(userProfileData) {
-    try {
-      console.log('Finding people with Apollo People Search API for user:', userProfileData);
-
-      return new Promise((resolve) => {
-        chrome.runtime.sendMessage({
-          action: 'findSimilarPeople',
-          contactedPersonData: userProfileData,
-          options: { maxResults: 3 } // Optimize feed page to use early exit
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('Chrome runtime error in people search:', chrome.runtime.lastError);
-            resolve({
-              success: false,
-              error: 'Extension error occurred'
-            });
-            return;
-          }
-
-          console.log('Apollo People Search response for user:', response);
-          resolve(response);
-        });
-      });
-    } catch (error) {
-      console.error('Error in findPeopleUsingApollo:', error);
-      return {
-        success: false,
-        error: 'Failed to connect to Apollo People Search API'
-      };
-    }
-  },
-
-  // Display people suggestions in the UI
-  displayPeopleSuggestions(suggestions) {
-    try {
-      console.log('Displaying people suggestions:', suggestions);
-
-      const containerEl = this.container.querySelector('#suggested-people-container');
-      if (!containerEl) {
-        console.error('Suggested people container not found');
-        return;
-      }
-
-      // Clear existing content
-      containerEl.innerHTML = '';
-
-      suggestions.forEach((person, index) => {
-        const personCard = this.createPersonCard(person, index);
-        containerEl.appendChild(personCard);
-      });
-
-      console.log('People suggestions displayed successfully');
-
-    } catch (error) {
-      console.error('Error displaying people suggestions:', error);
-      this.showPeopleSuggestionsError('Error displaying suggestions');
-    }
-  },
-
-  // Create a person card element
-  createPersonCard(person, index) {
-    const card = document.createElement('div');
-    card.className = 'suggested-person-card';
-    card.style.cssText = `
-      background: #f8f9fa;
-      border: 1px solid #e1e5e9;
-      border-radius: 8px;
-      padding: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    `;
-
-    // Generate avatar initials
-    const name = person.name || person.first_name + ' ' + person.last_name || 'Unknown';
-    const initials = name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-
-    // Create display info
-    const title = person.title || person.headline || 'No title available';
-    const company = person.organization?.name || person.organization_name || '';
-    const displayTitle = company ? `${title} at ${company}` : title;
-
-    // Set reason text
-    let reasonText = '';
-    switch (person.similarity_reason) {
-      case 'same_company_and_role':
-        reasonText = '🎯 Same company & role';
-        break;
-      case 'same_company':
-        reasonText = '🏢 Same company';
-        break;
-      case 'same_role':
-        reasonText = '💼 Same role';
-        break;
-      default:
-        reasonText = '🔍 Relevant connection';
-    }
-
-    card.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background: #0066cc; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
-          ${initials}
-        </div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${name}
-          </div>
-          <div style="font-size: 11px; color: #666; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${displayTitle}
-          </div>
-          <div style="font-size: 10px; color: #0066cc; font-weight: 500;">
-            ${reasonText}
-          </div>
-        </div>
-        <div style="color: #0066cc; font-size: 14px; flex-shrink: 0;">
-          →
-        </div>
-      </div>
-    `;
-
-    // Add click handler to navigate to LinkedIn profile
-    card.addEventListener('click', () => {
-      if (person.linkedin_url) {
-        console.log('Navigating to LinkedIn profile:', person.linkedin_url);
-        window.open(person.linkedin_url, '_blank');
-      } else {
-        console.warn('No LinkedIn URL available for person:', person.name);
-        this.showTemporaryMessage('LinkedIn profile not available', 'error');
-      }
-    });
-
-    // Add hover effects
-    card.addEventListener('mouseenter', () => {
-      card.style.backgroundColor = '#e8f4f8';
-      card.style.transform = 'translateY(-1px)';
-    });
-
-    card.addEventListener('mouseleave', () => {
-      card.style.backgroundColor = '#f8f9fa';
-      card.style.transform = 'translateY(0)';
-    });
-
-    return card;
-  },
-
-
-
-  // Show error state for people suggestions
-  showPeopleSuggestionsError(errorMessage) {
-    const loadingEl = this.container.querySelector('#people-suggestions-loading');
-    const errorEl = this.container.querySelector('#people-suggestions-error');
-    const errorTextEl = errorEl?.querySelector('p');
-
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (errorEl) errorEl.style.display = 'block';
-    if (errorTextEl) errorTextEl.textContent = errorMessage;
-  },
+  // People suggestions logic is in content/ui/people.js
 
   // Show temporary message to user
   showTemporaryMessage(message, type = 'info') {
@@ -2501,9 +1920,9 @@ window.UIManager = {
       }
     }, 3000);
   }
-};
+});
 
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = UIManager;
+  module.exports = window.UIManager;
 }
