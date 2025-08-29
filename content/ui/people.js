@@ -27,8 +27,9 @@
       if (errorEl) errorEl.style.display = 'none';
       if (containerEl) containerEl.innerHTML = '';
 
-      // Populate facets dropdowns from backend
+      // Populate facets dropdowns from backend and wire search button
       await this.populateFacetsDropdowns();
+      this.attachPeopleSearchHandlers();
 
       // Get user profile information for suggestions (Apollo removed)
       const userProfileData = await this.getUserProfileDataForSearch();
@@ -139,6 +140,89 @@
 
     if (jobTitleSelect) setOptions(jobTitleSelect, jobTitles || []);
     if (companySelect) setOptions(companySelect, companies || []);
+  };
+
+  // Attach search button behavior for people search
+  window.UIManager.attachPeopleSearchHandlers = function attachPeopleSearchHandlers() {
+    try {
+      const searchBtn = this.container?.querySelector('#peopleSearchButton');
+      const jobTitleSelect = this.container?.querySelector('#jobTitleFilter');
+      const companySelect = this.container?.querySelector('#companyFilter');
+      const resultsContainer = this.container?.querySelector('#people-search-results');
+      if (!searchBtn || !jobTitleSelect || !companySelect || !resultsContainer) return;
+
+      // Helper to render results
+      const renderResults = (results) => {
+        resultsContainer.innerHTML = '';
+        if (!Array.isArray(results) || results.length === 0) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'font-size: 11px; color: #666;';
+          empty.textContent = 'No results.';
+          resultsContainer.appendChild(empty);
+          return;
+        }
+        results.slice(0, 3).forEach((person) => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; border:1px solid #e1e5e9; border-radius:6px; padding:8px; background:white; cursor:' + (person.linkedinUrl ? 'pointer' : 'default') + ';';
+          const name = `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Unknown';
+          const title = person.jobTitle || '';
+          const company = person.company || '';
+          const left = document.createElement('div');
+          left.style.cssText = 'display:flex; flex-direction:column; gap:2px;';
+          const nameEl = document.createElement('div');
+          nameEl.style.cssText = 'font-weight:600; font-size: 12px; color:#333;';
+          nameEl.textContent = name;
+          const infoEl = document.createElement('div');
+          infoEl.style.cssText = 'font-size: 11px; color:#666;';
+          infoEl.textContent = [title, company].filter(Boolean).join(' at ');
+          left.appendChild(nameEl);
+          left.appendChild(infoEl);
+          row.appendChild(left);
+          if (person.linkedinUrl) {
+            row.addEventListener('click', () => {
+              window.location.href = person.linkedinUrl;
+            });
+          }
+          resultsContainer.appendChild(row);
+        });
+      };
+
+      // Debounce repeated searches for same params
+      let lastKey = '';
+      const doSearch = async () => {
+        if (!window.BackendAPI || !BackendAPI.isAuthenticated) {
+          renderResults([]);
+          return;
+        }
+        const jobTitle = jobTitleSelect.value;
+        const company = companySelect.value;
+        if (!jobTitle || !company) {
+          renderResults([]);
+          return;
+        }
+        const key = `${jobTitle}|||${company}`;
+        if (key === lastKey) return;
+        lastKey = key;
+
+        // Loading state
+        resultsContainer.innerHTML = '<div style="font-size:11px; color:#666;">Searching...</div>';
+        try {
+          const { results } = await BackendAPI.searchContacts(jobTitle, company);
+          renderResults(results);
+        } catch (error) {
+          console.error('People search failed:', error);
+          const err = document.createElement('div');
+          err.style.cssText = 'font-size: 11px; color: #e74c3c;';
+          err.textContent = error?.message || 'Search failed';
+          resultsContainer.innerHTML = '';
+          resultsContainer.appendChild(err);
+        }
+      };
+
+      searchBtn.onclick = doSearch;
+    } catch (e) {
+      console.error('Failed to attach people search handlers:', e);
+    }
   };
 
   // Get user profile data for suggestions

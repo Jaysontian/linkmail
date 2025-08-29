@@ -407,6 +407,57 @@ window.BackendAPI = {
   },
 
   /**
+   * Search contacts by jobTitle and company (returns up to 3)
+   * @param {string} jobTitle
+   * @param {string} company
+   * @returns {Promise<{ results: Array }>} contacts list
+   */
+  async searchContacts(jobTitle, company) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+    if (!jobTitle || !company) {
+      throw new Error('Both jobTitle and company are required');
+    }
+
+    try {
+      const base = this.apiBaseURL || this.baseURL;
+      const params = new URLSearchParams({ jobTitle, company });
+      const url = `${base}/api/contacts/search?${params.toString()}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.userToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 401) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      const results = Array.isArray(json.results) ? json.results : [];
+      return { results };
+    } catch (error) {
+      console.error('Failed to search contacts:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Debug method to check authentication state
    * @returns {Promise<Object>} Current auth state
    */
