@@ -21,8 +21,7 @@ global.EmailFinder = {
   _lastFoundEmail: null,
   _lastProfileUrl: null,
   getEmail: jest.fn().mockResolvedValue('test@example.com'),
-  clearCachedEmail: jest.fn(),
-  findEmailWithApollo: jest.fn().mockResolvedValue({ success: false, error: 'Not found' })
+  clearCachedEmail: jest.fn()
 };
 
 global.GmailManager = {

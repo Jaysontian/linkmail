@@ -21,8 +21,7 @@ global.EmailFinder = {
   _lastFoundEmail: null,
   _lastProfileUrl: null,
   getEmail: jest.fn().mockResolvedValue('test@example.com'),
-  clearCachedEmail: jest.fn(),
-  findEmailWithApollo: jest.fn().mockResolvedValue({ success: false, error: 'Not found' })
+  clearCachedEmail: jest.fn()
 };
 
 global.GmailManager = {
@@ -140,48 +139,7 @@ describe('LinkedIn Feed Page People Suggestions', () => {
       });
     });
 
-    // Mock Apollo People Search response
-    chrome.runtime.sendMessage.mockImplementation((message, callback) => {
-      if (message.action === 'findSimilarPeople') {
-        callback({
-          success: true,
-          allSuggestions: [
-            {
-              name: 'Alice Johnson',
-              first_name: 'Alice',
-              last_name: 'Johnson',
-              email: 'alice.johnson@example.com',
-              title: 'Senior Software Engineer',
-              organization: { name: 'TechCorp' },
-              linkedin_url: 'https://linkedin.com/in/alice-johnson',
-              similarity_reason: 'same_company_and_role'
-            },
-            {
-              name: 'Bob Smith',
-              first_name: 'Bob',
-              last_name: 'Smith',
-              email: 'bob.smith@example.com',
-              title: 'Product Manager',
-              organization: { name: 'StartupCo' },
-              linkedin_url: 'https://linkedin.com/in/bob-smith',
-              similarity_reason: 'same_role'
-            },
-            {
-              name: 'Carol Davis',
-              first_name: 'Carol',
-              last_name: 'Davis',
-              email: 'carol.davis@example.com',
-              title: 'Data Scientist',
-              organization: { name: 'DataCorp' },
-              linkedin_url: 'https://linkedin.com/in/carol-davis',
-              similarity_reason: 'same_company'
-            }
-          ]
-        });
-      } else {
-        callback({});
-      }
-    });
+    // Similar People search removed - no runtime message mocking
   });
 
   test('should show people suggestions view instead of splash on feed page', async () => {
@@ -252,16 +210,12 @@ describe('LinkedIn Feed Page People Suggestions', () => {
       company: 'TechCorp',
       headline: 'Software Engineer'
     });
-    UIManager.findPeopleUsingApollo = jest.fn().mockResolvedValue({
-      success: true,
-      allSuggestions: mockSuggestions
-    });
+    UIManager.findPeopleUsingApollo = jest.fn().mockResolvedValue({ success: false });
 
     await UIManager.loadPeopleSuggestions();
 
     expect(UIManager.getUserProfileDataForSearch).toHaveBeenCalled();
     expect(UIManager.findPeopleUsingApollo).toHaveBeenCalled();
-    expect(UIManager.displayPeopleSuggestions).toHaveBeenCalledWith(mockSuggestions);
   });
 
   test('should extract user profile data for Apollo search', async () => {

@@ -113,43 +113,7 @@ window.EmailFinder = {
     this._lastProfileUrl = null;
   },
 
-  // Find email using Apollo API - delegate to Apollo client
-  async findEmailWithApollo(profileData) {
-    // Delegate to ApolloClient module if available
-    if (window.ApolloClient) {
-      return await window.ApolloClient.findEmailWithProfile(profileData);
-    } else {
-      // Fallback to direct Chrome runtime message
-      try {
-        console.log('Attempting to find email with Apollo API');
-
-        return new Promise((resolve) => {
-          chrome.runtime.sendMessage({
-            action: 'enrichWithApollo',
-            profileData: profileData
-          }, (response) => {
-            if (chrome.runtime.lastError) {
-              console.error('Chrome runtime error:', chrome.runtime.lastError);
-              resolve({
-                success: false,
-                error: 'Extension error occurred'
-              });
-              return;
-            }
-
-            console.log('Apollo API response:', response);
-            resolve(response);
-          });
-        });
-      } catch (error) {
-        console.error('Error in findEmailWithApollo:', error);
-        return {
-          success: false,
-          error: 'Failed to connect to Apollo API'
-        };
-      }
-    }
-  }
+  // Apollo integration removed
 };
 
 // Export for testing

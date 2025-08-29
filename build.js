@@ -16,7 +16,6 @@ const filesToInclude = [
   'dashboard.html',
   'assets/',
   'backend/',
-  'apollo/',
   'content/',
   'dashboard/',
   'generate/',

@@ -16,9 +16,7 @@ global.ProfileScraper = {
     lastName: 'Doe'
   }),
 };
-global.EmailFinder = {
-  findEmailWithApollo: jest.fn(),
-};
+global.EmailFinder = {};
 
 // The HTML content from linkedin-div.html
 const linkedinDivHtml = `

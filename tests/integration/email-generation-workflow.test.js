@@ -120,7 +120,7 @@ describe('Email Generation Workflow Integration', () => {
       // Integration test complete - workflow executed successfully
     });
 
-    it('should handle missing email with Apollo fallback', async () => {
+    it('should handle missing email without Apollo fallback', async () => {
       // Step 1: Setup profile without email
       createMockLinkedInProfile({
         name: 'Bob Smith',
@@ -130,16 +130,7 @@ describe('Email Generation Workflow Integration', () => {
         hasContactInfo: false
       });
 
-      // Step 2: Mock Apollo API success
-      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
-        if (message.action === 'enrichWithApollo') {
-          callback({
-            success: true,
-            email: 'bob.smith@startup.com',
-            source: 'apollo'
-          });
-        }
-      });
+      // Step 2: No Apollo fallback
 
       // Step 3: Mock email generation
       fetch.mockResolvedValueOnce({
@@ -149,22 +140,11 @@ describe('Email Generation Workflow Integration', () => {
         })
       });
 
-      // Step 4: Execute workflow with Apollo fallback
+      // Step 4: Execute workflow without Apollo
       const profileData = await ProfileScraper.scrapeBasicProfileData();
-      const apolloResult = await EmailFinder.findEmailWithApollo(profileData);
+      const emailResponse = await ProfileScraper.generateColdEmail(profileData, UIManager.selectedTemplate);
 
-      // Add Apollo email to profile data
-      const enrichedProfileData = {
-        ...profileData,
-        email: apolloResult.email
-      };
-
-      const emailResponse = await ProfileScraper.generateColdEmail(enrichedProfileData, UIManager.selectedTemplate);
-
-      // Step 5: Verify Apollo integration worked
-      expect(apolloResult.success).toBe(true);
-      expect(apolloResult.email).toBe('bob.smith@startup.com');
-      // Email response might fallback to generic content in test environment
+      // Step 5: Verify graceful handling without Apollo
       expect(emailResponse.email).toContain('Hi');
     });
 
@@ -178,15 +158,7 @@ describe('Email Generation Workflow Integration', () => {
         hasContactInfo: false
       });
 
-      // Step 2: Mock Apollo API failure
-      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
-        if (message.action === 'enrichWithApollo') {
-          callback({
-            success: false,
-            error: 'No email found in Apollo database'
-          });
-        }
-      });
+      // Step 2: No Apollo fallback
 
       // Step 3: Mock email generation still succeeds
       fetch.mockResolvedValueOnce({
@@ -198,11 +170,9 @@ describe('Email Generation Workflow Integration', () => {
 
       // Step 4: Execute workflow
       const profileData = await ProfileScraper.scrapeBasicProfileData();
-      const apolloResult = await EmailFinder.findEmailWithApollo(profileData);
       const emailResponse = await ProfileScraper.generateColdEmail(profileData, UIManager.selectedTemplate);
 
       // Step 5: Verify graceful handling
-      expect(apolloResult.success).toBe(false);
       expect(emailResponse.email).toContain('Hi');
       expect(emailResponse.subject).toBeDefined();
     });

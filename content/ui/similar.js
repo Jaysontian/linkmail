@@ -14,8 +14,8 @@
       const profileData = await ProfileScraper.scrapeBasicProfileData();
       console.log('Current profile data for similar person search:', profileData);
 
-      // Call Apollo People Search API
-      const searchResult = await this.findSimilarPeopleUsingApollo(profileData);
+      // Similar-people feature disabled (Apollo removed)
+      const searchResult = { success: false, error: 'Similar people search disabled' };
       console.log('Similar person search result:', searchResult);
 
       // Log debug information if available
@@ -64,51 +64,15 @@
     }
   };
 
-  // Call Apollo People Search API through background script
-  window.UIManager.findSimilarPeopleUsingApollo = async function findSimilarPeopleUsingApollo(contactedPersonData) {
-    try {
-      console.log('📡 Calling Apollo People Search API through background script');
-      console.log('📡 Sending profile data:', contactedPersonData);
-
-      return new Promise((resolve) => {
-        console.log('📡 Sending Chrome runtime message...');
-        chrome.runtime.sendMessage({
-          action: 'findSimilarPeople',
-          contactedPersonData: contactedPersonData,
-          options: { maxResults: 1 }
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('❌ Chrome runtime error in similar people search:', chrome.runtime.lastError);
-            resolve({ success: false, error: 'Extension error occurred' });
-            return;
-          }
-          console.log('📡 Received Apollo People Search response:', response);
-          if (response && response.debug) {
-            console.log('📡 Background script debug info received:');
-            console.log('   - Original company:', response.debug.originalCompany);
-            console.log('   - Extracted domain:', response.debug.extractedDomain);
-            console.log('   - Search results:', response.debug.searchResults);
-            if (response.debug.majorCompanyFiltering && response.debug.majorCompanyFiltering.applied) {
-              console.log('📊 MAJOR COMPANY FILTERING APPLIED');
-              console.log('   - Company:', response.debug.majorCompanyFiltering.company);
-              console.log('   - Reason:', response.debug.majorCompanyFiltering.reason);
-            }
-          } else {
-            console.log('📡 No debug info in response');
-          }
-          resolve(response);
-        });
-      });
-    } catch (error) {
-      console.error('❌ Error in findSimilarPeopleUsingApollo:', error);
-      return { success: false, error: 'Failed to connect to Apollo People Search API' };
-    }
+  // Apollo People Search removed
+  window.UIManager.findSimilarPeopleUsingApollo = async function findSimilarPeopleUsingApollo() {
+    return { success: false, error: 'Similar people search disabled' };
   };
 
   // Show upgrade message when Apollo API access is denied
   window.UIManager.showSimilarPersonUpgradeMessage = function showSimilarPersonUpgradeMessage() {
     try {
-      console.log('Showing Apollo upgrade message');
+      console.log('Showing disabled message for similar people');
       const similarPersonSection = this.container?.querySelector('#similar-person-section');
       const similarPersonCard = this.container?.querySelector('#similar-person-card');
       if (!similarPersonSection || !similarPersonCard) {
@@ -118,15 +82,8 @@
       similarPersonCard.innerHTML = `
         <div style="text-align: center; padding: 8px;">
           <div style="font-size: 16px; margin-bottom: 6px;">🚀</div>
-          <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 4px;">
-            Upgrade to Apollo Pro
-          </div>
-          <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
-            Find similar people to contact next
-          </div>
-          <div style="font-size: 10px; color: #0066cc; cursor: pointer; text-decoration: underline;" onclick="window.open('https://apollo.io/pricing', '_blank')">
-            View pricing →
-          </div>
+          <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 4px;">Similar people suggestions are unavailable</div>
+          <div style="font-size: 11px; color: #666; margin-bottom: 8px;">This feature has been removed.</div>
         </div>
       `;
       similarPersonCard.onclick = null;

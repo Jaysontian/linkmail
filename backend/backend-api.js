@@ -4,6 +4,8 @@
 window.BackendAPI = {
   // Backend configuration
   baseURL: 'https://linkmail-sending.vercel.app',
+  // Data API (facets, etc.) lives on the same backend
+  apiBaseURL: 'https://linkmail-sending.vercel.app',
   
   // User authentication state
   isAuthenticated: false,
@@ -339,6 +341,69 @@ window.BackendAPI = {
 
     // Clear local auth data
     await this.clearAuth();
+  },
+
+  /**
+   * Fetch contact facets (job titles and companies) for dropdowns
+   * @returns {Promise<{ jobTitles: string[], companies: string[] }>}
+   */
+  async getContactFacets() {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      // Try primary exact endpoint, then fallbacks if 404
+      const base = this.apiBaseURL || this.baseURL;
+      const paths = ['/api/contacts/facets', '/contacts/facets', '/api/v1/contacts/facets'];
+      let response = null;
+      let lastErrorText = '';
+      for (let i = 0; i < paths.length; i++) {
+        const url = `${base}${paths[i]}`;
+        try {
+          response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${this.userToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (e) {
+          lastErrorText = e?.message || String(e);
+          continue;
+        }
+        if (response && response.status !== 404) {
+          break;
+        }
+      }
+      if (!response) {
+        throw new Error(lastErrorText || 'Network error');
+      }
+
+      if (response.status === 401) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      const jobTitles = Array.isArray(json.jobTitles) ? json.jobTitles : [];
+      const companies = Array.isArray(json.companies) ? json.companies : [];
+      return { jobTitles, companies };
+    } catch (error) {
+      console.error('Failed to fetch contact facets:', error);
+      throw error;
+    }
   },
 
   /**

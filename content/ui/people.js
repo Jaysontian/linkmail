@@ -27,7 +27,10 @@
       if (errorEl) errorEl.style.display = 'none';
       if (containerEl) containerEl.innerHTML = '';
 
-      // Get user profile information for Apollo search
+      // Populate facets dropdowns from backend
+      await this.populateFacetsDropdowns();
+
+      // Get user profile information for suggestions (Apollo removed)
       const userProfileData = await this.getUserProfileDataForSearch();
       
       if (!userProfileData) {
@@ -35,12 +38,12 @@
         return;
       }
 
-      console.log('User profile data for Apollo search:', userProfileData);
+      console.log('User profile data for suggestions:', userProfileData);
 
       // Caching: use cached suggestions if fresh
       const cacheKey = `peopleSuggestions:${this.userData.email}`;
       const now = Date.now();
-      const maxAgeMs = 2 * 60 * 60 * 1000; // 2 hours - longer cache to reduce Apollo API calls
+      const maxAgeMs = 2 * 60 * 60 * 1000;
       try {
         const stored = await new Promise(resolve => chrome.storage.local.get([cacheKey], r => resolve(r[cacheKey])));
         if (stored && stored.timestamp && Array.isArray(stored.suggestions) && (now - stored.timestamp) < maxAgeMs) {
@@ -53,8 +56,8 @@
         console.log('Cache read error (non-fatal):', e);
       }
 
-      // Call Apollo People Search API
-      const searchResult = await this.findPeopleUsingApollo(userProfileData);
+      // Similar people search disabled (no results fetched)
+      const searchResult = { success: false, error: 'Similar people search disabled' };
       
       if (loadingEl) loadingEl.style.display = 'none';
 
@@ -80,7 +83,65 @@
     }
   };
 
-  // Get user profile data for Apollo search
+  // Fetch and populate facets dropdowns: job titles and companies
+  window.UIManager.populateFacetsDropdowns = async function populateFacetsDropdowns() {
+    try {
+      const jobTitleSelect = this.container?.querySelector('#jobTitleFilter');
+      const companySelect = this.container?.querySelector('#companyFilter');
+      if (!jobTitleSelect || !companySelect) return;
+
+      // Cache key
+      const cacheKey = 'facetsCache:v1';
+      let facets = null;
+      try {
+        const stored = await new Promise(resolve => chrome.storage.local.get([cacheKey], r => resolve(r[cacheKey])));
+        if (stored && Array.isArray(stored.jobTitles) && Array.isArray(stored.companies)) {
+          facets = stored;
+        }
+      } catch (_) {}
+
+      if (!facets) {
+        // Ensure backend auth is initialized
+        if (!window.BackendAPI || !BackendAPI.isAuthenticated) {
+          console.log('Backend not authenticated; skipping facets fetch');
+          this.fillFacets(jobTitleSelect, companySelect, [], []);
+          return;
+        }
+        const { jobTitles, companies } = await BackendAPI.getContactFacets();
+        facets = { jobTitles, companies };
+        try { await new Promise(resolve => chrome.storage.local.set({ [cacheKey]: facets }, resolve)); } catch (_) {}
+      }
+
+      this.fillFacets(jobTitleSelect, companySelect, facets.jobTitles, facets.companies);
+
+    } catch (error) {
+      console.error('Failed to populate facets dropdowns:', error);
+    }
+  };
+
+  // Helper to fill dropdown options
+  window.UIManager.fillFacets = function fillFacets(jobTitleSelect, companySelect, jobTitles, companies) {
+    const setOptions = (selectEl, options) => {
+      // Preserve the first default option
+      const firstOption = selectEl.querySelector('option');
+      selectEl.innerHTML = '';
+      if (firstOption) selectEl.appendChild(firstOption);
+      options
+        .filter(v => typeof v === 'string' && v.trim().length > 0)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach(value => {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = value;
+          selectEl.appendChild(opt);
+        });
+    };
+
+    if (jobTitleSelect) setOptions(jobTitleSelect, jobTitles || []);
+    if (companySelect) setOptions(companySelect, companies || []);
+  };
+
+  // Get user profile data for suggestions
   window.UIManager.getUserProfileDataForSearch = async function getUserProfileDataForSearch() {
     try {
       // Get user data from storage which contains their bio information
@@ -130,37 +191,9 @@
     }
   };
 
-  // Find people using Apollo API (similar to existing implementation but for user's profile)
-  window.UIManager.findPeopleUsingApollo = async function findPeopleUsingApollo(userProfileData) {
-    try {
-      console.log('Finding people with Apollo People Search API for user:', userProfileData);
-
-      return new Promise((resolve) => {
-        chrome.runtime.sendMessage({
-          action: 'findSimilarPeople',
-          contactedPersonData: userProfileData,
-          options: { maxResults: 3 } // Optimize feed page to use early exit
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('Chrome runtime error in people search:', chrome.runtime.lastError);
-            resolve({
-              success: false,
-              error: 'Extension error occurred'
-            });
-            return;
-          }
-
-          console.log('Apollo People Search response for user:', response);
-          resolve(response);
-        });
-      });
-    } catch (error) {
-      console.error('Error in findPeopleUsingApollo:', error);
-      return {
-        success: false,
-        error: 'Failed to connect to Apollo People Search API'
-      };
-    }
+  // Apollo People Search removed
+  window.UIManager.findPeopleUsingApollo = async function findPeopleUsingApollo() {
+    return { success: false, error: 'Similar people search disabled' };
   };
 
   // Display people suggestions in the UI

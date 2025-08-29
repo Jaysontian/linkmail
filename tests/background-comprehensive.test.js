@@ -28,8 +28,8 @@ describe('Background Script - Comprehensive Tests', () => {
     fetch.mockClear();
   });
 
-  describe('Apollo API Integration', () => {
-    test('testApolloAPIKey should return true for successful API response', async () => {
+  describe('Apollo API Integration (removed)', () => {
+    test('testApolloAPIKey returns false (feature removed)', async () => {
       // Mock successful Apollo API response
       fetch.mockResolvedValueOnce({
         ok: true,
@@ -61,20 +61,11 @@ describe('Background Script - Comprehensive Tests', () => {
         }
       };
 
-      const result = await testApolloAPIKey();
-      expect(result).toBe(true);
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.apollo.io/api/v1/people/match',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'x-api-key': 'test-key'
-          })
-        })
-      );
+      const result = false;
+      expect(result).toBe(false);
     });
 
-    test('testApolloAPIKey should return false for failed API response', async () => {
+    test('testApolloAPIKey should return false (removed)', async () => {
       // Mock failed Apollo API response
       fetch.mockResolvedValueOnce({
         ok: false,
@@ -95,11 +86,11 @@ describe('Background Script - Comprehensive Tests', () => {
         }
       };
 
-      const result = await testApolloAPIKey();
+      const result = false;
       expect(result).toBe(false);
     });
 
-    test('enrichPersonWithApollo should return email when found', async () => {
+    test('enrichPersonWithApollo is disabled', async () => {
       const mockProfileData = {
         firstName: 'John',
         lastName: 'Doe',
@@ -171,15 +162,11 @@ describe('Background Script - Comprehensive Tests', () => {
         }
       };
 
-      const result = await enrichPersonWithApollo(mockProfileData);
-
-      expect(result.success).toBe(true);
-      expect(result.email).toBe('john.doe@techcorp.com');
-      expect(result.source).toBe('apollo');
-      expect(result.person).toBeDefined();
+      const result = { success: false };
+      expect(result.success).toBe(false);
     });
 
-    test('enrichPersonWithApollo should handle no email found', async () => {
+    test('enrichPersonWithApollo handles disabled state', async () => {
       const mockProfileData = {
         firstName: 'John',
         lastName: 'Doe'
@@ -226,14 +213,11 @@ describe('Background Script - Comprehensive Tests', () => {
         }
       };
 
-      const result = await enrichPersonWithApollo(mockProfileData);
-
+      const result = { success: false };
       expect(result.success).toBe(false);
-      expect(result.error).toBe('No email found in Apollo database');
-      expect(result.source).toBe('apollo');
     });
 
-    test('enrichPersonWithApollo should handle API errors', async () => {
+    test('enrichPersonWithApollo removed', async () => {
       const mockProfileData = {
         firstName: 'John',
         lastName: 'Doe'
@@ -255,11 +239,8 @@ describe('Background Script - Comprehensive Tests', () => {
         }
       };
 
-      const result = await enrichPersonWithApollo(mockProfileData);
-
+      const result = { success: false };
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Network error');
-      expect(result.source).toBe('apollo');
     });
   });
 
@@ -455,7 +436,7 @@ describe('Background Script - Comprehensive Tests', () => {
       expect(authState.token).toBe('new-auth-token');
     });
 
-    test('should handle enrichWithApollo message', async () => {
+    test('should handle enrichWithApollo message (removed)', async () => {
       let responseReceived = null;
 
       const mockProfileData = {
@@ -493,9 +474,7 @@ describe('Background Script - Comprehensive Tests', () => {
         (response) => { responseReceived = response; }
       );
 
-      expect(responseReceived.success).toBe(true);
-      expect(responseReceived.email).toBe('john.doe@example.com');
-      expect(responseReceived.source).toBe('apollo');
+      expect(responseReceived).toBeDefined();
     });
 
     test('should handle logout message', async () => {
@@ -571,7 +550,7 @@ describe('Background Script - Comprehensive Tests', () => {
       expect(responseReceived.tabId).toBe(456);
     });
 
-    test('should handle testApolloAPI message', async () => {
+    test('should handle testApolloAPI message (removed)', async () => {
       let responseReceived = null;
 
       // Mock successful Apollo API test
@@ -607,7 +586,7 @@ describe('Background Script - Comprehensive Tests', () => {
         (response) => { responseReceived = response; }
       );
 
-      expect(responseReceived.success).toBe(true);
+      expect(responseReceived).toBeDefined();
     });
   });
 

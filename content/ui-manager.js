@@ -996,35 +996,26 @@ window.UIManager = Object.assign(__existingUI, {
       try {
         // Get the current profile data
         const profileData = await ProfileScraper.scrapeBasicProfileData();
-        console.log('Profile data for Apollo:', profileData);
+        console.log('Profile data for email search:', profileData);
 
-        // Call Apollo API through EmailFinder
-        const apolloResult = await EmailFinder.findEmailWithApollo(profileData);
-        console.log('Apollo result:', apolloResult);
+        // Try scraping LinkedIn for email (about/contact info)
+        const scrapedEmail = await EmailFinder.getEmail();
 
-        if (apolloResult.success && apolloResult.email) {
-          // Success - populate the email field
+        if (scrapedEmail) {
           const recipientInput = document.getElementById('recipientEmailInput');
           if (recipientInput) {
-            recipientInput.value = apolloResult.email;
-
-            // Cache the email in EmailFinder
-            EmailFinder._lastFoundEmail = apolloResult.email;
-            EmailFinder._lastProfileUrl = window.location.href;
+            recipientInput.value = scrapedEmail;
           }
 
           // Hide the find email button since we found an email
           this.elements.findEmailButton.style.display = 'none';
 
           // Show success message briefly
-          this.showTemporaryMessage('Email found via Apollo!', 'success');
+          this.showTemporaryMessage('Email found on profile!', 'success');
 
         } else {
-          // No email found or error
-          const errorMessage = apolloResult.error || 'No email found in Apollo database';
-          console.log('Apollo API error:', errorMessage);
-
-          this.showTemporaryMessage(errorMessage, 'error');
+          // No email found
+          this.showTemporaryMessage('No email found on profile', 'error');
         }
 
       } catch (error) {

@@ -21,7 +21,6 @@
       "dashboard.html",
       "dashboard/*.js",
       "generate/*.js",
-      "apollo/*.js", 
       "send/*.js",
       "templates/*.js",
       "history/*.js",
@@ -33,7 +32,6 @@
   "host_permissions": [
     "https://linkmail-api.vercel.app/*",
     "https://linkmail-sending.vercel.app/*",
-    "https://api.apollo.io/*",
     "*://*.linkedin.com/*"
   ],
   "background": {
@@ -51,8 +49,6 @@
     "js": [
       "backend/backend-api.js",
       "profile/profile-manager.js",
-      "apollo/apollo-client.js",
-      "apollo/apollo-people-search.js",
       "generate/email-generator.js",
       "send/email-sender.js",
       "templates/template-manager.js",

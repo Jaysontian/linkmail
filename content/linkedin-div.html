@@ -120,7 +120,16 @@
     <!-- People Suggestions View for Feed Page -->
     <div id="linkmail-people-suggestions" style="display:none;">
         <h2 class="linkmail-header">People you might want to reach out to</h2>
-        <p style="font-size: 12px; color: #666; margin-bottom: 16px;">Based on your profile, here are some people who might be interested in connecting with you. Click to view their LinkedIn profiles:</p>
+        <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Filter by role and company from your contacts database:</p>
+
+        <div id="facets-filters" style="display:flex; gap: 8px; margin-bottom: 12px;">
+            <select id="jobTitleFilter" class="lm-input" style="flex:1; font-size:10pt; padding:6px 8px;">
+                <option value="">All Job Titles</option>
+            </select>
+            <select id="companyFilter" class="lm-input" style="flex:1; font-size:10pt; padding:6px 8px;">
+                <option value="">All Companies</option>
+            </select>
+        </div>
         
         <div id="suggested-people-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
             <!-- Suggested people will be populated here -->
