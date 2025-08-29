@@ -218,7 +218,7 @@ describe('LinkedIn Feed Page People Suggestions', () => {
     expect(UIManager.findPeopleUsingApollo).toHaveBeenCalled();
   });
 
-  test('should extract user profile data for Apollo search', async () => {
+  test('should extract user profile data for suggestions', async () => {
     require('../../content/ui-manager.js');
     const UIManager = window.UIManager;
 

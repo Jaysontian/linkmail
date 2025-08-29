@@ -67,39 +67,11 @@
     border-radius:100px;
 }
 
-.apollo-div {
-    /* background-color: rgba(20, 126, 255, 0.134);
-    padding: 8px;
-    border-radius: 8px; */
-    margin: 4px 0px;
-}
 
-.apollo-div button{
-    background-color:white;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    display:flex;
-    justify-items: center;
-    justify-content: space-between;
-    border-radius:6px;
-    padding: 6px 10px;
-    margin: 4px auto;
-    width: fit-content;
-}
 
 .hidden { display: none !important; }
 
-.apollo-desc {
-    font-size: 10pt;
-    color: #666;
-    margin-bottom: 5px;
-}
 
-.apollo-status {
-    margin-top: 8px;
-    font-size: 10pt;
-    color: #666;
-    text-align: center;
-}
 
 
 

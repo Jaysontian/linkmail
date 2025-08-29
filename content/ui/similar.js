@@ -20,7 +20,7 @@
 
       // Log debug information if available
       if (searchResult.debug) {
-        console.log('🔍 === APOLLO SEARCH DEBUG INFO ===');
+        console.log('🔍 === SIMILAR SEARCH DEBUG INFO ===');
         console.log('🏢 Original company:', searchResult.debug.originalCompany);
         console.log('🌐 Extracted domain:', searchResult.debug.extractedDomain);
         console.log('💼 Original job title:', searchResult.debug.originalJobTitle);
@@ -89,7 +89,7 @@
       similarPersonCard.onclick = null;
       similarPersonCard.style.cursor = 'default';
       similarPersonSection.style.display = 'block';
-      console.log('Apollo upgrade message displayed successfully');
+      console.log('Similar people disabled message displayed successfully');
     } catch (error) {
       console.error('Error showing Apollo upgrade message:', error);
     }

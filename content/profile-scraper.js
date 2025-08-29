@@ -50,7 +50,7 @@ window.ProfileScraper = {
       location: location,
       experience: cleanedExperience,
       emailFromAbout: emailFromAbout, // Include this for reference
-      linkedinUrl: window.location.href // Add LinkedIn URL for Apollo matching
+      linkedinUrl: window.location.href
     };
 
     console.log('ProfileScraper: Basic profile data scraping complete');

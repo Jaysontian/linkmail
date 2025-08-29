@@ -2,7 +2,7 @@
 
 ## Overview
 
-LinkMail is a Chrome extension that integrates with LinkedIn to find and send personalized emails to professionals. It uses AI-powered email generation and Apollo.io for email discovery.
+LinkMail is a Chrome extension that integrates with LinkedIn to find and send personalized emails to professionals. It uses AI-powered email generation; third-party people search integrations have been removed.
 
 **⚠️ Important**: This extension now uses a backend service for OAuth and email sending to comply with Chrome Web Store policies and avoid Tier 2 CASA assessment requirements.
 
