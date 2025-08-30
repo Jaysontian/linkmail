@@ -278,26 +278,19 @@ window.UIManager = Object.assign(__existingUI, {
         // Keep cached own-profile id updated for stable page-type detection
         this.updateOwnProfileIdFromUserData();
 
-        // Check if user exists in local storage for bio setup completion
+        // Check if user exists in local storage for additional user data (bio, templates, etc.)
         const hasEmail = typeof this.userData.email === 'string' && this.userData.email.trim().length > 0;
         const userExists = hasEmail ? await this.checkUserInStorage(this.userData.email) : false;
 
         if (userExists) {
-          // Get complete user data from storage (bio, templates, etc.)
+          // Get complete user data from storage and merge with backend userData
           const storedUserData = hasEmail ? await this.getUserFromStorage(this.userData.email) : null;
-          // Merge with backend userData
           this.userData = { ...this.userData, ...storedUserData };
           this.updateOwnProfileIdFromUserData();
-          this.showAuthenticatedUI();
-        } else {
-          // Redirect to bio setup page only if we have an email
-          if (hasEmail) {
-            this.redirectToBioSetup(this.userData.email);
-          } else {
-            console.warn('Authenticated but missing email; cannot open bio setup');
-            this.showAuthenticatedUI();
-          }
         }
+
+        // Show authenticated UI for all authenticated users - no profile setup redirection
+        this.showAuthenticatedUI();
       } else {
         this.isAuthenticated = false;
         this.showSignInUI();

@@ -51,35 +51,7 @@
     });
   };
 
-  window.UIManager.redirectToBioSetup = function redirectToBioSetup(email) {
-    if (email && this._bioSetupOpenedByEmail[email]) {
-      console.log('Bio setup tab already opened for:', email);
-      this.showSignInUI();
-      const signInView = document.querySelector('#linkmail-signin');
-      if (signInView) {
-        const header = signInView.querySelector('.linkmail-header');
-        const paragraph = signInView.querySelector('p');
-        if (header) header.textContent = 'Complete Your Profile';
-        if (paragraph) paragraph.textContent = 'Please complete your profile in the tab that opened. Return here when finished.';
-        const signInButton = signInView.querySelector('#googleSignInButton');
-        if (signInButton) signInButton.style.display = 'none';
-      }
-      return;
-    }
-    if (email) this._bioSetupOpenedByEmail[email] = true;
-    const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(email)}`);
-    chrome.runtime.sendMessage({ action: 'openBioSetupPage', url: bioSetupUrl });
-    this.showSignInUI();
-    const signInView = document.querySelector('#linkmail-signin');
-    if (signInView) {
-      const header = signInView.querySelector('.linkmail-header');
-      const paragraph = signInView.querySelector('p');
-      if (header) header.textContent = 'Complete Your Profile';
-      if (paragraph) paragraph.textContent = 'Please complete your profile in the new tab that opened. Return here when finished.';
-      const signInButton = signInView.querySelector('#googleSignInButton');
-      if (signInButton) signInButton.style.display = 'none';
-    }
-  };
+
 
   window.UIManager.refreshUserData = async function refreshUserData() {
     if (!this.isAuthenticated || !this.userData || !this.userData.email) {
@@ -140,15 +112,16 @@
           picture: window.BackendAPI.userData.picture
         };
         this.updateOwnProfileIdFromUserData();
+        // Check if user exists in local storage for additional user data (bio, templates, etc.)
         const userExists = await this.checkUserInStorage(this.userData.email);
         if (userExists) {
           const storedUserData = await this.getUserFromStorage(this.userData.email);
           this.userData = { ...this.userData, ...storedUserData };
           this.updateOwnProfileIdFromUserData();
-          this.showAuthenticatedUI();
-        } else {
-          this.redirectToBioSetup(this.userData.email);
         }
+        
+        // Show authenticated UI for all authenticated users - no profile setup redirection
+        this.showAuthenticatedUI();
       } else {
         this.isAuthenticated = false;
         this.showSignInUI();

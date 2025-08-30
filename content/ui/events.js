@@ -93,15 +93,16 @@
                 name: window.BackendAPI.userData.name,
                 picture: window.BackendAPI.userData.picture
               };
+              // Check if user exists in local storage for additional user data (bio, templates, etc.)
               const userExists = await this.checkUserInStorage(this.userData.email);
               if (userExists) {
                 const storedUserData = await this.getUserFromStorage(this.userData.email);
                 this.userData = { ...this.userData, ...storedUserData };
-                this.showAuthenticatedUI();
-                this.showTemporaryMessage('Authentication successful!', 'success');
-              } else {
-                this.redirectToBioSetup(this.userData.email);
               }
+              
+              // Show authenticated UI for all authenticated users - no profile setup redirection
+              this.showAuthenticatedUI();
+              this.showTemporaryMessage('Authentication successful!', 'success');
             } else if (authCheckCount >= maxAuthChecks) {
               clearInterval(checkAuthInterval);
               console.log('Auth check timeout - stopping polling');
@@ -127,15 +128,16 @@
                     name: window.BackendAPI.userData.name,
                     picture: window.BackendAPI.userData.picture
                   };
+                  // Check if user exists in local storage for additional user data (bio, templates, etc.)
                   const userExists = await this.checkUserInStorage(this.userData.email);
                   if (userExists) {
                     const storedUserData = await this.getUserFromStorage(this.userData.email);
                     this.userData = { ...this.userData, ...storedUserData };
-                    this.showAuthenticatedUI();
-                    this.showTemporaryMessage('Authentication successful!', 'success');
-                  } else {
-                    this.redirectToBioSetup(this.userData.email);
                   }
+                  
+                  // Show authenticated UI for all authenticated users - no profile setup redirection
+                  this.showAuthenticatedUI();
+                  this.showTemporaryMessage('Authentication successful!', 'success');
                 }
               } catch (error) { console.log('Storage change auth check error:', error); }
             }, 100);
