@@ -117,6 +117,15 @@ window.GmailManager = {
           window.UIManager.checkLastEmailSent();
         }
 
+        // Persist contacted LinkedIn to backend if available
+        try {
+          if (window.BackendAPI && window.BackendAPI.isAuthenticated && profileUrl && profileUrl.includes('linkedin.com')) {
+            await window.BackendAPI.addContactedLinkedIn(profileUrl);
+          }
+        } catch (e) {
+          console.warn('Failed to update contacted LinkedIn in backend (non-fatal):', e?.message || e);
+        }
+
         return result;
       }
     } catch (error) {

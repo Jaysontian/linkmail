@@ -66,30 +66,44 @@ window.ProfileManager = (function() {
         console.error('Email is required to load profile');
         return { success: false, error: 'Email is required', profile: null };
       }
-
-      return new Promise((resolve) => {
-        try {
-          chrome.storage.local.get([email], function(result) {
-            if (chrome.runtime.lastError) {
-              console.error('Error loading profile:', chrome.runtime.lastError);
-              resolve({ success: false, error: chrome.runtime.lastError.message, profile: null });
-              return;
+      // Prefer backend if authenticated
+      try {
+        if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
+          const resp = await window.BackendAPI.getUserBio();
+          if (resp && resp.success) {
+            const p = resp.profile;
+            if (p) {
+              // Map backend shape to existing schema fields for UI compatibility
+              const mapped = {
+                name: '',
+                email,
+                college: '',
+                graduationYear: '',
+                linkedinUrl: p.linkedin_url || '',
+                experiences: Array.isArray(p.experiences) ? p.experiences.map(e => ({
+                  jobTitle: e.job_title || e.jobTitle || '',
+                  company: e.company || '',
+                  description: e.description || ''
+                })) : [],
+                skills: Array.isArray(p.skills) ? p.skills : [],
+                templates: Array.isArray(p.templates) ? p.templates.map(t => ({
+                  name: t.title || '',
+                  content: t.body || ''
+                })) : [],
+                sentEmails: [],
+                setupCompleted: true
+              };
+              return { success: true, profile: mapped };
             }
-
-            const userData = result[email];
-            if (userData && userData.setupCompleted) {
-              console.log('Profile loaded successfully for', email);
-              resolve({ success: true, profile: userData });
-            } else {
-              console.log('No completed profile found for', email);
-              resolve({ success: true, profile: null });
-            }
-          });
-        } catch (error) {
-          console.error('Error in loadProfile:', error);
-          resolve({ success: false, error: error.message, profile: null });
+            return { success: true, profile: null };
+          }
         }
-      });
+      } catch (error) {
+        console.error('Backend loadProfile failed, falling back to storage:', error);
+      }
+
+      // Backend-only: no local storage fallback
+      return { success: true, profile: null };
     },
 
     // Save a user profile to storage
@@ -98,45 +112,35 @@ window.ProfileManager = (function() {
         console.error('Profile data with email is required');
         return false;
       }
-
-      return new Promise((resolve) => {
-        try {
-          // Get existing data to preserve other fields
-          chrome.storage.local.get([profileData.email], function(result) {
-            if (chrome.runtime.lastError) {
-              console.error('Error getting existing data for save:', chrome.runtime.lastError);
-              resolve(false);
-              return;
-            }
-
-            const existingData = result[profileData.email] || {};
-
-            // Merge new profile data with existing data
-            const mergedData = {
-              ...existingData,
-              ...profileData
-            };
-
-            // Save back to storage
-            const data = {};
-            data[profileData.email] = mergedData;
-
-            chrome.storage.local.set(data, function() {
-              if (chrome.runtime.lastError) {
-                console.error('Error saving profile:', chrome.runtime.lastError);
-                resolve(false);
-                return;
-              }
-
-              console.log('Profile saved successfully for', profileData.email);
-              resolve(true);
-            });
-          });
-        } catch (error) {
-          console.error('Error in saveProfile:', error);
-          resolve(false);
+      // Prefer backend if authenticated
+      try {
+        if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
+          const payload = {
+            firstName: (profileData.name || '').split(' ')[0] || null,
+            lastName: (profileData.name || '').split(' ').slice(1).join(' ') || null,
+            linkedinUrl: profileData.linkedinUrl || null,
+            experiences: Array.isArray(profileData.experiences) ? profileData.experiences.map(e => ({
+              job_title: e.jobTitle || e.job_title || '',
+              company: e.company || '',
+              description: e.description || ''
+            })) : [],
+            skills: Array.isArray(profileData.skills) ? profileData.skills : [],
+            templates: Array.isArray(profileData.templates) ? profileData.templates.map(t => ({
+              title: t.name || t.title || '',
+              body: t.content || t.body || ''
+            })) : []
+          };
+          const resp = await window.BackendAPI.saveUserBio(payload);
+          if (resp && resp.success) {
+            return true;
+          }
         }
-      });
+      } catch (error) {
+        console.error('Backend saveProfile failed, falling back to storage:', error);
+      }
+
+      // Backend-only: no local storage fallback
+      return false;
     },
 
     // Update an existing profile
@@ -147,15 +151,13 @@ window.ProfileManager = (function() {
       }
 
       try {
-        // Load existing profile
-        const existingProfile = await operations.loadProfile(email);
-        if (!existingProfile) {
-          return { success: false, error: 'Profile not found' };
-        }
+        // Load existing profile (may be null on first save)
+        const existingResult = await operations.loadProfile(email);
+        const existingProfile = existingResult && existingResult.profile ? existingResult.profile : null;
 
         // Merge updates
         const updatedProfile = {
-          ...existingProfile,
+          ...(existingProfile || {}),
           ...updates,
           email: email // Ensure email doesn't change
         };

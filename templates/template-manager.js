@@ -40,31 +40,20 @@ window.TemplateManager = (function() {
         return { success: false, error: 'Email is required', templates: [] };
       }
 
-      return new Promise((resolve) => {
-        try {
-          chrome.storage.local.get([email], function(result) {
-            if (chrome.runtime.lastError) {
-              console.error('Error loading templates:', chrome.runtime.lastError);
-              resolve({ success: false, error: chrome.runtime.lastError.message, templates: [] });
-              return;
-            }
-
-            const userData = result[email];
-            if (userData && userData.templates && Array.isArray(userData.templates)) {
-              templates = JSON.parse(JSON.stringify(userData.templates));
-              console.log('Loaded', templates.length, 'templates for', email);
-              resolve({ success: true, templates: templates });
-            } else {
-              console.log('No existing templates found for', email);
-              templates = [];
-              resolve({ success: true, templates: [] });
-            }
-          });
-        } catch (error) {
-          console.error('Error in loadTemplates:', error);
-          resolve({ success: false, error: error.message, templates: [] });
+      // Backend-only: fetch via BackendAPI if available
+      try {
+        if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
+          const resp = await window.BackendAPI.getUserBio();
+          const p = resp && resp.profile ? resp.profile : null;
+          const fromDb = Array.isArray(p?.templates) ? p.templates.map(t => ({ name: t.title || '', content: t.body || '' })) : [];
+          templates = JSON.parse(JSON.stringify(fromDb));
+          return { success: true, templates };
         }
-      });
+      } catch (e) {
+        console.error('Backend loadTemplates failed:', e);
+      }
+      templates = [];
+      return { success: true, templates: [] };
     },
 
     // Save templates for a specific user
@@ -77,37 +66,17 @@ window.TemplateManager = (function() {
       // Use provided templates or current templates array
       const templatesData = templatesToSave || templates;
 
-      return new Promise((resolve) => {
-        try {
-          chrome.storage.local.get([email], function(result) {
-            if (chrome.runtime.lastError) {
-              console.error('Error getting user data for save:', chrome.runtime.lastError);
-              resolve(false);
-              return;
-            }
-
-            const userData = result[email] || {};
-            userData.templates = templatesData;
-
-            const data = {};
-            data[email] = userData;
-
-            chrome.storage.local.set(data, function() {
-              if (chrome.runtime.lastError) {
-                console.error('Error saving templates:', chrome.runtime.lastError);
-                resolve(false);
-                return;
-              }
-
-              console.log('Templates saved successfully for', email);
-              resolve(true);
-            });
-          });
-        } catch (error) {
-          console.error('Error in saveTemplates:', error);
-          resolve(false);
+      try {
+        if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
+          const simplified = templatesData.map(t => ({ title: t.name, body: t.content }));
+          await window.BackendAPI.saveTemplates(simplified);
+          return true;
         }
-      });
+      } catch (e) {
+        console.error('Backend saveTemplates failed:', e);
+        return false;
+      }
+      return false;
     },
 
     // Create a new template

@@ -185,8 +185,9 @@ window.BackendAPI = {
         throw new Error('Failed to get user profile');
       }
 
-      const userData = await response.json();
-      await this.storeAuth(token, userData);
+      const json = await response.json();
+      const user = json && json.user ? json.user : json;
+      await this.storeAuth(token, user);
       
       return userData;
     } catch (error) {
@@ -305,17 +306,124 @@ window.BackendAPI = {
         throw new Error('Failed to fetch user profile');
       }
 
-      const userData = await response.json();
-      this.userData = userData;
+      const json = await response.json();
+      const user = json && json.user ? json.user : json;
+      this.userData = user;
       
       // Update stored user data
-      await this.storeAuth(this.userToken, userData);
+      await this.storeAuth(this.userToken, user);
       
-      return userData;
+      return { success: true, user };
     } catch (error) {
       console.error('Failed to get user profile:', error);
       throw error;
     }
+  },
+
+  /**
+   * Get persisted user bio from backend
+   */
+  async getUserBio() {
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+    const response = await fetch(`${this.baseURL}/api/user/bio`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.userToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.status === 401) {
+      await this.clearAuth();
+      throw new Error('Authentication expired. Please sign in again.');
+    }
+    if (!response.ok) {
+      throw new Error('Failed to fetch user bio');
+    }
+    return await response.json();
+  },
+
+  /**
+   * Save user bio to backend
+   */
+  async saveUserBio(bio) {
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+    const response = await fetch(`${this.baseURL}/api/user/bio`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${this.userToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(bio)
+    });
+    if (response.status === 401) {
+      await this.clearAuth();
+      throw new Error('Authentication expired. Please sign in again.');
+    }
+    if (!response.ok) {
+      let err = 'Failed to save user bio';
+      try { const e = await response.json(); err = e.message || e.error || err; } catch (_e) {}
+      throw new Error(err);
+    }
+    return await response.json();
+  },
+
+  /**
+   * Save templates to backend (stores as [{title, body}])
+   */
+  async saveTemplates(templates) {
+    // Merge with current backend profile snapshot to avoid wiping columns
+    try {
+      const resp = await this.getUserBio();
+      const profile = resp && resp.profile ? resp.profile : {};
+      const existingExperiences = Array.isArray(profile.experiences) ? profile.experiences : [];
+      const existingSkills = Array.isArray(profile.skills) ? profile.skills : [];
+      const linkedin_url = typeof profile.linkedin_url === 'string' ? profile.linkedin_url : undefined;
+      const first_name = typeof profile.first_name === 'string' ? profile.first_name : undefined;
+      const last_name = typeof profile.last_name === 'string' ? profile.last_name : undefined;
+      const payload = {
+        templates,
+        experiences: existingExperiences,
+        skills: existingSkills
+      };
+      if (linkedin_url) payload.linkedinUrl = linkedin_url;
+      if (first_name) payload.firstName = first_name;
+      if (last_name) payload.lastName = last_name;
+      return await this.saveUserBio(payload);
+    } catch (_e) {
+      // Fallback to sending templates only; server will COALESCE others
+      return await this.saveUserBio({ templates });
+    }
+  },
+
+  /**
+   * Append a contacted LinkedIn profile URL to backend
+   */
+  async addContactedLinkedIn(linkedinUrl) {
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+    const response = await fetch(`${this.baseURL}/api/user/contacted`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.userToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ linkedinUrl })
+    });
+    if (response.status === 401) {
+      await this.clearAuth();
+      throw new Error('Authentication expired. Please sign in again.');
+    }
+    if (!response.ok) {
+      let err = 'Failed to update contacted linkedins';
+      try { const e = await response.json(); err = e.message || e.error || err; } catch (_e) {}
+      throw new Error(err);
+    }
+    return await response.json();
   },
 
   /**

@@ -412,67 +412,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Collect skills data
         const skillsData = typeof window.skills !== 'undefined' ? window.skills : skills;
 
-        // Get existing user data first to ensure we don't lose templates
-        chrome.storage.local.get([email], function(result) {
-          const existingData = result[email] || {};
-
-          // Collect templates data safely
-          let templatesData = [];
-          if (typeof window.collectTemplatesData === 'function') {
-            try {
-              templatesData = window.collectTemplatesData();
-              console.log('Collected templates from form:', templatesData.length);
-            } catch (templateError) {
-              console.error('Error collecting templates from form:', templateError);
-              // Fall back to existing templates if available
-              if (existingData.templates && Array.isArray(existingData.templates)) {
-                templatesData = existingData.templates;
-                console.log('Using existing templates from storage:', templatesData.length);
-              }
-            }
-          } else if (existingData.templates && Array.isArray(existingData.templates)) {
-            // If collectTemplatesData isn't available, use existing templates
-            templatesData = existingData.templates;
-            console.log('Using existing templates from storage:', templatesData.length);
+        // Collect templates (optional UI feature)
+        let templatesData = [];
+        if (typeof window.collectTemplatesData === 'function') {
+          try {
+            templatesData = window.collectTemplatesData();
+          } catch (templateError) {
+            console.error('Error collecting templates from form:', templateError);
           }
+        }
 
-          // Prepare user data
-          const userData = {
-            name: name,
-            college: college,
-            graduationYear: gradYear,
-            linkedinUrl: linkedinUrl,
-            email: email,
-            experiences: experiences,
-            skills: skillsData,
-            templates: templatesData,
-            setupCompleted: true
-          };
+        // Prepare user data for ProfileManager
+        const userData = {
+          name: name,
+          college: college,
+          graduationYear: gradYear,
+          linkedinUrl: linkedinUrl,
+          email: email,
+          experiences: experiences,
+          skills: skillsData,
+          templates: templatesData,
+          setupCompleted: true
+        };
 
-          console.log('Saving user data with templates:', templatesData.length);
-
-          // Merge with other existing data (like sent emails)
-          const mergedData = {
-            ...existingData,
-            ...userData
-          };
-
-          // Store the data
-          const data = {};
-          data[email] = mergedData;
-
-          chrome.storage.local.set(data, function() {
-            // Show success message
-            showSuccess('Profile saved successfully!');
-
-            // If not in edit mode, close the tab after a delay
-            if (!isEditMode) {
-              setTimeout(() => {
-                window.close();
-              }, 2000);
+        // Prefer ProfileManager (backend-only now)
+        if (window.ProfileManager && typeof window.ProfileManager.updateProfile === 'function') {
+          try {
+            const result = await window.ProfileManager.updateProfile(email, userData);
+            if (!result || !result.success) {
+              throw new Error(result?.error || 'Failed to save via ProfileManager');
             }
-          });
-        });
+            showSuccess('Profile saved successfully!');
+            if (!isEditMode) setTimeout(() => window.close(), 2000);
+            return;
+          } catch (pmErr) {
+            console.error('ProfileManager save failed:', pmErr?.message || pmErr);
+            showError('Failed to save profile. Please try again.');
+            return;
+          }
+        }
+        showError('Profile service unavailable. Please sign in and try again.');
       } catch (error) {
         console.error('Error saving profile:', error);
         const actionText = isEditMode ? 'updating' : 'saving';

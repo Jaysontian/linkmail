@@ -122,6 +122,11 @@ window.UIManager = Object.assign(__existingUI, {
   async checkUserInStorage(email) {
     return new Promise((resolve) => {
       try {
+        if (!email || typeof email !== 'string' || email.trim().length === 0) {
+          console.warn('checkUserInStorage called without a valid email');
+          resolve(false);
+          return;
+        }
         if (!chrome.runtime?.id) {
           console.log('Extension context invalidated, cannot check user in storage');
           resolve(false);
@@ -147,6 +152,11 @@ window.UIManager = Object.assign(__existingUI, {
   async getUserFromStorage(email) {
     return new Promise((resolve) => {
       try {
+        if (!email || typeof email !== 'string' || email.trim().length === 0) {
+          console.warn('getUserFromStorage called without a valid email');
+          resolve(null);
+          return;
+        }
         if (!chrome.runtime?.id) {
           console.log('Extension context invalidated, cannot get user from storage');
           resolve(null);
@@ -170,6 +180,19 @@ window.UIManager = Object.assign(__existingUI, {
 
   // Add this method to redirect to the bio setup page
   redirectToBioSetup(email) {
+    // Validate or recover email
+    if (!email || typeof email !== 'string' || email.trim().length === 0) {
+      const fallback = (window.BackendAPI && window.BackendAPI.userData && window.BackendAPI.userData.email)
+        ? window.BackendAPI.userData.email
+        : null;
+      if (fallback) {
+        email = fallback;
+      } else {
+        console.warn('redirectToBioSetup called without a valid email; aborting open');
+        this.showSignInUI();
+        return;
+      }
+    }
     // Prevent opening duplicate tabs for the same email
     if (email && this._bioSetupOpenedByEmail[email]) {
       console.log('Bio setup tab already opened for:', email);
@@ -256,18 +279,24 @@ window.UIManager = Object.assign(__existingUI, {
         this.updateOwnProfileIdFromUserData();
 
         // Check if user exists in local storage for bio setup completion
-        const userExists = await this.checkUserInStorage(this.userData.email);
+        const hasEmail = typeof this.userData.email === 'string' && this.userData.email.trim().length > 0;
+        const userExists = hasEmail ? await this.checkUserInStorage(this.userData.email) : false;
 
         if (userExists) {
           // Get complete user data from storage (bio, templates, etc.)
-          const storedUserData = await this.getUserFromStorage(this.userData.email);
+          const storedUserData = hasEmail ? await this.getUserFromStorage(this.userData.email) : null;
           // Merge with backend userData
           this.userData = { ...this.userData, ...storedUserData };
           this.updateOwnProfileIdFromUserData();
           this.showAuthenticatedUI();
         } else {
-          // Redirect to bio setup page
-          this.redirectToBioSetup(this.userData.email);
+          // Redirect to bio setup page only if we have an email
+          if (hasEmail) {
+            this.redirectToBioSetup(this.userData.email);
+          } else {
+            console.warn('Authenticated but missing email; cannot open bio setup');
+            this.showAuthenticatedUI();
+          }
         }
       } else {
         this.isAuthenticated = false;
