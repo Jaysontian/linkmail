@@ -24,6 +24,8 @@ window.UIManager = Object.assign(__existingUI, {
   _isCreatingUI: false,
   _ownProfileId: null,
   _emailLookupAttemptedForUrl: null,
+  _autoFillRetryTimer: null,
+  _autoFillRetryCount: 0,
 
   // Track which emails have already triggered the bio setup tab to avoid duplicates
   _bioSetupOpenedByEmail: {},
@@ -91,7 +93,7 @@ window.UIManager = Object.assign(__existingUI, {
         if (this.elements.findEmailButton && document.querySelector('#linkmail-editor').style.display === 'block') {
           this.elements.findEmailButton.style.display = 'block';
         }
-        // Try backend autofill once per profile if still empty
+        // Attempt auto-fill (quick on-page check first, then backend)
         await this._fetchAndFillEmailIfBlank();
       }
 
@@ -306,6 +308,11 @@ window.UIManager = Object.assign(__existingUI, {
     this.elements = {};
     this.container = null;
     this._emailLookupAttemptedForUrl = null;
+    if (this._autoFillRetryTimer) {
+      clearTimeout(this._autoFillRetryTimer);
+      this._autoFillRetryTimer = null;
+    }
+    this._autoFillRetryCount = 0;
   },
 
   showAuthenticatedUI(preserveCurrentView = false) {
@@ -375,6 +382,13 @@ window.UIManager = Object.assign(__existingUI, {
 
         // Check email history after authentication is confirmed
         this.checkLastEmailSent();
+
+        // Ensure form is populated and attempt automatic email autofill
+        // This runs post-auth so BackendAPI.isAuthenticated is true
+        this.populateForm().then(() => {
+          // Force a lookup once immediately post-auth to ensure it runs at least once
+          this._fetchAndFillEmailIfBlank(true);
+        });
       }).catch(error => {
         console.log('Error refreshing user data:', error);
       });
@@ -839,6 +853,23 @@ window.UIManager = Object.assign(__existingUI, {
             }
           }
 
+          // If scraping yielded no email, immediately query backend and auto-fill if found
+          if (!emailToUse && window.BackendAPI && window.BackendAPI.isAuthenticated) {
+            try {
+              const extra = {
+                firstName: basicProfileData?.firstName || '',
+                lastName: basicProfileData?.lastName || '',
+                company: basicProfileData?.company || ''
+              };
+              const data = await window.BackendAPI.getEmailByLinkedIn(window.location.href, extra);
+              if (data && data.found && data.email) {
+                emailToUse = data.email;
+              }
+            } catch (be) {
+              console.log('Backend email lookup failed after scraping:', be);
+            }
+          }
+
           // Add the email to the profile data (remove emailFromAbout to avoid duplication)
           // eslint-disable-next-line no-unused-vars
           const { emailFromAbout, ...cleanedProfileData } = basicProfileData;
@@ -970,7 +1001,7 @@ window.UIManager = Object.assign(__existingUI, {
           this.elements.emailResult.value = 'Failed to generate email. Please try again.';
         }
         
-        // Attempt to auto-fill recipient email from backend if still blank
+        // Attempt to auto-fill recipient email automatically if still blank
         await this._fetchAndFillEmailIfBlank();
       } catch (error) {
         console.error('Error:', error);
@@ -1225,15 +1256,40 @@ window.UIManager = Object.assign(__existingUI, {
   },
 
   // Fetch email from backend and fill input if currently blank; debounced per URL
-  async _fetchAndFillEmailIfBlank() {
+  async _fetchAndFillEmailIfBlank(force = false) {
     try {
       const pageType = window.currentPageType || 'other-profile';
       if (pageType !== 'other-profile') return; // only on other people's profiles
 
       const recipientInput = document.getElementById('recipientEmailInput');
-      if (!recipientInput) return;
+      if (!recipientInput) {
+        // Retry a few times in case the editor hasn't mounted yet
+        if (this._autoFillRetryCount < 5) {
+          this._autoFillRetryCount++;
+          this._autoFillRetryTimer = setTimeout(() => this._fetchAndFillEmailIfBlank(force), 400);
+        }
+        return;
+      }
       const currentVal = (recipientInput.value || '').trim();
       if (currentVal) return; // already has an email
+
+      // Quick on-page check: try About section only (non-invasive)
+      try {
+        const basic = await ProfileScraper.scrapeBasicProfileData();
+        const fromAbout = basic?.emailFromAbout;
+        if (fromAbout && !recipientInput.value) {
+          recipientInput.value = fromAbout;
+          if (this.elements.findEmailButton) this.elements.findEmailButton.style.display = 'none';
+          this.showTemporaryMessage('Email found on profile!', 'success');
+          return; // done
+        }
+        // If no about email and editor just mounted, retry once after a brief delay to let editor render
+        if (!recipientInput.value && this._autoFillRetryCount < 1) {
+          this._autoFillRetryCount++;
+          this._autoFillRetryTimer = setTimeout(() => this._fetchAndFillEmailIfBlank(force), 300);
+          return;
+        }
+      } catch (_e) {}
 
       if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) return;
 
@@ -1241,8 +1297,8 @@ window.UIManager = Object.assign(__existingUI, {
       console.log('[UIManager] Attempting backend email fetch for URL:', currentUrl);
       const cacheKey = this._normalizeProfileUrlForCache(currentUrl);
 
-      // Debounce per URL so we only attempt once per profile load
-      if (this._emailLookupAttemptedForUrl === cacheKey) return;
+      // Debounce per URL so we only attempt once per profile load, unless forced
+      if (!force && this._emailLookupAttemptedForUrl === cacheKey) return;
       this._emailLookupAttemptedForUrl = cacheKey;
 
       // Check cached value in storage first
@@ -1428,8 +1484,9 @@ window.UIManager = Object.assign(__existingUI, {
     // Make sure the view matches the page type after auth check
     await this.checkLastEmailSent();
 
-    // Re-populate the form with the profile's email
+    // Re-populate the form with the profile's email and attempt autofill
     await this.populateForm();
+    await this._fetchAndFillEmailIfBlank(true);
   },
 
   // Add this new method to help manage view transitions
