@@ -64,6 +64,7 @@
       menuToggle: container.querySelector('#menuToggle'),
       menuContent: container.querySelector('#menuContent'),
       findEmailButton: container.querySelector('#findEmailButton'),
+      findEmailApolloButton: container.querySelector('#findEmailApolloButton'),
       retryPeopleSearchButton: container.querySelector('#retry-people-search')
     };
   };

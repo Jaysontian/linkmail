@@ -35,7 +35,7 @@ window.ProfileScraper = {
     console.log('ProfileScraper: Experience count:', experience.length);
 
     const cleanedAbout = this._removeDuplicates(about);
-    const cleanedCompany = this._removeDuplicates(company);
+    const cleanedCompany = this._cleanCompanyName(this._removeDuplicates(company));
     const cleanedExperience = experience.map(exp => ({
       content: this._removeDuplicates(exp.content)
     }));
@@ -196,6 +196,19 @@ window.ProfileScraper = {
     }
 
     return possibleEmail; // Return original if no match found
+  },
+
+  // Helper method to clean company names (remove duplicates)
+  _cleanCompanyName(company) {
+    if (!company) return '';
+    
+    // Remove exact duplicates like "DecagonDecagon" -> "Decagon"
+    const cleaned = company.replace(/(.+)\1+/g, '$1').trim();
+    
+    // Additional cleanup for common patterns
+    return cleaned
+      .replace(/\s+/g, ' ') // Multiple spaces to single space
+      .trim();
   },
 
   // Helper method to remove duplicated content

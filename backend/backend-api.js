@@ -654,6 +654,94 @@ window.BackendAPI = {
   },
 
   /**
+   * Find email using Apollo People Search API
+   * @param {Object} searchData - Search parameters
+   * @param {string} searchData.firstName - First name
+   * @param {string} searchData.lastName - Last name
+   * @param {string} searchData.company - Company name
+   * @param {string} searchData.linkedinUrl - LinkedIn URL
+   * @returns {Promise<Object>} Apollo search response
+   */
+  async findEmailWithApollo(searchData) {
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!searchData || typeof searchData !== 'object') {
+      throw new Error('searchData is required');
+    }
+
+    try {
+      const primaryBase = this.apiBaseURL || this.baseURL;
+      const candidates = [primaryBase];
+      
+      // Host fallback: try the sibling host if primary fails
+      try {
+        const u = new URL(primaryBase);
+        if (u.hostname.includes('linkmail-sending')) {
+          candidates.push('https://linkmail-api.vercel.app');
+        } else if (u.hostname.includes('linkmail-api')) {
+          candidates.push('https://linkmail-sending.vercel.app');
+        }
+      } catch (_) {}
+
+      let response = null;
+      let lastError = '';
+      
+      for (let i = 0; i < candidates.length; i++) {
+        const base = candidates[i];
+        const url = `${base}/api/contacts/apollo-email-search`;
+        
+        console.log('[BackendAPI] Apollo email search:', { url, searchData });
+        
+        try {
+          response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.userToken}`,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(searchData)
+          });
+        } catch (e) {
+          lastError = e?.message || String(e);
+          continue;
+        }
+        
+        if (response && response.status !== 404) break; // only fallback on 404/network
+      }
+      
+      if (!response) {
+        throw new Error(lastError || 'Network error');
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      console.log('[BackendAPI] Apollo email search response:', json);
+      return json;
+    } catch (error) {
+      console.error('Failed to search email with Apollo:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Normalize a LinkedIn profile URL to canonical form:
    * https://www.linkedin.com/in/{slug}/ (lowercased slug, no query/hash)
    */

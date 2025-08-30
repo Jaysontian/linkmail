@@ -84,9 +84,12 @@ window.UIManager = Object.assign(__existingUI, {
       if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
         // Use the cached email if available
         recipientInput.value = cachedEmail;
-        // Hide find email button since we have an email
+        // Hide both email finding buttons since we have an email
         if (this.elements.findEmailButton) {
           this.elements.findEmailButton.style.display = 'none';
+        }
+        if (this.elements.findEmailApolloButton) {
+          this.elements.findEmailApolloButton.style.display = 'none';
         }
       } else {
         // No cached email - show the Find Email button if we're in editor view
@@ -1102,17 +1105,29 @@ window.UIManager = Object.assign(__existingUI, {
                 this.showTemporaryMessage(data.isVerifiedContact ? 'Verified email from your contacts' : 'Email from your contacts', 'success');
               } else {
                 this.showTemporaryMessage('No email found in contacts', 'error');
+                // Show Apollo button as fallback option
+                if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
+                  this.elements.findEmailApolloButton.style.display = 'block';
+                }
               }
             }
           } catch (be) {
             console.log('[UIManager] Find Email backend error:', be);
             this.showTemporaryMessage('Failed to fetch email from contacts', 'error');
+            // Show Apollo button as fallback option
+            if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
+              this.elements.findEmailApolloButton.style.display = 'block';
+            }
           }
         }
 
       } catch (error) {
         console.error('Error in Find Email:', error);
         this.showTemporaryMessage('Failed to find email. Please try again.', 'error');
+        // Show Apollo button as fallback option
+        if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
+          this.elements.findEmailApolloButton.style.display = 'block';
+        }
       } finally {
         // Reset button state
         this.elements.findEmailButton.disabled = false;
@@ -1122,6 +1137,73 @@ window.UIManager = Object.assign(__existingUI, {
             <path d="m21 21-4.35-4.35"/>
           </svg>
           Find Email
+        `;
+      }
+    });
+
+    // Find Email with Apollo button event listener
+    if (this.elements.findEmailApolloButton) this.elements.findEmailApolloButton.addEventListener('click', async () => {
+      console.log('Find Email with Apollo button clicked');
+
+      // Check if authenticated
+      if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
+        this.showTemporaryMessage('Please sign in to use Apollo email finding', 'error');
+        return;
+      }
+
+      // Disable button and show loading state
+      this.elements.findEmailApolloButton.disabled = true;
+      this.elements.findEmailApolloButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px; animation: spin 1s linear infinite;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 11-6.219-8.56"/>
+        </svg>
+        Searching with Apollo...
+      `;
+
+      try {
+        // Get the current profile data
+        const profileData = await ProfileScraper.scrapeBasicProfileData();
+        console.log('Profile data for Apollo search:', profileData);
+
+        // Call Apollo API via backend
+        const apolloData = await window.BackendAPI.findEmailWithApollo({
+          firstName: profileData?.firstName || '',
+          lastName: profileData?.lastName || '',
+          company: profileData?.company || '',
+          linkedinUrl: window.location.href
+        });
+
+        console.log('[UIManager] Apollo search result:', apolloData);
+
+        if (apolloData && apolloData.success && apolloData.email) {
+          const recipientInput = document.getElementById('recipientEmailInput');
+          if (recipientInput) {
+            recipientInput.value = apolloData.email;
+          }
+
+          // Hide both email finding buttons since we found an email
+          this.elements.findEmailButton.style.display = 'none';
+          this.elements.findEmailApolloButton.style.display = 'none';
+
+          // Show success message
+          this.showTemporaryMessage('Email found with Apollo!', 'success');
+
+        } else {
+          this.showTemporaryMessage('No email found with Apollo. The person may not be in Apollo\'s database.', 'error');
+        }
+
+      } catch (error) {
+        console.error('Error in Apollo email search:', error);
+        this.showTemporaryMessage(error.message || 'Failed to find email with Apollo. Please try again.', 'error');
+      } finally {
+        // Reset button state
+        this.elements.findEmailApolloButton.disabled = false;
+        this.elements.findEmailApolloButton.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7v10c0 5.55 3.84 10 9 9s9-4.03 9-9V7l-8-5z"/>
+            <path d="M12 22s8-4 8-10V7l-8-5-8 5v5c0 6 8 10 8 10"/>
+          </svg>
+          Find Email with Apollo
         `;
       }
     });
@@ -1362,10 +1444,18 @@ window.UIManager = Object.assign(__existingUI, {
       if (data && data.found && data.email && !recipientInput.value) {
         recipientInput.value = data.email;
         if (this.elements.findEmailButton) this.elements.findEmailButton.style.display = 'none';
+        if (this.elements.findEmailApolloButton) this.elements.findEmailApolloButton.style.display = 'none';
         if (data.isVerifiedContact) {
           this.showTemporaryMessage('Verified email autofilled from your contacts', 'success');
         } else {
           this.showTemporaryMessage('Email autofilled from your contacts', 'success');
+        }
+      } else if (!recipientInput.value) {
+        // No email found through scraping or backend - show Apollo button if authenticated
+        if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
+          if (this.elements.findEmailApolloButton && document.querySelector('#linkmail-editor').style.display === 'block') {
+            this.elements.findEmailApolloButton.style.display = 'block';
+          }
         }
       }
     } catch (err) {
