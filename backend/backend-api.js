@@ -458,6 +458,116 @@ window.BackendAPI = {
   },
 
   /**
+   * Get best contact email by LinkedIn profile URL
+   * @param {string} linkedinUrl - Raw LinkedIn profile URL (window.location.href)
+   * @returns {Promise<Object>} EmailByLinkedInResponse
+   */
+  async getEmailByLinkedIn(linkedinUrl, extra = {}) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!linkedinUrl || typeof linkedinUrl !== 'string') {
+      throw new Error('linkedinUrl is required');
+    }
+
+    try {
+      const normalizedUrl = this._normalizeLinkedInUrl(linkedinUrl);
+      const params = new URLSearchParams({ linkedinUrl: normalizedUrl });
+      try {
+        const maybeAdd = (key) => {
+          const value = (extra && typeof extra[key] === 'string') ? extra[key].trim() : '';
+          if (value) params.append(key, value);
+        };
+        maybeAdd('firstName');
+        maybeAdd('lastName');
+        maybeAdd('company');
+      } catch (_e) {}
+      const primaryBase = this.apiBaseURL || this.baseURL;
+      const candidates = [primaryBase];
+      // Host fallback: try the sibling host if primary fails (mirrors how facets is resilient by path)
+      try {
+        const u = new URL(primaryBase);
+        if (u.hostname.includes('linkmail-sending')) {
+          candidates.push('https://linkmail-api.vercel.app');
+        } else if (u.hostname.includes('linkmail-api')) {
+          candidates.push('https://linkmail-sending.vercel.app');
+        }
+      } catch (_) {}
+
+      let response = null;
+      let lastError = '';
+      for (let i = 0; i < candidates.length; i++) {
+        const base = candidates[i];
+        const url = `${base}/api/contacts/email-by-linkedin?${params.toString()}`;
+        console.log('[BackendAPI] Fetching email by LinkedIn URL:', { url, normalizedUrl, extra });
+        try {
+          response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${this.userToken}`,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+        } catch (e) {
+          lastError = e?.message || String(e);
+          continue;
+        }
+        if (response && response.status !== 404) break; // only fallback on 404/network
+      }
+      if (!response) {
+        throw new Error(lastError || 'Network error');
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      console.log('[BackendAPI] Email-by-LinkedIn response:', json);
+      return json;
+    } catch (error) {
+      console.error('Failed to fetch email by LinkedIn URL:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Normalize a LinkedIn profile URL to canonical form:
+   * https://www.linkedin.com/in/{slug}/ (lowercased slug, no query/hash)
+   */
+  _normalizeLinkedInUrl(rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      const match = u.pathname.match(/\/in\/([^\/?#]+)/i);
+      if (match && match[1]) {
+        const slug = match[1].toLowerCase();
+        return `https://www.linkedin.com/in/${slug}/`;
+      }
+      // Fallback: strip query/hash, force https and www if linkedin domain
+      const isLinkedIn = /(^|\.)linkedin\.com$/i.test(u.hostname);
+      const host = isLinkedIn ? 'www.linkedin.com' : u.hostname;
+      const path = u.pathname.replace(/\/$/, '');
+      return `https://${host}${path ? path + '/' : '/'}`;
+    } catch (_e) {
+      return rawUrl;
+    }
+  },
+
+  /**
    * Debug method to check authentication state
    * @returns {Promise<Object>} Current auth state
    */

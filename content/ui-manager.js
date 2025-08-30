@@ -23,6 +23,7 @@ window.UIManager = Object.assign(__existingUI, {
   instanceId: Math.random().toString(36).substring(2, 15),
   _isCreatingUI: false,
   _ownProfileId: null,
+  _emailLookupAttemptedForUrl: null,
 
   // Track which emails have already triggered the bio setup tab to avoid duplicates
   _bioSetupOpenedByEmail: {},
@@ -90,6 +91,8 @@ window.UIManager = Object.assign(__existingUI, {
         if (this.elements.findEmailButton && document.querySelector('#linkmail-editor').style.display === 'block') {
           this.elements.findEmailButton.style.display = 'block';
         }
+        // Try backend autofill once per profile if still empty
+        await this._fetchAndFillEmailIfBlank();
       }
 
       if (nameElement) {
@@ -302,6 +305,7 @@ window.UIManager = Object.assign(__existingUI, {
     // Reset internal state
     this.elements = {};
     this.container = null;
+    this._emailLookupAttemptedForUrl = null;
   },
 
   showAuthenticatedUI(preserveCurrentView = false) {
@@ -587,22 +591,26 @@ window.UIManager = Object.assign(__existingUI, {
       return;
     }
 
-    // Toggle dropdown when three-dots button is clicked
-    this.elements.menuToggle.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const dropdown = this.elements.menuContent;
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
+    // Toggle dropdown when three-dots button is clicked (guard if missing)
+    if (this.elements.menuToggle && this.elements.menuContent) {
+      this.elements.menuToggle.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const dropdown = this.elements.menuContent;
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+    } else {
+      console.log('Menu toggle/content not found; skipping account dropdown listeners');
+    }
 
     // Close dropdown when clicking elsewhere on the page
     window.addEventListener('click', (event) => {
-      if (!this.elements.menuContent.contains(event.target)){
+      if (this.elements.menuContent && !this.elements.menuContent.contains(event.target)){
         this.elements.menuContent.style.display = 'none';
       }
     });
 
     // Google Sign-in button - now uses backend authentication
-    this.elements.signInButton.addEventListener('click', async () => {
+    if (this.elements.signInButton) this.elements.signInButton.addEventListener('click', async () => {
       try {
         // Check if extension context is still valid
         if (!chrome.runtime?.id) {
@@ -723,7 +731,7 @@ window.UIManager = Object.assign(__existingUI, {
     });
 
     // Sign out button - now uses backend logout
-    this.elements.signOutButton.addEventListener('click', async () => {
+    if (this.elements.signOutButton) this.elements.signOutButton.addEventListener('click', async () => {
       try {
         // Use backend logout
         if (window.BackendAPI) {
@@ -756,7 +764,7 @@ window.UIManager = Object.assign(__existingUI, {
 
     // Add this improvement to the editProfileButton click handler
     // Find this in setupEventListeners
-    this.elements.editProfileButton.addEventListener('click', () => {
+    if (this.elements.editProfileButton) this.elements.editProfileButton.addEventListener('click', () => {
       if (this.userData && this.userData.email) {
         // Open the bio setup page with edit mode
         const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
@@ -786,7 +794,7 @@ window.UIManager = Object.assign(__existingUI, {
     });
 
     // GENERATE BUTTON UI
-    this.elements.generateButton.addEventListener('click', async () => {
+    if (this.elements.generateButton) this.elements.generateButton.addEventListener('click', async () => {
       // Check if authenticated
       if (!this.isAuthenticated) {
         this.showSignInUI();
@@ -961,6 +969,9 @@ window.UIManager = Object.assign(__existingUI, {
         } else {
           this.elements.emailResult.value = 'Failed to generate email. Please try again.';
         }
+        
+        // Attempt to auto-fill recipient email from backend if still blank
+        await this._fetchAndFillEmailIfBlank();
       } catch (error) {
         console.error('Error:', error);
         this.elements.emailResult.value = 'An error occurred while generating the email.';
@@ -971,7 +982,7 @@ window.UIManager = Object.assign(__existingUI, {
     });
 
     // COPY BUTTON
-    this.elements.copyButton.addEventListener('click', () => {
+    if (this.elements.copyButton) this.elements.copyButton.addEventListener('click', () => {
       this.elements.emailResult.select();
       document.execCommand('copy');
       this.elements.copyButton.textContent = 'Copied!';
@@ -981,7 +992,7 @@ window.UIManager = Object.assign(__existingUI, {
     });
 
     // Find Email button event listener
-    this.elements.findEmailButton.addEventListener('click', async () => {
+    if (this.elements.findEmailButton) this.elements.findEmailButton.addEventListener('click', async () => {
       console.log('Find Email button clicked');
 
       // Disable button and show loading state
@@ -1014,8 +1025,36 @@ window.UIManager = Object.assign(__existingUI, {
           this.showTemporaryMessage('Email found on profile!', 'success');
 
         } else {
-          // No email found
-          this.showTemporaryMessage('No email found on profile', 'error');
+          // No email found via scraping; try backend by LinkedIn URL as a fallback
+          console.log('[UIManager] Find Email fallback: calling backend by LinkedIn URL');
+          try {
+            if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
+              this.showTemporaryMessage('Please sign in to fetch emails from your contacts', 'error');
+            } else {
+              let extra = {};
+              try {
+                const basic = await ProfileScraper.scrapeBasicProfileData();
+                extra = {
+                  firstName: basic?.firstName || '',
+                  lastName: basic?.lastName || '',
+                  company: basic?.company || ''
+                };
+              } catch (_e) {}
+              const data = await window.BackendAPI.getEmailByLinkedIn(window.location.href, extra);
+              console.log('[UIManager] Find Email backend result:', data);
+              if (data && data.found && data.email) {
+                const recipientInput = document.getElementById('recipientEmailInput');
+                if (recipientInput) recipientInput.value = data.email;
+                this.elements.findEmailButton.style.display = 'none';
+                this.showTemporaryMessage(data.isVerifiedContact ? 'Verified email from your contacts' : 'Email from your contacts', 'success');
+              } else {
+                this.showTemporaryMessage('No email found in contacts', 'error');
+              }
+            }
+          } catch (be) {
+            console.log('[UIManager] Find Email backend error:', be);
+            this.showTemporaryMessage('Failed to fetch email from contacts', 'error');
+          }
         }
 
       } catch (error) {
@@ -1035,7 +1074,7 @@ window.UIManager = Object.assign(__existingUI, {
     });
 
     // Replace your current sendGmailButton event listener with this
-    this.elements.sendGmailButton.addEventListener('click', async () => {
+    if (this.elements.sendGmailButton) this.elements.sendGmailButton.addEventListener('click', async () => {
       console.log('Send Gmail button clicked');
 
       // Check if authenticated
@@ -1171,6 +1210,89 @@ window.UIManager = Object.assign(__existingUI, {
           });
       }
     });
+  },
+
+  // Helper: normalize profile URL key for caching
+  _normalizeProfileUrlForCache(url) {
+    try {
+      const u = new URL(url);
+      // keep pathname only up to profile slug
+      const path = u.pathname.split('?')[0].split('#')[0].replace(/\/$/, '');
+      return `${u.host}${path}`.toLowerCase();
+    } catch (_e) {
+      return (url || '').toString();
+    }
+  },
+
+  // Fetch email from backend and fill input if currently blank; debounced per URL
+  async _fetchAndFillEmailIfBlank() {
+    try {
+      const pageType = window.currentPageType || 'other-profile';
+      if (pageType !== 'other-profile') return; // only on other people's profiles
+
+      const recipientInput = document.getElementById('recipientEmailInput');
+      if (!recipientInput) return;
+      const currentVal = (recipientInput.value || '').trim();
+      if (currentVal) return; // already has an email
+
+      if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) return;
+
+      const currentUrl = window.location.href;
+      console.log('[UIManager] Attempting backend email fetch for URL:', currentUrl);
+      const cacheKey = this._normalizeProfileUrlForCache(currentUrl);
+
+      // Debounce per URL so we only attempt once per profile load
+      if (this._emailLookupAttemptedForUrl === cacheKey) return;
+      this._emailLookupAttemptedForUrl = cacheKey;
+
+      // Check cached value in storage first
+      const storageKey = `emailByLinkedIn:${cacheKey}`;
+      const cached = await new Promise((resolve) => {
+        try {
+          if (!chrome.runtime?.id) return resolve(null);
+          chrome.storage.local.get([storageKey], (result) => resolve(result[storageKey] || null));
+        } catch (_e) { resolve(null); }
+      });
+
+      let data = cached;
+      if (!data) {
+        // Fetch from backend
+        try {
+          let extra = {};
+          try {
+            const basic = await ProfileScraper.scrapeBasicProfileData();
+            extra = {
+              firstName: basic?.firstName || '',
+              lastName: basic?.lastName || '',
+              company: basic?.company || ''
+            };
+          } catch (_e) {}
+          data = await window.BackendAPI.getEmailByLinkedIn(currentUrl, extra);
+          console.log('[UIManager] Backend email result:', data);
+        } catch (e) {
+          console.log('Email by LinkedIn fetch failed:', e?.message || e);
+          return;
+        }
+        // Cache result (even negative) to avoid repeat calls
+        try {
+          if (chrome.runtime?.id) {
+            chrome.storage.local.set({ [storageKey]: data });
+          }
+        } catch (_e) {}
+      }
+
+      if (data && data.found && data.email && !recipientInput.value) {
+        recipientInput.value = data.email;
+        if (this.elements.findEmailButton) this.elements.findEmailButton.style.display = 'none';
+        if (data.isVerifiedContact) {
+          this.showTemporaryMessage('Verified email autofilled from your contacts', 'success');
+        } else {
+          this.showTemporaryMessage('Email autofilled from your contacts', 'success');
+        }
+      }
+    } catch (err) {
+      console.log('fetchAndFillEmailIfBlank error:', err);
+    }
   },
 
   async init() {
