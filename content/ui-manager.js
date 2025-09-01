@@ -174,72 +174,9 @@ window.UIManager = Object.assign(__existingUI, {
     });
   },
 
-  // Add this method to redirect to the bio setup page
-  redirectToBioSetup(email) {
-    // Validate or recover email
-    if (!email || typeof email !== 'string' || email.trim().length === 0) {
-      const fallback = (window.BackendAPI && window.BackendAPI.userData && window.BackendAPI.userData.email)
-        ? window.BackendAPI.userData.email
-        : null;
-      if (fallback) {
-        email = fallback;
-      } else {
-        console.warn('redirectToBioSetup called without a valid email; aborting open');
-        this.showSignInUI();
-        return;
-      }
-    }
-    // Prevent opening duplicate tabs for the same email
-    if (email && this._bioSetupOpenedByEmail[email]) {
-      console.log('Bio setup tab already opened for:', email);
-      // Still update the UI messaging but do not open another tab
-      this.showSignInUI();
-      const signInView = document.querySelector('#linkmail-signin');
-      if (signInView) {
-        const header = signInView.querySelector('.linkmail-header');
-        const paragraph = signInView.querySelector('p');
-        if (header) header.textContent = 'Complete Your Profile';
-        if (paragraph) paragraph.textContent = 'Please complete your profile in the tab that opened. Return here when finished.';
-        const signInButton = signInView.querySelector('#googleSignInButton');
-        if (signInButton) signInButton.style.display = 'none';
-      }
-      return;
-    }
-
-    // Mark as opened for this email
-    if (email) {
-      this._bioSetupOpenedByEmail[email] = true;
-    }
-
-    const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(email)}`);
-
-    // Open the bio setup page in a new tab
-    chrome.runtime.sendMessage({
-      action: 'openBioSetupPage',
-      url: bioSetupUrl
-    });
-
-    // Show a message in the LinkedIn UI
-    this.showSignInUI();
-    const signInView = document.querySelector('#linkmail-signin');
-    if (signInView) {
-      const header = signInView.querySelector('.linkmail-header');
-      const paragraph = signInView.querySelector('p');
-
-      if (header) {
-        header.textContent = 'Complete Your Profile';
-      }
-
-      if (paragraph) {
-        paragraph.textContent = 'Please complete your profile in the new tab that opened. Return here when finished.';
-      }
-
-      // Hide the sign-in button
-      const signInButton = signInView.querySelector('#googleSignInButton');
-      if (signInButton) {
-        signInButton.style.display = 'none';
-      }
-    }
+  // Removed redirectToBioSetup flow: no profile completion redirects/messages
+  redirectToBioSetup(_email) {
+    console.log('redirectToBioSetup disabled');
   },
 
   async checkAuthStatus() {
@@ -700,9 +637,6 @@ window.UIManager = Object.assign(__existingUI, {
                 this.userData = { ...this.userData, ...storedUserData };
                 this.showAuthenticatedUI();
                 this.showTemporaryMessage('Authentication successful!', 'success');
-              } else {
-                // Redirect to bio setup page
-                this.redirectToBioSetup(this.userData.email);
               }
             } else if (authCheckCount >= maxAuthChecks) {
               // Stop checking after max attempts
@@ -743,8 +677,6 @@ window.UIManager = Object.assign(__existingUI, {
                     this.userData = { ...this.userData, ...storedUserData };
                     this.showAuthenticatedUI();
                     this.showTemporaryMessage('Authentication successful!', 'success');
-                  } else {
-                    this.redirectToBioSetup(this.userData.email);
                   }
                 }
               } catch (error) {
@@ -1451,9 +1383,23 @@ window.UIManager = Object.assign(__existingUI, {
             if (userEmailDisplay) userEmailDisplay.textContent = this.userData.email;
           }
         } else {
-          // User needs to complete bio setup
-          if (signInView) signInView.style.display = 'flex';
-          this.redirectToBioSetup(this.userData.email);
+          // No profile setup flow: still show authenticated UI without stored profile
+          const pageType = this.getSafePageType();
+          const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
+          if (shouldShowPeopleSuggestions) {
+            if (peopleSuggestionsView) {
+              peopleSuggestionsView.style.display = 'block';
+              this.loadPeopleSuggestions();
+            }
+          } else {
+            if (splashView) splashView.style.display = 'flex';
+          }
+          const accountInfo = this.container.querySelector('.linkmail-account-info');
+          const userEmailDisplay = this.container.querySelector('#user-email-display');
+          if (accountInfo && this.userData?.email) {
+            accountInfo.style.display = 'block';
+            if (userEmailDisplay) userEmailDisplay.textContent = this.userData.email;
+          }
         }
       } catch (error) {
         console.log('Error checking user in storage during reset:', error);

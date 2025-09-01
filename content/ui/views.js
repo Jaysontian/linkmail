@@ -105,7 +105,6 @@
           }
         } else {
           if (signInView) signInView.style.display = 'flex';
-          this.redirectToBioSetup(this.userData.email);
         }
       } catch (error) {
         console.log('Error checking user in storage during reset:', error);
