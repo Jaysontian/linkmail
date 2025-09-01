@@ -227,9 +227,10 @@ window.BackendAPI = {
    * @param {string} subject - Email subject
    * @param {string} body - Email body
    * @param {Array} attachments - Email attachments
+   * @param {Object} contactInfo - Optional contact information
    * @returns {Promise<Object>} Send result
    */
-  async sendEmail(to, subject, body, attachments = []) {
+  async sendEmail(to, subject, body, attachments = [], contactInfo = null) {
     // Validate authentication first
     const isAuthValid = await this.validateAuth();
     if (!isAuthValid) {
@@ -247,6 +248,11 @@ window.BackendAPI = {
       body: body.trim(),
       attachments: attachments || []
     };
+
+    // Add contact information if provided
+    if (contactInfo && typeof contactInfo === 'object') {
+      emailData.contactInfo = contactInfo;
+    }
 
     console.log('[BackendAPI] Sending email:', {
       to: emailData.to,

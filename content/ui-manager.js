@@ -1014,8 +1014,41 @@ window.UIManager = Object.assign(__existingUI, {
         // Get any attachments from the selected template
         const attachments = this.selectedTemplate?.attachments || [];
 
-        // Send email with attachments
-        await GmailManager.sendAndSaveEmail(email, subject, emailContent, attachments);
+        // Extract contact information from current profile if available
+        let contactInfo = null;
+        try {
+          const pageType = this.getSafePageType();
+          if (pageType === 'other-profile' && window.ProfileScraper) {
+            console.log('Extracting contact information from profile...');
+            const profileData = await window.ProfileScraper.scrapeBasicProfileData();
+            
+            // Extract job title from headline (remove company part if present)
+            let jobTitle = profileData?.headline || null;
+            if (jobTitle && profileData?.company) {
+              // If headline contains " at [company]", extract just the job title part
+              const atIndex = jobTitle.toLowerCase().indexOf(' at ');
+              if (atIndex > 0) {
+                jobTitle = jobTitle.substring(0, atIndex).trim();
+              }
+            }
+            
+            contactInfo = {
+              firstName: profileData?.firstName || null,
+              lastName: profileData?.lastName || null,
+              jobTitle: jobTitle,
+              company: profileData?.company || null,
+              linkedinUrl: window.location.href
+            };
+            
+            console.log('Contact information extracted:', contactInfo);
+          }
+        } catch (error) {
+          console.warn('Failed to extract contact information:', error);
+          // Continue with sending email even if contact extraction fails
+        }
+
+        // Send email with attachments and contact information
+        await GmailManager.sendAndSaveEmail(email, subject, emailContent, attachments, contactInfo);
         console.log('Email sent successfully');
 
         // Clear the form

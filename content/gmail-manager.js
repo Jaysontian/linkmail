@@ -39,17 +39,17 @@ window.GmailManager = {
     }
   },
 
-  async sendEmail(to, subject, body, attachments = []) {
+  async sendEmail(to, subject, body, attachments = [], contactInfo = null) {
     // Delegate to EmailSender module if available
     if (window.EmailSender) {
-      return await window.EmailSender.sendEmail(to, subject, body, attachments);
+      return await window.EmailSender.sendEmail(to, subject, body, attachments, contactInfo);
     } else {
       // Use backend API for email sending
       try {
         const auth = await this.getBackendAuth();
 
         // Use backend API to send email
-        const response = await window.BackendAPI.sendEmail(to, subject, body, attachments);
+        const response = await window.BackendAPI.sendEmail(to, subject, body, attachments, contactInfo);
 
         return response;
       } catch (error) {
@@ -59,10 +59,10 @@ window.GmailManager = {
   },
 
   // Send email and save to history - delegates to new modules
-  async sendAndSaveEmail(to, subject, body, attachments = []) {
+  async sendAndSaveEmail(to, subject, body, attachments = [], contactInfo = null) {
     try {
       // First send the email using delegation
-      const result = await this.sendEmail(to, subject, body, attachments);
+      const result = await this.sendEmail(to, subject, body, attachments, contactInfo);
 
       // If successful, save to email history
       if (result) {

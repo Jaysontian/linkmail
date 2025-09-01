@@ -18,9 +18,10 @@ window.EmailSender = {
    * @param {string} subject - Email subject
    * @param {string} body - Email body
    * @param {Array} attachments - Email attachments
+   * @param {Object} contactInfo - Optional contact information
    * @returns {Promise<Object>} Send result
    */
-  async sendEmail(to, subject, body, attachments = []) {
+  async sendEmail(to, subject, body, attachments = [], contactInfo = null) {
     try {
       // Check if BackendAPI is available and authenticated
       if (!window.BackendAPI) {
@@ -32,7 +33,7 @@ window.EmailSender = {
       }
 
       // Send email via backend API
-      const result = await window.BackendAPI.sendEmail(to, subject, body, attachments);
+      const result = await window.BackendAPI.sendEmail(to, subject, body, attachments, contactInfo);
       
       return result;
     } catch (error) {
