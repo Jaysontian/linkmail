@@ -218,12 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
     bioForm.addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      const name = document.getElementById('name').value;
+      const firstName = document.getElementById('firstName').value;
+      const lastName = document.getElementById('lastName').value;
       const college = document.getElementById('college').value;
-      const gradYear = document.getElementById('gradYear').value;
       const linkedinUrl = document.getElementById('linkedinUrl').value;
 
-      if (!name || !college || !gradYear || !linkedinUrl) {
+      if (!firstName || !lastName || !college || !linkedinUrl) {
         window.showError('Please fill in all required fields');
         return;
       }
@@ -254,9 +254,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Prepare user data
         const userData = {
-          name: name,
+          firstName: firstName,
+          lastName: lastName,
           college: college,
-          graduationYear: gradYear,
           linkedinUrl: linkedinUrl,
           email: email,
           experiences: experiences,
@@ -371,6 +371,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Helper function to load profile data into the UI
   function loadProfileData(userData) {
+    // Load basic profile information
+    if (userData.firstName) {
+      const firstNameInput = document.getElementById('firstName');
+      if (firstNameInput) firstNameInput.value = userData.firstName;
+    }
+    
+    if (userData.lastName) {
+      const lastNameInput = document.getElementById('lastName');
+      if (lastNameInput) lastNameInput.value = userData.lastName;
+    }
+    
+    if (userData.linkedinUrl) {
+      const linkedinUrlInput = document.getElementById('linkedinUrl');
+      if (linkedinUrlInput) linkedinUrlInput.value = userData.linkedinUrl;
+    }
+    
+    if (userData.college) {
+      const collegeInput = document.getElementById('college');
+      if (collegeInput) collegeInput.value = userData.college;
+    }
+
     // Load experiences
     if (userData.experiences && Array.isArray(userData.experiences)) {
       userData.experiences.forEach((exp, index) => {

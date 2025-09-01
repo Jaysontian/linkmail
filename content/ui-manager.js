@@ -675,34 +675,84 @@ window.UIManager = Object.assign(__existingUI, {
 
     // Add this improvement to the editProfileButton click handler
     // Find this in setupEventListeners
-    if (this.elements.editProfileButton) this.elements.editProfileButton.addEventListener('click', () => {
-      if (this.userData && this.userData.email) {
-        // Open the bio setup page with edit mode
-        const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
+    if (this.elements.editProfileButton) {
+      console.log('✅ Edit Profile button found, setting up event listener');
+      this.elements.editProfileButton.addEventListener('click', () => {
+        console.log('🔍 Edit Profile button clicked!');
+        console.log('🔍 Current userData:', this.userData);
+        console.log('🔍 userData type:', typeof this.userData);
+        console.log('🔍 userData keys:', this.userData ? Object.keys(this.userData) : 'null');
+        console.log('🔍 userData.email:', this.userData?.email);
+        console.log('🔍 BackendAPI userData:', window.BackendAPI?.userData);
+        console.log('🔍 Is authenticated:', this.isAuthenticated);
+        
+        if (this.userData && this.userData.email) {
+          console.log('✅ User data available, opening dashboard...');
+          // Open the bio setup page with edit mode
+          const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
+          console.log('🔗 Dashboard URL:', bioSetupUrl);
 
-        chrome.runtime.sendMessage({
-          action: 'openBioSetupPage',
-          url: bioSetupUrl
-        }, (response) => {
-          // If the bio setup page was opened successfully, set up a timer to refresh templates
-          if (response && response.success) {
-            console.log('Bio setup page opened, setting up refresh timer');
+          chrome.runtime.sendMessage({
+            action: 'openBioSetupPage',
+            url: bioSetupUrl
+          }, (response) => {
+            console.log('📨 Background response:', response);
+            // If the bio setup page was opened successfully, set up a timer to refresh templates
+            if (response && response.success) {
+              console.log('Bio setup page opened, setting up refresh timer');
 
-            // Check for template updates every 5 seconds while the bio page might be open
-            const refreshInterval = setInterval(() => {
-              this.refreshUserData().then(() => {
-                this.populateTemplateDropdown();
-              });
-            }, 5000);
+              // Check for template updates every 5 seconds while the bio page might be open
+              const refreshInterval = setInterval(() => {
+                this.refreshUserData().then(() => {
+                  this.populateTemplateDropdown();
+                });
+              }, 5000);
 
-            // Stop checking after 10 minutes (600000 ms)
-            setTimeout(() => {
-              clearInterval(refreshInterval);
-            }, 600000);
+              // Stop checking after 10 minutes (600000 ms)
+              setTimeout(() => {
+                clearInterval(refreshInterval);
+              }, 600000);
+            } else {
+              console.error('❌ Failed to open dashboard:', response);
+            }
+          });
+        } else {
+          console.error('❌ User data not available:', {
+            userData: this.userData,
+            userDataKeys: this.userData ? Object.keys(this.userData) : 'null',
+            userDataStringified: JSON.stringify(this.userData),
+            email: this.userData?.email,
+            isAuthenticated: this.isAuthenticated,
+            backendUserData: window.BackendAPI?.userData,
+            backendUserDataKeys: window.BackendAPI?.userData ? Object.keys(window.BackendAPI.userData) : 'null'
+          });
+          
+          // Try to use the backend email directly as a fallback
+          const fallbackEmail = window.BackendAPI?.userData?.email;
+          if (fallbackEmail) {
+            console.log('🔄 Trying fallback with backend email:', fallbackEmail);
+            const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(fallbackEmail)}&mode=edit`);
+            console.log('🔗 Fallback Dashboard URL:', bioSetupUrl);
+            
+            chrome.runtime.sendMessage({
+              action: 'openBioSetupPage',
+              url: bioSetupUrl
+            }, (response) => {
+              console.log('📨 Fallback Background response:', response);
+              if (response && response.success) {
+                console.log('✅ Dashboard opened successfully with fallback');
+              } else {
+                console.error('❌ Fallback also failed:', response);
+              }
+            });
+          } else {
+            console.error('❌ No fallback email available either');
           }
-        });
-      }
-    });
+        }
+      });
+    } else {
+      console.error('❌ Edit Profile button not found in DOM!');
+    }
 
     // GENERATE BUTTON UI
     if (this.elements.generateButton) this.elements.generateButton.addEventListener('click', async () => {

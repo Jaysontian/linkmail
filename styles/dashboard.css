@@ -280,6 +280,24 @@ body {
   max-width: 100%;
 }
 
+/* Form row styles for side-by-side fields */
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.form-field {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field .lm-input {
+  width: 100%;
+}
+
 .lm-input:hover {
   background-color: var(--bg-light);
 }

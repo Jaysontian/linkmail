@@ -6,10 +6,10 @@ window.ProfileManager = (function() {
 
   // Profile data schema
   const PROFILE_SCHEMA = {
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     college: '',
-    graduationYear: '',
     linkedinUrl: '',
     experiences: [],
     skills: [],
@@ -75,10 +75,10 @@ window.ProfileManager = (function() {
             if (p) {
               // Map backend shape to existing schema fields for UI compatibility
               const mapped = {
-                name: '',
+                firstName: p.first_name || '',
+                lastName: p.last_name || '',
                 email,
                 college: '',
-                graduationYear: '',
                 linkedinUrl: p.linkedin_url || '',
                 experiences: Array.isArray(p.experiences) ? p.experiences.map(e => ({
                   jobTitle: e.job_title || e.jobTitle || '',
@@ -116,8 +116,8 @@ window.ProfileManager = (function() {
       try {
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
           const payload = {
-            firstName: (profileData.name || '').split(' ')[0] || null,
-            lastName: (profileData.name || '').split(' ').slice(1).join(' ') || null,
+            firstName: profileData.firstName || null,
+            lastName: profileData.lastName || null,
             linkedinUrl: profileData.linkedinUrl || null,
             experiences: Array.isArray(profileData.experiences) ? profileData.experiences.map(e => ({
               job_title: e.jobTitle || e.job_title || '',
@@ -221,8 +221,12 @@ window.ProfileManager = (function() {
     validateProfile(profileData) {
       const errors = [];
 
-      if (!profileData.name || profileData.name.trim() === '') {
-        errors.push('Name is required');
+      if (!profileData.firstName || profileData.firstName.trim() === '') {
+        errors.push('First name is required');
+      }
+
+      if (!profileData.lastName || profileData.lastName.trim() === '') {
+        errors.push('Last name is required');
       }
 
       if (!profileData.email || profileData.email.trim() === '') {
@@ -233,12 +237,6 @@ window.ProfileManager = (function() {
 
       if (!profileData.college || profileData.college.trim() === '') {
         errors.push('College is required');
-      }
-
-      if (!profileData.graduationYear || profileData.graduationYear.trim() === '') {
-        errors.push('Graduation year is required');
-      } else if (!operations.isValidGraduationYear(profileData.graduationYear)) {
-        errors.push('Valid graduation year is required');
       }
 
       if (!profileData.linkedinUrl || profileData.linkedinUrl.trim() === '') {
@@ -305,10 +303,11 @@ window.ProfileManager = (function() {
       }
 
       return {
-        name: profileData.name,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        fullName: `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim(),
         email: profileData.email,
         college: profileData.college,
-        graduationYear: profileData.graduationYear,
         linkedinUrl: profileData.linkedinUrl,
         experienceCount: profileData.experiences ? profileData.experiences.length : 0,
         skillsCount: profileData.skills ? profileData.skills.length : 0,
@@ -474,12 +473,16 @@ window.ProfileManager = (function() {
     formatProfileForDisplay(profileData) {
       if (!profileData) return null;
 
+      const fullName = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim();
+
       return {
-        name: profileData.name || 'Unknown User',
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
+        fullName: fullName || 'Unknown User',
         email: profileData.email || '',
         college: profileData.college || 'Not specified',
-        graduationYear: profileData.graduationYear || 'Not specified',
-        initials: uiUtils.generateInitials(profileData.name),
+        linkedinUrl: profileData.linkedinUrl || '',
+        initials: uiUtils.generateInitials(fullName),
         experiencesText: profileData.experiences ? 
           `${profileData.experiences.length} experience${profileData.experiences.length !== 1 ? 's' : ''}` : 
           'No experiences',
@@ -493,12 +496,13 @@ window.ProfileManager = (function() {
     updateProfileInUI(profileData) {
       if (!profileData) return;
 
+      const fullName = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim();
       const userNameElement = document.querySelector('.user-name');
       const userEmailElement = document.getElementById('user-email-display');
       const userAvatarElement = document.querySelector('.user-avatar');
 
       if (userNameElement) {
-        userNameElement.textContent = profileData.name;
+        userNameElement.textContent = fullName || 'Unknown User';
       }
 
       if (userEmailElement) {
@@ -506,7 +510,7 @@ window.ProfileManager = (function() {
       }
 
       if (userAvatarElement) {
-        userAvatarElement.textContent = uiUtils.generateInitials(profileData.name);
+        userAvatarElement.textContent = uiUtils.generateInitials(fullName);
       }
     },
 
