@@ -84,18 +84,11 @@ window.UIManager = Object.assign(__existingUI, {
       if (recipientInput && cachedEmail && EmailFinder._lastProfileUrl === window.location.href) {
         // Use the cached email if available
         recipientInput.value = cachedEmail;
-        // Hide both email finding buttons since we have an email
-        if (this.elements.findEmailButton) {
-          this.elements.findEmailButton.style.display = 'none';
-        }
+        // Hide Apollo button since we have an email
         if (this.elements.findEmailApolloButton) {
           this.elements.findEmailApolloButton.style.display = 'none';
         }
       } else {
-        // No cached email - show the Find Email button if we're in editor view
-        if (this.elements.findEmailButton && document.querySelector('#linkmail-editor').style.display === 'block') {
-          this.elements.findEmailButton.style.display = 'block';
-        }
         // Attempt auto-fill (quick on-page check first, then backend)
         await this._fetchAndFillEmailIfBlank();
       }
@@ -110,9 +103,9 @@ window.UIManager = Object.assign(__existingUI, {
         recipientInput.placeholder = 'Enter recipient email address';
       }
       
-      // Always hide find email button on feed page and own profile
-      if (this.elements.findEmailButton) {
-        this.elements.findEmailButton.style.display = 'none'; // Hide by default, user needs to enter email manually
+      // Always hide Apollo button on feed page and own profile
+      if (this.elements.findEmailApolloButton) {
+        this.elements.findEmailApolloButton.style.display = 'none';
       }
 
       if (nameElement) {
@@ -932,14 +925,14 @@ window.UIManager = Object.assign(__existingUI, {
 
           if (recipientInput && emailToUse) {
             recipientInput.value = emailToUse;
-            // Hide find email button since we have an email
-            if (this.elements.findEmailButton) {
-              this.elements.findEmailButton.style.display = 'none';
+            // Hide Apollo button since we have an email
+            if (this.elements.findEmailApolloButton) {
+              this.elements.findEmailApolloButton.style.display = 'none';
             }
           } else {
-            // No email found - show the Find Email button
-            if (this.elements.findEmailButton) {
-              this.elements.findEmailButton.style.display = 'block';
+            // No email found - show Apollo button if authenticated
+            if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
+              this.elements.findEmailApolloButton.style.display = 'block';
             }
           }
         }
@@ -1047,99 +1040,7 @@ window.UIManager = Object.assign(__existingUI, {
       }, 2000);
     });
 
-    // Find Email button event listener
-    if (this.elements.findEmailButton) this.elements.findEmailButton.addEventListener('click', async () => {
-      console.log('Find Email button clicked');
-
-      // Disable button and show loading state
-      this.elements.findEmailButton.disabled = true;
-      this.elements.findEmailButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px; animation: spin 1s linear infinite;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12a9 9 0 11-6.219-8.56"/>
-        </svg>
-        Finding...
-      `;
-
-      try {
-        // Get the current profile data
-        const profileData = await ProfileScraper.scrapeBasicProfileData();
-        console.log('Profile data for email search:', profileData);
-
-        // Try scraping LinkedIn for email (about/contact info)
-        const scrapedEmail = await EmailFinder.getEmail();
-
-        if (scrapedEmail) {
-          const recipientInput = document.getElementById('recipientEmailInput');
-          if (recipientInput) {
-            recipientInput.value = scrapedEmail;
-          }
-
-          // Hide the find email button since we found an email
-          this.elements.findEmailButton.style.display = 'none';
-
-          // Show success message briefly
-          this.showTemporaryMessage('Email found on profile!', 'success');
-
-        } else {
-          // No email found via scraping; try backend by LinkedIn URL as a fallback
-          console.log('[UIManager] Find Email fallback: calling backend by LinkedIn URL');
-          try {
-            if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
-              this.showTemporaryMessage('Please sign in to fetch emails from your contacts', 'error');
-            } else {
-              let extra = {};
-              try {
-                const basic = await ProfileScraper.scrapeBasicProfileData();
-                extra = {
-                  firstName: basic?.firstName || '',
-                  lastName: basic?.lastName || '',
-                  company: basic?.company || ''
-                };
-              } catch (_e) {}
-              const data = await window.BackendAPI.getEmailByLinkedIn(window.location.href, extra);
-              console.log('[UIManager] Find Email backend result:', data);
-              if (data && data.found && data.email) {
-                const recipientInput = document.getElementById('recipientEmailInput');
-                if (recipientInput) recipientInput.value = data.email;
-                this.elements.findEmailButton.style.display = 'none';
-                this.showTemporaryMessage(data.isVerifiedContact ? 'Verified email from your contacts' : 'Email from your contacts', 'success');
-              } else {
-                this.showTemporaryMessage('No email found in contacts', 'error');
-                // Show Apollo button as fallback option
-                if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
-                  this.elements.findEmailApolloButton.style.display = 'block';
-                }
-              }
-            }
-          } catch (be) {
-            console.log('[UIManager] Find Email backend error:', be);
-            this.showTemporaryMessage('Failed to fetch email from contacts', 'error');
-            // Show Apollo button as fallback option
-            if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
-              this.elements.findEmailApolloButton.style.display = 'block';
-            }
-          }
-        }
-
-      } catch (error) {
-        console.error('Error in Find Email:', error);
-        this.showTemporaryMessage('Failed to find email. Please try again.', 'error');
-        // Show Apollo button as fallback option
-        if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
-          this.elements.findEmailApolloButton.style.display = 'block';
-        }
-      } finally {
-        // Reset button state
-        this.elements.findEmailButton.disabled = false;
-        this.elements.findEmailButton.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          Find Email
-        `;
-      }
-    });
+    // Removed Find Email button and its manual scraping flow
 
     // Find Email with Apollo button event listener
     if (this.elements.findEmailApolloButton) this.elements.findEmailApolloButton.addEventListener('click', async () => {
@@ -1181,8 +1082,7 @@ window.UIManager = Object.assign(__existingUI, {
             recipientInput.value = apolloData.email;
           }
 
-          // Hide both email finding buttons since we found an email
-          this.elements.findEmailButton.style.display = 'none';
+          // Hide Apollo button since we found an email
           this.elements.findEmailApolloButton.style.display = 'none';
 
           // Show success message
@@ -1383,7 +1283,7 @@ window.UIManager = Object.assign(__existingUI, {
         const fromAbout = basic?.emailFromAbout;
         if (fromAbout && !recipientInput.value) {
           recipientInput.value = fromAbout;
-          if (this.elements.findEmailButton) this.elements.findEmailButton.style.display = 'none';
+          if (this.elements.findEmailApolloButton) this.elements.findEmailApolloButton.style.display = 'none';
           this.showTemporaryMessage('Email found on profile!', 'success');
           return; // done
         }
@@ -1443,7 +1343,6 @@ window.UIManager = Object.assign(__existingUI, {
 
       if (data && data.found && data.email && !recipientInput.value) {
         recipientInput.value = data.email;
-        if (this.elements.findEmailButton) this.elements.findEmailButton.style.display = 'none';
         if (this.elements.findEmailApolloButton) this.elements.findEmailApolloButton.style.display = 'none';
         if (data.isVerifiedContact) {
           this.showTemporaryMessage('Verified email autofilled from your contacts', 'success');
