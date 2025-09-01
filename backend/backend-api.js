@@ -47,7 +47,9 @@ window.BackendAPI = {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        // Add timeout to prevent hanging requests
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
       if (response.ok) {
@@ -64,11 +66,20 @@ window.BackendAPI = {
         } else {
           console.log('No extension token available yet');
         }
+      } else if (response.status === 429) {
+        // Rate limited - this is likely the "Too many requests" error
+        console.log('Extension poll rate limited, will retry later');
+        throw new Error('Rate limited - too many requests');
       } else {
         console.log('Extension poll failed:', response.status);
       }
     } catch (error) {
-      console.error('Error polling for extension token:', error);
+      if (error.message.includes('Rate limited')) {
+        console.error('Rate limiting detected:', error);
+        throw error; // Re-throw rate limit errors
+      } else {
+        console.error('Error polling for extension token:', error);
+      }
     }
     return false;
   },
@@ -134,13 +145,27 @@ window.BackendAPI = {
         headers: {
           'Authorization': `Bearer ${this.userToken}`,
           'Content-Type': 'application/json'
-        }
+        },
+        // Add timeout to prevent hanging requests
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
-      return response.ok;
+      if (response.ok) {
+        return true;
+      } else if (response.status === 401) {
+        // Only clear auth if we get a definitive 401 (unauthorized)
+        console.log('Token verification failed with 401, clearing auth');
+        return false;
+      } else {
+        // For other errors (network issues, 500s, etc.), assume token is still valid
+        // to avoid clearing auth due to temporary backend issues
+        console.log(`Token verification returned ${response.status}, assuming token is still valid`);
+        return true;
+      }
     } catch (error) {
-      console.error('Token verification failed:', error);
-      return false;
+      // Network errors or timeouts - assume token is still valid to avoid clearing auth
+      console.log('Token verification network error, assuming token is still valid:', error.message);
+      return true;
     }
   },
 
@@ -205,42 +230,94 @@ window.BackendAPI = {
    * @returns {Promise<Object>} Send result
    */
   async sendEmail(to, subject, body, attachments = []) {
-    if (!this.isAuthenticated) {
+    // Validate authentication first
+    const isAuthValid = await this.validateAuth();
+    if (!isAuthValid) {
       throw new Error('User not authenticated. Please sign in first.');
     }
 
+    // Validate required parameters
+    if (!to || !subject || !body) {
+      throw new Error('Missing required email parameters (to, subject, body)');
+    }
+
+    const emailData = {
+      to: to.trim(),
+      subject: subject.trim(),
+      body: body.trim(),
+      attachments: attachments || []
+    };
+
+    console.log('[BackendAPI] Sending email:', {
+      to: emailData.to,
+      subject: emailData.subject,
+      bodyLength: emailData.body.length,
+      attachmentsCount: emailData.attachments.length,
+      hasToken: !!this.userToken,
+      baseURL: this.baseURL
+    });
+
     try {
-      const response = await fetch(`${this.baseURL}/api/email/send`, {
+      const url = `${this.baseURL}/api/email/send`;
+      console.log('[BackendAPI] Making request to:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.userToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          to,
-          subject,
-          body,
-          attachments
-        })
+        body: JSON.stringify(emailData),
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(30000) // 30 second timeout
       });
 
+      console.log('[BackendAPI] Response status:', response.status);
+      console.log('[BackendAPI] Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.status === 401) {
+        console.error('[BackendAPI] Authentication failed - token expired');
         // Token expired, clear auth and throw error
         await this.clearAuth();
         throw new Error('Authentication expired. Please sign in again.');
       }
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send email');
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('[BackendAPI] Server error:', errorData);
+        } catch (parseError) {
+          console.error('[BackendAPI] Failed to parse error response:', parseError);
+          const errorText = await response.text();
+          console.error('[BackendAPI] Error response text:', errorText);
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('[BackendAPI] Email sent successfully:', result);
+      return result;
+
     } catch (error) {
+      console.error('[BackendAPI] Email sending error:', error);
+      
+      // Provide more specific error messages
+      if (error.name === 'AbortError') {
+        throw new Error('Email sending timed out. Please check your connection and try again.');
+      }
+      
       if (error.message.includes('Authentication expired')) {
-        // Re-throw auth errors
+        // Re-throw auth errors as-is
         throw error;
       }
+      
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to email service. Please check your internet connection and try again.');
+      }
+      
       throw new Error(`Email sending failed: ${error.message}`);
     }
   },
@@ -764,6 +841,88 @@ window.BackendAPI = {
   },
 
   /**
+   * Test backend connectivity
+   * @returns {Promise<Object>} Connectivity test result
+   */
+  async testConnectivity() {
+    console.log('[BackendAPI] Testing backend connectivity...');
+    
+    try {
+      const url = `${this.baseURL}/api/health`;
+      console.log('[BackendAPI] Testing connection to:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+      
+      const isHealthy = response.ok;
+      const status = response.status;
+      
+      let responseData = null;
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        responseData = await response.text();
+      }
+      
+      console.log('[BackendAPI] Connectivity test result:', { isHealthy, status, responseData });
+      
+      return {
+        success: isHealthy,
+        status,
+        data: responseData,
+        url,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('[BackendAPI] Connectivity test failed:', error);
+      
+      return {
+        success: false,
+        error: error.message,
+        url: `${this.baseURL}/api/health`,
+        timestamp: new Date().toISOString()
+      };
+    }
+  },
+
+  /**
+   * Validate authentication before making API calls
+   * @returns {Promise<boolean>} Whether auth is valid
+   */
+  async validateAuth() {
+    console.log('[BackendAPI] Validating authentication...');
+    
+    if (!this.isAuthenticated || !this.userToken) {
+      console.log('[BackendAPI] Not authenticated or missing token');
+      return false;
+    }
+    
+    try {
+      // Test the token by making a simple API call
+      const isValid = await this.verifyToken();
+      
+      if (!isValid) {
+        console.log('[BackendAPI] Token validation failed');
+        await this.clearAuth();
+        return false;
+      }
+      
+      console.log('[BackendAPI] Authentication is valid');
+      return true;
+      
+    } catch (error) {
+      console.error('[BackendAPI] Auth validation error:', error);
+      return false;
+    }
+  },
+
+  /**
    * Debug method to check authentication state
    * @returns {Promise<Object>} Current auth state
    */
@@ -782,6 +941,7 @@ window.BackendAPI = {
         hasStoredUserData: !!storedAuth.userData,
         storedUserEmail: storedAuth.userData?.email
       },
+      baseURL: this.baseURL,
       timestamp: new Date().toISOString()
     };
   }

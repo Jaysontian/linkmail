@@ -12,8 +12,15 @@
         console.log('Storage change detected but ignoring because success view is displayed');
         return;
       }
+      
+      // Prevent storage listener from triggering showAuthenticatedUI in a loop
+      if (this._updatingStorage) {
+        console.log('Storage update was triggered by UI, ignoring to prevent loop');
+        return;
+      }
+      
       if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
-        console.log('User data updated in storage, refreshing UI');
+        console.log('User data updated in storage by external source, refreshing UI');
         const currentView = this.getCurrentView();
         console.log('Current view before storage listener update:', currentView);
         this.getUserFromStorage(this.userData.email).then(userData => {
@@ -21,9 +28,16 @@
             this.userData = { ...this.userData, ...userData };
             const userEmailDisplay = document.getElementById('user-email-display');
             if (userEmailDisplay && this.userData?.email) userEmailDisplay.textContent = this.userData.email;
-            const shouldPreserveView = currentView === 'editor' || currentView === 'success';
-            console.log('Should preserve view:', shouldPreserveView);
-            this.showAuthenticatedUI(shouldPreserveView);
+            
+            // Only trigger showAuthenticatedUI if we're in a basic view state
+            const currentView = this.getCurrentView();
+            if (currentView === 'splash' || currentView === 'people-suggestions' || currentView === 'signin') {
+              const shouldPreserveView = currentView === 'editor' || currentView === 'success';
+              console.log('Triggering showAuthenticatedUI from storage listener, preserve view:', shouldPreserveView);
+              this.showAuthenticatedUI(shouldPreserveView);
+            } else {
+              console.log('User is in', currentView, 'view, not triggering showAuthenticatedUI to avoid disruption');
+            }
           }
         });
       }
@@ -155,9 +169,6 @@
         if (window.BackendAPI) await window.BackendAPI.signOut();
         this.isAuthenticated = false;
         this.userData = null;
-        document.querySelector('#linkmail-editor').style.display = 'none';
-        document.querySelector('#linkmail-success').style.display = 'none';
-        document.querySelector('#linkmail-splash').style.display = 'none';
         this.showSignInUI();
         if (this.elements.emailResult) this.elements.emailResult.value = '';
         if (this.elements.emailSubject) this.elements.emailSubject.value = '';

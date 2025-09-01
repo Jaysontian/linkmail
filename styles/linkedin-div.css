@@ -24,13 +24,14 @@
 }
 
 #linkmail-splash {
-    display:flex;
     flex-direction: column;
     justify-items: center;
     align-items: center;
     justify-content: space-around;
     animation: lm-fadeIn 0.3s ease;
 }
+
+/* Allow JavaScript to control splash view display */
 
 #linkemail-signin{
     display:flex;
@@ -43,6 +44,8 @@
 #linkmail-editor{
     animation: lm-fadeIn 0.3s ease;
 }
+
+/* Allow JavaScript to control editor view display */
 
 #linkmail-signin p{
     text-align: center; 

@@ -18,6 +18,7 @@ window.UIManager = Object.assign(__existingUI, {
   elements: {},
   userData: null,
   isAuthenticated: false,
+  _authenticationInProgress: false,
   _selectedTemplate: {},
   container: null, // Add this line to store the container reference
   instanceId: Math.random().toString(36).substring(2, 15),
@@ -270,88 +271,7 @@ window.UIManager = Object.assign(__existingUI, {
     this._autoFillRetryCount = 0;
   },
 
-  showAuthenticatedUI(preserveCurrentView = false) {
-    try {
-      console.log('Showing authenticated UI, preserveCurrentView:', preserveCurrentView);
 
-      // Always hide the sign-in view
-      if (this.elements.signInView) {
-        this.elements.signInView.style.display = 'none';
-      }
-
-      // Check page type - treat own-profile same as feed page
-      const pageType = this.getSafePageType();
-      const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
-
-      // Only show appropriate view if we're not preserving the current view
-      if (!preserveCurrentView) {
-        if (shouldShowPeopleSuggestions) {
-          // Feed page and own-profile: Show people suggestions
-          if (this.elements.peopleSuggestionsView) {
-            this.elements.peopleSuggestionsView.style.display = 'block';
-            // Load people suggestions
-            this.loadPeopleSuggestions();
-          }
-          // Hide splash view on feed page and own-profile
-          if (this.elements.splashView) {
-            this.elements.splashView.style.display = 'none';
-          }
-        } else {
-          // Other profile page: Show splash view
-          if (this.elements.splashView) {
-            this.elements.splashView.style.display = 'flex';
-          }
-          // Hide people suggestions on other profile page
-          if (this.elements.peopleSuggestionsView) {
-            this.elements.peopleSuggestionsView.style.display = 'none';
-          }
-        }
-      } else {
-        console.log('Preserving current view, not changing view');
-      }
-
-      // Display user info if available
-      try {
-        const accountInfo = document.querySelector('.linkmail-account-info');
-        const userEmailDisplay = document.getElementById('user-email-display');
-
-        if (accountInfo && this.userData?.email) {
-          accountInfo.style.display = 'block';
-          if (userEmailDisplay) {
-            userEmailDisplay.textContent = this.userData.email;
-          }
-        }
-      } catch (domError) {
-        console.log('Error accessing DOM elements:', domError);
-      }
-
-      // Refresh user data from storage to get latest templates
-      this.refreshUserData().then(() => {
-        // Pass user data to GmailManager
-        if (window.GmailManager && this.userData) {
-          window.GmailManager.setUserData(this.userData);
-        }
-
-        // Populate template dropdown with user's custom templates
-        this.populateTemplateDropdown();
-
-        // Check email history after authentication is confirmed
-        this.checkLastEmailSent();
-
-        // Ensure form is populated and attempt automatic email autofill
-        // This runs post-auth so BackendAPI.isAuthenticated is true
-        this.populateForm().then(() => {
-          // Force a lookup once immediately post-auth to ensure it runs at least once
-          this._fetchAndFillEmailIfBlank(true);
-        });
-      }).catch(error => {
-        console.log('Error refreshing user data:', error);
-      });
-
-    } catch (error) {
-      console.log('Error in showAuthenticatedUI:', error);
-    }
-  },
 
   // Add this new method to UIManager to refresh user data
   async refreshUserData() {
@@ -595,6 +515,25 @@ window.UIManager = Object.assign(__existingUI, {
           return;
         }
 
+        // Prevent multiple authentication attempts
+        if (this._authenticationInProgress) {
+          console.log('Authentication already in progress, skipping duplicate request');
+          this.showTemporaryMessage('Authentication already in progress. Please wait...', 'info');
+          return;
+        }
+
+        // Check if already authenticated
+        if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
+          console.log('User already authenticated, updating UI');
+          this.isAuthenticated = true;
+          this.userData = window.BackendAPI.userData;
+          this.showAuthenticatedUI();
+          return;
+        }
+
+        // Mark authentication as in progress
+        this._authenticationInProgress = true;
+
         // Show loading message
         this.showTemporaryMessage('Opening authentication page...', 'info');
         
@@ -606,18 +545,21 @@ window.UIManager = Object.assign(__existingUI, {
         
         // Set up a listener for when authentication completes
         let authCheckCount = 0;
-        const maxAuthChecks = 30; // 2 minutes at 4-second intervals
+        const maxAuthChecks = 15; // 1 minute at 4-second intervals (reduced from 2 minutes)
         
         const checkAuthInterval = setInterval(async () => {
           try {
             authCheckCount++;
             console.log(`Checking for authentication... (${authCheckCount}/${maxAuthChecks})`);
             
-            // Check BackendAPI for auth status (it will poll backend only if not already authenticated)
-            await window.BackendAPI.init();
+            // Check BackendAPI for auth status (only poll if not already authenticated)
+            if (!window.BackendAPI.isAuthenticated) {
+              await window.BackendAPI.checkForAuthSuccess();
+            }
             
             if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
               clearInterval(checkAuthInterval);
+              this._authenticationInProgress = false; // Reset flag
               console.log('Authentication detected! Setting up user data...');
               
               this.isAuthenticated = true;
@@ -637,10 +579,14 @@ window.UIManager = Object.assign(__existingUI, {
                 this.userData = { ...this.userData, ...storedUserData };
                 this.showAuthenticatedUI();
                 this.showTemporaryMessage('Authentication successful!', 'success');
+              } else {
+                this.showAuthenticatedUI();
+                this.showTemporaryMessage('Authentication successful!', 'success');
               }
             } else if (authCheckCount >= maxAuthChecks) {
               // Stop checking after max attempts
               clearInterval(checkAuthInterval);
+              this._authenticationInProgress = false; // Reset flag
               console.log('Auth check timeout - stopping polling');
               this.showTemporaryMessage('Authentication timeout. Please try again.', 'error');
             }
@@ -648,6 +594,7 @@ window.UIManager = Object.assign(__existingUI, {
             console.log('Auth check error:', error);
             if (authCheckCount >= maxAuthChecks) {
               clearInterval(checkAuthInterval);
+              this._authenticationInProgress = false; // Reset flag
             }
           }
         }, 4000); // Check every 4 seconds
@@ -663,6 +610,7 @@ window.UIManager = Object.assign(__existingUI, {
                 if (window.BackendAPI.isAuthenticated) {
                   clearInterval(checkAuthInterval);
                   chrome.storage.onChanged.removeListener(storageListener);
+                  this._authenticationInProgress = false; // Reset flag
                   
                   this.isAuthenticated = true;
                   this.userData = {
@@ -675,6 +623,9 @@ window.UIManager = Object.assign(__existingUI, {
                   if (userExists) {
                     const storedUserData = await this.getUserFromStorage(this.userData.email);
                     this.userData = { ...this.userData, ...storedUserData };
+                    this.showAuthenticatedUI();
+                    this.showTemporaryMessage('Authentication successful!', 'success');
+                  } else {
                     this.showAuthenticatedUI();
                     this.showTemporaryMessage('Authentication successful!', 'success');
                   }
@@ -690,6 +641,7 @@ window.UIManager = Object.assign(__existingUI, {
         
       } catch (error) {
         console.error('Error during authentication:', error);
+        this._authenticationInProgress = false; // Reset flag on error
         this.showTemporaryMessage('Authentication failed. Please try again.', 'error');
       }
     });
@@ -706,12 +658,7 @@ window.UIManager = Object.assign(__existingUI, {
         this.isAuthenticated = false;
         this.userData = null;
 
-        // Hide all views first
-        document.querySelector('#linkmail-editor').style.display = 'none';
-        document.querySelector('#linkmail-success').style.display = 'none';
-        document.querySelector('#linkmail-splash').style.display = 'none';
-
-        // Show sign-in view
+        // Show sign-in view (this will handle hiding all other views)
         this.showSignInUI();
 
         // Clear form fields
@@ -908,8 +855,7 @@ window.UIManager = Object.assign(__existingUI, {
 
         console.log(response);
 
-        document.querySelector('#linkmail-splash').style.display = 'none';
-        document.querySelector('#linkmail-editor').style.display = 'block';
+        this.showView('#linkmail-editor');
 
         if (response?.email) {
           let emailContent = response.email;
@@ -1446,47 +1392,7 @@ window.UIManager = Object.assign(__existingUI, {
     await this._fetchAndFillEmailIfBlank(true);
   },
 
-  // Add this new method to help manage view transitions
-  showView(viewName) {
-    console.log(`Showing view: ${viewName}`);
 
-    if (!this.container) {
-      console.error('Container not initialized, cannot show view');
-      return;
-    }
-
-    // Define all possible views (centralized)
-    const allViews = this.ALL_VIEWS;
-
-    // Hide all views first
-    allViews.forEach(selector => {
-      const view = this.container.querySelector(selector);
-      if (view) {
-        view.style.display = 'none';
-        console.log(`Hidden view: ${selector}`);
-      } else {
-        console.warn(`View not found: ${selector}`);
-      }
-    });
-
-    // Show the requested view
-    const targetView = this.container.querySelector(viewName);
-    if (targetView) {
-      if (viewName === '#linkmail-splash') {
-        targetView.style.display = 'flex';
-      } else {
-        targetView.style.display = 'block';
-      }
-      console.log(`Displayed view: ${viewName}`);
-      
-      // If showing people suggestions, load the suggestions
-      if (viewName === '#linkmail-people-suggestions') {
-        this.loadPeopleSuggestions();
-      }
-    } else {
-      console.error(`Target view not found: ${viewName}`);
-    }
-  },
 
   // Update the populateTemplateDropdown method in UI-manager.js
   populateTemplateDropdown() {
@@ -1747,16 +1653,10 @@ window.UIManager = Object.assign(__existingUI, {
       // Default state
       lastEmailStatus.style.display = 'none';
 
-      // If not authenticated, we need to check auth status first
+      // If not authenticated, return early (don't call checkAuthStatus to avoid loops)
       if (!this.isAuthenticated || !this.userData || !this.userData.email) {
-        console.log('Not authenticated or missing user data, checking auth status first...');
-        await this.checkAuthStatus();
-
-        // If still not authenticated after checking, return
-        if (!this.isAuthenticated || !this.userData) {
-          console.log('Still not authenticated after check, returning');
-          return;
-        }
+        console.log('Not authenticated or missing user data, skipping email history check');
+        return;
       }
 
       console.log('User authenticated, email:', this.userData.email);
