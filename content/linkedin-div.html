@@ -122,16 +122,10 @@
         <h2 class="linkmail-header">People you might want to reach out to</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Filter by role and company from your contacts database:</p>
 
-        <div id="facets-filters" style="display:flex; gap: 8px; margin-bottom: 12px;">
-            <select id="jobTitleFilter" class="lm-input" style="flex:1; font-size:10pt; padding:6px 8px;">
-                <option value="">All Job Titles</option>
-            </select>
-            <select id="companyFilter" class="lm-input" style="flex:1; font-size:10pt; padding:6px 8px;">
-                <option value="">All Companies</option>
-            </select>
+        <div id="facets-filters" style="display:flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+            <input id="jobTitleFilter" class="lm-input" placeholder="Job Title (e.g. Software Engineer)" style="flex:1; font-size:10pt; padding:6px 8px;">
+            <input id="companyFilter" class="lm-input" placeholder="Company (e.g. Palantir)" style="flex:1; font-size:10pt; padding:6px 8px;">
         </div>
-
-        <button id="peopleSearchButton" class="lm-btn-2" style="margin-bottom: 12px;">Search</button>
 
         <div id="people-search-results" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;"></div>
         

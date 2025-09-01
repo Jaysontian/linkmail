@@ -27,8 +27,7 @@
       if (errorEl) errorEl.style.display = 'none';
       if (containerEl) containerEl.innerHTML = '';
 
-      // Populate facets dropdowns from backend and wire search button
-      await this.populateFacetsDropdowns();
+      // Wire search input handlers for real-time search
       this.attachPeopleSearchHandlers();
 
       // Get user profile information for suggestions (Apollo removed)
@@ -84,72 +83,15 @@
     }
   };
 
-  // Fetch and populate facets dropdowns: job titles and companies
-  window.UIManager.populateFacetsDropdowns = async function populateFacetsDropdowns() {
-    try {
-      const jobTitleSelect = this.container?.querySelector('#jobTitleFilter');
-      const companySelect = this.container?.querySelector('#companyFilter');
-      if (!jobTitleSelect || !companySelect) return;
+  // Note: Dropdown-related functions removed since we now use text inputs for real-time search
 
-      // Cache key
-      const cacheKey = 'facetsCache:v1';
-      let facets = null;
-      try {
-        const stored = await new Promise(resolve => chrome.storage.local.get([cacheKey], r => resolve(r[cacheKey])));
-        if (stored && Array.isArray(stored.jobTitles) && Array.isArray(stored.companies)) {
-          facets = stored;
-        }
-      } catch (_) {}
-
-      if (!facets) {
-        // Ensure backend auth is initialized
-        if (!window.BackendAPI || !BackendAPI.isAuthenticated) {
-          console.log('Backend not authenticated; skipping facets fetch');
-          this.fillFacets(jobTitleSelect, companySelect, [], []);
-          return;
-        }
-        const { jobTitles, companies } = await BackendAPI.getContactFacets();
-        facets = { jobTitles, companies };
-        try { await new Promise(resolve => chrome.storage.local.set({ [cacheKey]: facets }, resolve)); } catch (_) {}
-      }
-
-      this.fillFacets(jobTitleSelect, companySelect, facets.jobTitles, facets.companies);
-
-    } catch (error) {
-      console.error('Failed to populate facets dropdowns:', error);
-    }
-  };
-
-  // Helper to fill dropdown options
-  window.UIManager.fillFacets = function fillFacets(jobTitleSelect, companySelect, jobTitles, companies) {
-    const setOptions = (selectEl, options) => {
-      // Preserve the first default option
-      const firstOption = selectEl.querySelector('option');
-      selectEl.innerHTML = '';
-      if (firstOption) selectEl.appendChild(firstOption);
-      options
-        .filter(v => typeof v === 'string' && v.trim().length > 0)
-        .sort((a, b) => a.localeCompare(b))
-        .forEach(value => {
-          const opt = document.createElement('option');
-          opt.value = value;
-          opt.textContent = value;
-          selectEl.appendChild(opt);
-        });
-    };
-
-    if (jobTitleSelect) setOptions(jobTitleSelect, jobTitles || []);
-    if (companySelect) setOptions(companySelect, companies || []);
-  };
-
-  // Attach search button behavior for people search
+  // Attach real-time search behavior for people search
   window.UIManager.attachPeopleSearchHandlers = function attachPeopleSearchHandlers() {
     try {
-      const searchBtn = this.container?.querySelector('#peopleSearchButton');
-      const jobTitleSelect = this.container?.querySelector('#jobTitleFilter');
-      const companySelect = this.container?.querySelector('#companyFilter');
+      const jobTitleInput = this.container?.querySelector('#jobTitleFilter');
+      const companyInput = this.container?.querySelector('#companyFilter');
       const resultsContainer = this.container?.querySelector('#people-search-results');
-      if (!searchBtn || !jobTitleSelect || !companySelect || !resultsContainer) return;
+      if (!jobTitleInput || !companyInput || !resultsContainer) return;
 
       // Helper to render results
       const renderResults = (results) => {
@@ -157,13 +99,24 @@
         if (!Array.isArray(results) || results.length === 0) {
           const empty = document.createElement('div');
           empty.style.cssText = 'font-size: 11px; color: #666;';
-          empty.textContent = 'No results.';
+          empty.textContent = 'No results found. Try entering both a job title and company.';
           resultsContainer.appendChild(empty);
           return;
         }
         results.slice(0, 3).forEach((person) => {
           const row = document.createElement('div');
-          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; border:1px solid #e1e5e9; border-radius:6px; padding:8px; background:white; cursor:' + (person.linkedinUrl ? 'pointer' : 'default') + ';';
+          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; border:1px solid #e1e5e9; border-radius:6px; padding:8px; background:white; cursor:' + (person.linkedinUrl ? 'pointer' : 'default') + '; transition: background-color 0.2s;';
+          
+          // Add hover effect
+          row.addEventListener('mouseenter', () => {
+            if (person.linkedinUrl) {
+              row.style.backgroundColor = '#f8f9fa';
+            }
+          });
+          row.addEventListener('mouseleave', () => {
+            row.style.backgroundColor = 'white';
+          });
+
           const name = `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Unknown';
           const title = person.jobTitle || '';
           const company = person.company || '';
@@ -178,34 +131,49 @@
           left.appendChild(nameEl);
           left.appendChild(infoEl);
           row.appendChild(left);
+          
+          // Add arrow indicator for clickable items
           if (person.linkedinUrl) {
+            const arrow = document.createElement('div');
+            arrow.style.cssText = 'color: #0066cc; font-size: 16px; flex-shrink: 0;';
+            arrow.textContent = '→';
+            row.appendChild(arrow);
+            
             row.addEventListener('click', () => {
               window.location.href = person.linkedinUrl;
             });
           }
+          
           resultsContainer.appendChild(row);
         });
       };
 
-      // Debounce repeated searches for same params
+      // Debounce search function
+      let searchTimeout = null;
       let lastKey = '';
+      
       const doSearch = async () => {
         if (!window.BackendAPI || !BackendAPI.isAuthenticated) {
           renderResults([]);
           return;
         }
-        const jobTitle = jobTitleSelect.value;
-        const company = companySelect.value;
+        
+        const jobTitle = jobTitleInput.value.trim();
+        const company = companyInput.value.trim();
+        
+        // Clear results if either field is empty
         if (!jobTitle || !company) {
-          renderResults([]);
+          resultsContainer.innerHTML = '';
           return;
         }
+        
         const key = `${jobTitle}|||${company}`;
         if (key === lastKey) return;
         lastKey = key;
 
-        // Loading state
+        // Show loading state
         resultsContainer.innerHTML = '<div style="font-size:11px; color:#666;">Searching...</div>';
+        
         try {
           const { results } = await BackendAPI.searchContacts(jobTitle, company);
           renderResults(results);
@@ -219,7 +187,30 @@
         }
       };
 
-      searchBtn.onclick = doSearch;
+      // Add real-time search on input change with debouncing
+      const handleInput = () => {
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+        searchTimeout = setTimeout(doSearch, 500); // 500ms debounce
+      };
+
+      jobTitleInput.addEventListener('input', handleInput);
+      companyInput.addEventListener('input', handleInput);
+
+      // Also trigger search on Enter key
+      const handleEnter = (e) => {
+        if (e.key === 'Enter') {
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+          }
+          doSearch();
+        }
+      };
+
+      jobTitleInput.addEventListener('keydown', handleEnter);
+      companyInput.addEventListener('keydown', handleEnter);
+
     } catch (e) {
       console.error('Failed to attach people search handlers:', e);
     }

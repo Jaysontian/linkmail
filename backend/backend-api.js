@@ -590,7 +590,8 @@ window.BackendAPI = {
       const json = await response.json();
       const jobTitles = Array.isArray(json.jobTitles) ? json.jobTitles : [];
       const companies = Array.isArray(json.companies) ? json.companies : [];
-      return { jobTitles, companies };
+      const totalContacts = typeof json.totalContacts === 'number' ? json.totalContacts : 0;
+      return { jobTitles, companies, totalContacts };
     } catch (error) {
       console.error('Failed to fetch contact facets:', error);
       throw error;
