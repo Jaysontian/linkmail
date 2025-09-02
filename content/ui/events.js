@@ -9,20 +9,16 @@
     chrome.storage.onChanged.addListener((changes, namespace) => {
       const successView = this.container.querySelector('#linkmail-success');
       if (successView && successView.style.display === 'block') {
-        console.log('Storage change detected but ignoring because success view is displayed');
         return;
       }
       
       // Prevent storage listener from triggering showAuthenticatedUI in a loop
       if (this._updatingStorage) {
-        console.log('Storage update was triggered by UI, ignoring to prevent loop');
         return;
       }
       
       if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
-        console.log('User data updated in storage by external source, refreshing UI');
         const currentView = this.getCurrentView();
-        console.log('Current view before storage listener update:', currentView);
         this.getUserFromStorage(this.userData.email).then(userData => {
           if (userData) {
             this.userData = { ...this.userData, ...userData };
@@ -33,10 +29,8 @@
             const currentView = this.getCurrentView();
             if (currentView === 'splash' || currentView === 'people-suggestions' || currentView === 'signin') {
               const shouldPreserveView = currentView === 'editor' || currentView === 'success';
-              console.log('Triggering showAuthenticatedUI from storage listener, preserve view:', shouldPreserveView);
               this.showAuthenticatedUI(shouldPreserveView);
             } else {
-              console.log('User is in', currentView, 'view, not triggering showAuthenticatedUI to avoid disruption');
             }
           }
         });
@@ -46,16 +40,12 @@
 
   window.UIManager.setupFocusRefresh = function setupFocusRefresh() {
     window.addEventListener('focus', () => {
-      console.log('Window focused, checking for template updates');
       if (this.isAuthenticated && this.userData && this.userData.email) {
         const currentView = this.getCurrentView();
-        console.log('Current view before focus refresh:', currentView);
         this.refreshUserData().then(() => {
           this.populateTemplateDropdown();
           if (currentView === 'editor' || currentView === 'success') {
-            console.log('Preserving current view after focus refresh:', currentView);
           } else {
-            console.log('Safe to refresh UI after focus');
           }
         });
       }
@@ -79,7 +69,6 @@
     this.elements.signInButton.addEventListener('click', async () => {
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot sign in');
           this.showTemporaryMessage('Extension needs to be reloaded. Please refresh the page and try again.', 'error');
           return;
         }
@@ -96,11 +85,9 @@
         const checkAuthInterval = setInterval(async () => {
           try {
             authCheckCount++;
-            console.log(`Checking for authentication... (${authCheckCount}/${maxAuthChecks})`);
             await window.BackendAPI.init();
             if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
               clearInterval(checkAuthInterval);
-              console.log('Authentication detected! Setting up user data...');
               this.isAuthenticated = true;
               this.userData = {
                 email: window.BackendAPI.userData.email,
@@ -119,17 +106,14 @@
               this.showTemporaryMessage('Authentication successful!', 'success');
             } else if (authCheckCount >= maxAuthChecks) {
               clearInterval(checkAuthInterval);
-              console.log('Auth check timeout - stopping polling');
               this.showTemporaryMessage('Authentication timeout. Please try again.', 'error');
             }
           } catch (error) {
-            console.log('Auth check error:', error);
             if (authCheckCount >= maxAuthChecks) clearInterval(checkAuthInterval);
           }
         }, 4000);
         const storageListener = (changes, namespace) => {
           if (namespace === 'local' && (changes.backendToken || changes.backendUserData)) {
-            console.log('Auth storage changed detected, checking authentication...');
             setTimeout(async () => {
               try {
                 await window.BackendAPI.init();

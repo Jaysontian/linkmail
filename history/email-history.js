@@ -60,7 +60,6 @@ window.EmailHistory = (function() {
                 return;
               }
 
-              console.log('Email saved to history successfully');
               resolve({ success: true, emailRecord });
             });
           });
@@ -90,7 +89,6 @@ window.EmailHistory = (function() {
             const userData = result[userEmail];
             const sentEmails = userData?.sentEmails || [];
 
-            console.log(`Loaded ${sentEmails.length} emails from history for ${userEmail}`);
             resolve({ success: true, emails: sentEmails });
           });
         } catch (error) {
@@ -230,7 +228,6 @@ window.EmailHistory = (function() {
                 return;
               }
 
-              console.log('Email deleted from history successfully');
               resolve({ success: true, deletedEmail });
             });
           });

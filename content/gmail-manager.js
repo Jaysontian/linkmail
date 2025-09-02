@@ -30,12 +30,10 @@ window.GmailManager = {
   // Add a method to set user data
   setUserData(userData) {
     this.userData = userData;
-    console.log('GmailManager: User data set', userData?.name);
     
     // Also pass user data to EmailSender module if available
     if (window.EmailSender) {
       window.EmailSender.setUserData(userData);
-      console.log('EmailSender: User data set', userData?.name);
     }
   },
 

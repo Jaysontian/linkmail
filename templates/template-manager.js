@@ -45,8 +45,18 @@ window.TemplateManager = (function() {
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
           const resp = await window.BackendAPI.getUserBio();
           const p = resp && resp.profile ? resp.profile : null;
-          const fromDb = Array.isArray(p?.templates) ? p.templates.map(t => ({ name: t.title || '', content: t.body || '' })) : [];
+          const fromDb = Array.isArray(p?.templates) ? p.templates.map(t => ({ 
+            name: t.title || '', 
+            content: t.body || '',
+            subjectLine: `${t.title || 'Template'} with [Recipient Name]`,
+            icon: '📝',
+            attachments: []
+          })) : [];
           templates = JSON.parse(JSON.stringify(fromDb));
+          
+          // Sync loaded templates to local storage for LinkedIn injection
+          await this.syncToLocalStorage(email, templates);
+          
           return { success: true, templates };
         }
       } catch (e) {
@@ -70,6 +80,10 @@ window.TemplateManager = (function() {
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
           const simplified = templatesData.map(t => ({ title: t.name, body: t.content }));
           await window.BackendAPI.saveTemplates(simplified);
+          
+          // Also save to Chrome local storage for LinkedIn injection synchronization
+          await this.syncToLocalStorage(email, templatesData);
+          
           return true;
         }
       } catch (e) {
@@ -314,6 +328,49 @@ window.TemplateManager = (function() {
         isValid: errors.length === 0,
         errors: errors
       };
+    },
+
+    // Sync templates to Chrome local storage for LinkedIn injection
+    async syncToLocalStorage(email, templatesData) {
+      return new Promise((resolve) => {
+        try {
+          if (!chrome.runtime?.id) {
+            console.warn('Chrome extension context not available');
+            resolve(false);
+            return;
+          }
+
+          // Get existing user data from storage
+          chrome.storage.local.get([email], (result) => {
+            if (chrome.runtime.lastError) {
+              console.error('Error getting user data from storage:', chrome.runtime.lastError);
+              resolve(false);
+              return;
+            }
+
+            // Merge templates with existing user data
+            const userData = result[email] || {};
+            userData.templates = templatesData;
+
+            // Save back to storage
+            const dataToSave = {};
+            dataToSave[email] = userData;
+
+            chrome.storage.local.set(dataToSave, () => {
+              if (chrome.runtime.lastError) {
+                console.error('Error saving templates to storage:', chrome.runtime.lastError);
+                resolve(false);
+                return;
+              }
+              console.log('Templates synced to local storage successfully');
+              resolve(true);
+            });
+          });
+        } catch (error) {
+          console.error('Error syncing templates to local storage:', error);
+          resolve(false);
+        }
+      });
     }
   };
 
@@ -361,6 +418,9 @@ window.TemplateManager = (function() {
 
     // Validation
     validateTemplate: operations.validateTemplate,
+
+    // Storage sync
+    syncToLocalStorage: operations.syncToLocalStorage,
 
     // Event system
     addEventListener(eventName, callback) {

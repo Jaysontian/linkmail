@@ -41,7 +41,6 @@ window.BackendAPI = {
    */
   async checkForAuthSuccess() {
     try {
-      console.log('Polling backend for extension token...');
       
       const response = await fetch(`${this.baseURL}/api/auth/extension-poll`, {
         method: 'GET',
@@ -54,24 +53,18 @@ window.BackendAPI = {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Extension poll response:', data);
         
         if (data.success && data.token && data.userData) {
-          console.log('Found extension token! Storing authentication data...');
           
           // Store the authentication data
           await this.storeAuth(data.token, data.userData);
-          console.log('Authentication data stored successfully from extension poll');
           return true;
         } else {
-          console.log('No extension token available yet');
         }
       } else if (response.status === 429) {
         // Rate limited - this is likely the "Too many requests" error
-        console.log('Extension poll rate limited, will retry later');
         throw new Error('Rate limited - too many requests');
       } else {
-        console.log('Extension poll failed:', response.status);
       }
     } catch (error) {
       if (error.message.includes('Rate limited')) {
@@ -154,17 +147,14 @@ window.BackendAPI = {
         return true;
       } else if (response.status === 401) {
         // Only clear auth if we get a definitive 401 (unauthorized)
-        console.log('Token verification failed with 401, clearing auth');
         return false;
       } else {
         // For other errors (network issues, 500s, etc.), assume token is still valid
         // to avoid clearing auth due to temporary backend issues
-        console.log(`Token verification returned ${response.status}, assuming token is still valid`);
         return true;
       }
     } catch (error) {
       // Network errors or timeouts - assume token is still valid to avoid clearing auth
-      console.log('Token verification network error, assuming token is still valid:', error.message);
       return true;
     }
   },
@@ -265,7 +255,6 @@ window.BackendAPI = {
 
     try {
       const url = `${this.baseURL}/api/email/send`;
-      console.log('[BackendAPI] Making request to:', url);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -278,8 +267,6 @@ window.BackendAPI = {
         signal: AbortSignal.timeout(30000) // 30 second timeout
       });
 
-      console.log('[BackendAPI] Response status:', response.status);
-      console.log('[BackendAPI] Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (response.status === 401) {
         console.error('[BackendAPI] Authentication failed - token expired');
@@ -304,7 +291,6 @@ window.BackendAPI = {
       }
 
       const result = await response.json();
-      console.log('[BackendAPI] Email sent successfully:', result);
       return result;
 
     } catch (error) {
@@ -692,7 +678,6 @@ window.BackendAPI = {
       for (let i = 0; i < candidates.length; i++) {
         const base = candidates[i];
         const url = `${base}/api/contacts/email-by-linkedin?${params.toString()}`;
-        console.log('[BackendAPI] Fetching email by LinkedIn URL:', { url, normalizedUrl, extra });
         try {
           response = await fetch(url, {
             method: 'GET',
@@ -729,10 +714,126 @@ window.BackendAPI = {
       }
 
       const json = await response.json();
-      console.log('[BackendAPI] Email-by-LinkedIn response:', json);
       return json;
     } catch (error) {
       console.error('Failed to fetch email by LinkedIn URL:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get job title and company information by LinkedIn URL
+   * @param {string} linkedinUrl - LinkedIn profile URL
+   * @returns {Promise<Object>} Contact information with job title and company
+   */
+  async getContactInfoByLinkedIn(linkedinUrl) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!linkedinUrl || typeof linkedinUrl !== 'string') {
+      throw new Error('linkedinUrl is required');
+    }
+
+    try {
+      const normalizedUrl = this._normalizeLinkedInUrl(linkedinUrl);
+      const params = new URLSearchParams({ linkedinUrl: normalizedUrl });
+      
+      const primaryBase = this.apiBaseURL || this.baseURL;
+      const candidates = [primaryBase];
+      
+      // Host fallback: try the sibling host if primary fails
+      try {
+        const u = new URL(primaryBase);
+        if (u.hostname.includes('linkmail-sending')) {
+          candidates.push('https://linkmail-api.vercel.app');
+        } else if (u.hostname.includes('linkmail-api')) {
+          candidates.push('https://linkmail-sending.vercel.app');
+        }
+      } catch (_) {}
+
+      let response = null;
+      let lastError = '';
+      
+      for (let i = 0; i < candidates.length; i++) {
+        const base = candidates[i];
+        const url = `${base}/api/contacts/email-by-linkedin?${params.toString()}`;
+        
+        try {
+          response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${this.userToken}`,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+        } catch (e) {
+          lastError = e?.message || String(e);
+          continue;
+        }
+        
+        if (response && response.status !== 404) break; // only fallback on 404/network
+      }
+      
+      if (!response) {
+        throw new Error(lastError || 'Network error');
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      
+      // The email-by-linkedin endpoint now returns:
+      // { found, contactId, firstName, lastName, jobTitle, company, linkedinUrl, isVerifiedContact, email, emails, emailMeta }
+      
+      const contactInfo = {
+        found: json.found || false,
+        contactId: json.contactId || null,
+        firstName: json.firstName || '',
+        lastName: json.lastName || '',
+        jobTitle: json.jobTitle || 'Not available',
+        company: json.company || 'Not available',
+        linkedinUrl: json.linkedinUrl || normalizedUrl,
+        email: json.email || null,
+        isVerified: json.isVerifiedContact || false
+      };
+      
+      // Log to console as requested
+      console.log('=== LinkedIn Contact Information ===');
+      console.log(`LinkedIn URL: ${contactInfo.linkedinUrl}`);
+      console.log(`Contact Found: ${contactInfo.found}`);
+      if (contactInfo.found) {
+        console.log(`Contact ID: ${contactInfo.contactId}`);
+        console.log(`Name: ${contactInfo.firstName} ${contactInfo.lastName}`.trim());
+        console.log(`Job Title: ${contactInfo.jobTitle}`);
+        console.log(`Company: ${contactInfo.company}`);
+        console.log(`Email: ${contactInfo.email || 'No email found'}`);
+        console.log(`Verified: ${contactInfo.isVerified}`);
+      } else {
+        console.log('No contact found in database for this LinkedIn URL');
+        console.log(`Job Title: ${contactInfo.jobTitle}`);
+        console.log(`Company: ${contactInfo.company}`);
+      }
+      console.log('===================================');
+      
+      return contactInfo;
+    } catch (error) {
+      console.error('Failed to fetch contact info by LinkedIn URL:', error);
       throw error;
     }
   },
@@ -776,7 +877,6 @@ window.BackendAPI = {
         const base = candidates[i];
         const url = `${base}/api/contacts/apollo-email-search`;
         
-        console.log('[BackendAPI] Apollo email search:', { url, searchData });
         
         try {
           response = await fetch(url, {
@@ -817,7 +917,6 @@ window.BackendAPI = {
       }
 
       const json = await response.json();
-      console.log('[BackendAPI] Apollo email search response:', json);
       return json;
     } catch (error) {
       console.error('Failed to search email with Apollo:', error);
@@ -852,11 +951,9 @@ window.BackendAPI = {
    * @returns {Promise<Object>} Connectivity test result
    */
   async testConnectivity() {
-    console.log('[BackendAPI] Testing backend connectivity...');
     
     try {
       const url = `${this.baseURL}/api/health`;
-      console.log('[BackendAPI] Testing connection to:', url);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -876,7 +973,6 @@ window.BackendAPI = {
         responseData = await response.text();
       }
       
-      console.log('[BackendAPI] Connectivity test result:', { isHealthy, status, responseData });
       
       return {
         success: isHealthy,
@@ -903,10 +999,8 @@ window.BackendAPI = {
    * @returns {Promise<boolean>} Whether auth is valid
    */
   async validateAuth() {
-    console.log('[BackendAPI] Validating authentication...');
     
     if (!this.isAuthenticated || !this.userToken) {
-      console.log('[BackendAPI] Not authenticated or missing token');
       return false;
     }
     
@@ -915,17 +1009,43 @@ window.BackendAPI = {
       const isValid = await this.verifyToken();
       
       if (!isValid) {
-        console.log('[BackendAPI] Token validation failed');
         await this.clearAuth();
         return false;
       }
       
-      console.log('[BackendAPI] Authentication is valid');
       return true;
       
     } catch (error) {
       console.error('[BackendAPI] Auth validation error:', error);
       return false;
+    }
+  },
+
+  /**
+   * Helper function to query and log contact info when "Send Email" is clicked on LinkedIn
+   * This function automatically detects the current LinkedIn URL and queries the database
+   * @returns {Promise<Object>} Contact information
+   */
+  async logCurrentLinkedInContactInfo() {
+    try {
+      // Get the current page URL
+      const currentUrl = window.location.href;
+      
+      // Check if we're on a LinkedIn profile page
+      if (!currentUrl.includes('linkedin.com/in/')) {
+        console.warn('Not on a LinkedIn profile page. Current URL:', currentUrl);
+        return { error: 'Not on a LinkedIn profile page' };
+      }
+      
+      console.log('Querying contact information for current LinkedIn profile...');
+      
+      // Query the contact information
+      const contactInfo = await this.getContactInfoByLinkedIn(currentUrl);
+      
+      return contactInfo;
+    } catch (error) {
+      console.error('Error querying LinkedIn contact info:', error);
+      return { error: error.message };
     }
   },
 
@@ -956,7 +1076,9 @@ window.BackendAPI = {
 
 // Initialize on load
 if (typeof window !== 'undefined') {
+  console.log('[BackendAPI] Module loaded, initializing...');
   window.BackendAPI.init();
+  console.log('[BackendAPI] Available methods:', Object.keys(window.BackendAPI));
 }
 
 // Export for testing

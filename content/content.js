@@ -32,7 +32,6 @@
       });
 
       if (!authData || !authData.email) {
-        console.log('No authenticated user found in storage');
         return false;
       }
 
@@ -44,7 +43,6 @@
       });
 
       if (!userProfile || !userProfile.linkedinUrl) {
-        console.log('No user profile or LinkedIn URL found for authenticated user');
         return false;
       }
 
@@ -54,7 +52,6 @@
 
       // Compare profile IDs
       const isOwnProfile = storedProfileId && profileId.toLowerCase() === storedProfileId;
-      console.log('Profile comparison:', { current: profileId, stored: storedProfileId, isOwnProfile });
 
       return isOwnProfile;
     } catch (error) {
@@ -85,7 +82,6 @@
 
   // ADD this helper function to content.js just before the initialization code
   function forceResetUIState() {
-    console.log('Forcing UI state reset for new profile');
     if (window.UIManager) {
       // Hide all views to avoid flicker; actual view will be decided by resetUI
       const container = document.querySelector('.linkmail-container');
@@ -105,11 +101,9 @@
 
   // Function to initialize the extension
   async function initialize() {
-    console.log('Starting initialization');
 
     // Concurrency guard
     if (isInitializing) {
-      console.log('Initialization already in progress, skipping');
       return;
     }
     isInitializing = true;
@@ -117,14 +111,12 @@
     try {
       // Only proceed if we're on a supported LinkedIn page (profile or feed)
       if (!isSupportedLinkedInPage()) {
-        console.log('Not on a supported LinkedIn page');
         return;
       }
 
       const pageType = await getPageType();
       const profileId = getProfileIdFromUrl();
       
-      console.log('Page type:', pageType);
 
       // Check if this is a different profile than before, or if we're switching between feed and profile
       const currentPageId = profileId || 'feed';
@@ -146,14 +138,12 @@
 
       // If page changed, clear the cached email
       if (isNewPage && window.EmailFinder) {
-        console.log('New page detected, clearing cached email');
         window.EmailFinder.clearCachedEmail();
       }
 
       // If UI exists but page changed, reset UI
       const existingUI = document.querySelector('.linkmail-container');
       if (existingUI && isNewPage) {
-        console.log('Detected navigation to a new page, resetting UI');
         forceResetUIState();
         if (window.UIManager && typeof window.UIManager.resetUI === 'function') {
           await window.UIManager.resetUI();
@@ -163,7 +153,6 @@
 
       // If no UI exists, create it
       if (!existingUI) {
-        console.log('No UI found, creating new UI');
         try {
           await window.UIManager.init();
         } catch (e) {
@@ -178,7 +167,6 @@
 
   // Function to observe URL changes
   function setupUrlObserver() {
-    console.log('Setting up URL observer');
 
     // Save initial page ID (profile ID or 'feed')
     currentProfileId = getProfileIdFromUrl() || (isLinkedInFeedPage() ? 'feed' : null);
@@ -187,7 +175,6 @@
     setInterval(async () => {
       const newPageId = getProfileIdFromUrl() || (isLinkedInFeedPage() ? 'feed' : null);
       if (newPageId && newPageId !== currentProfileId) {
-        console.log(`Page changed from ${currentProfileId} to ${newPageId}`);
         // Clear the stored page type so it gets re-evaluated
         window.currentPageType = null;
         await initialize();
@@ -196,7 +183,6 @@
 
     // Also listen for navigation events
     window.addEventListener('popstate', async () => {
-      console.log('Navigation detected via popstate');
       window.currentPageType = null;
       await initialize();
     });
@@ -206,7 +192,6 @@
       Utils.debounce(async () => {
         const newPageId = getProfileIdFromUrl() || (isLinkedInFeedPage() ? 'feed' : null);
         if (newPageId && newPageId !== currentProfileId) {
-          console.log(`Page changed (detected by DOM mutation) from ${currentProfileId} to ${newPageId}`);
           window.currentPageType = null;
           await initialize();
         }
@@ -238,7 +223,6 @@
     if (request.action === 'findEmail') {
       EmailFinder.findLinkedInEmail()
         .then(email => {
-          console.log('Found email:', email);
           if (email) {
             UIManager.populateForm();
             sendResponse({ email: email });

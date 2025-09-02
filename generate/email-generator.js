@@ -33,11 +33,9 @@ window.EmailGenerator = {
 
       // Handle prompt size limitations
       if (userPrompt.length > this.MAX_PROMPT_LENGTH) {
-        console.log(`Original prompt length: ${userPrompt.length} characters. Truncating content...`);
         const { truncatedProfileData, truncatedUserData } = this._truncateContent(sanitizedProfileData, templateData.userData, templateData);
         userPrompt = this._buildUserPrompt(truncatedProfileData, truncatedUserData, templateData);
         
-        console.log(`Truncated prompt length: ${userPrompt.length} characters`);
 
         if (userPrompt.length > this.MAX_PROMPT_LENGTH) {
           throw new Error('Request too large even after truncation');
@@ -261,8 +259,6 @@ Remember: Use $$$ as the delimiter between subject and body.
       }
 
       const data = await response.json();
-      console.log('Full API response structure:', data);
-      console.log('Response keys:', Object.keys(data || {}));
 
       return data;
 
@@ -304,14 +300,9 @@ Remember: Use $$$ as the delimiter between subject and body.
       throw new Error('Invalid response from API');
     }
 
-    console.log('API Response received successfully');
-    console.log('Raw API response:', data);
-    console.log('API content:', responseContent);
 
     // Parse the response into subject and email parts
     const parts = responseContent.split('$$$');
-    console.log('Split parts:', parts);
-    console.log('Number of parts:', parts.length);
 
     let subject, email;
 

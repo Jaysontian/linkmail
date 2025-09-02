@@ -5,62 +5,77 @@
   if (!window) return;
   window.UIManager = window.UIManager || {};
 
-  // Find and show similar person suggestion
+  // Find and show similar people recommendations based on recipient's job title and company
   window.UIManager.findAndShowSimilarPerson = async function findAndShowSimilarPerson() {
     try {
-      console.log('Finding similar person suggestion...');
-
-      // Get the current profile data
-      const profileData = await ProfileScraper.scrapeBasicProfileData();
-      console.log('Current profile data for similar person search:', profileData);
-
-      // Similar-people feature disabled (Apollo removed)
-      const searchResult = { success: false, error: 'Similar people search disabled' };
-      console.log('Similar person search result:', searchResult);
-
-      // Log debug information if available
-      if (searchResult.debug) {
-        console.log('🔍 === SIMILAR SEARCH DEBUG INFO ===');
-        console.log('🏢 Original company:', searchResult.debug.originalCompany);
-        console.log('🌐 Extracted domain:', searchResult.debug.extractedDomain);
-        console.log('💼 Original job title:', searchResult.debug.originalJobTitle);
-        console.log('📝 Normalized job title:', searchResult.debug.normalizedJobTitle);
-        console.log('📊 Search results by priority:');
-        console.log('  🎯 Same company + role:', searchResult.debug.searchResults.sameCompanyAndRole);
-        console.log('  🏢 Same company only:', searchResult.debug.searchResults.sameCompanyOnly);
-        console.log('  💼 Same role only:', searchResult.debug.searchResults.sameRoleOnly);
-        console.log('✨ Final suggestions:');
-        searchResult.debug.finalSuggestions.forEach((suggestion, index) => {
-          console.log(`  ${index + 1}. ${suggestion.name} - ${suggestion.title} at ${suggestion.company} (${suggestion.reason})`);
-        });
-        if (searchResult.debug.majorCompanyFiltering && searchResult.debug.majorCompanyFiltering.applied) {
-          console.log('📊 MAJOR COMPANY FILTERING INFO:');
-          console.log(`   Company: ${searchResult.debug.majorCompanyFiltering.company}`);
-          console.log(`   Reason: ${searchResult.debug.majorCompanyFiltering.reason}`);
-          console.log('   Note: Applied location and seniority filters to narrow search results');
-        }
-        console.log('🔍 === END DEBUG INFO ===');
+      const currentLinkedInUrl = window.location.href;
+      
+      if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
+        console.log('Cannot find similar people: not authenticated');
+        this.hideSimilarPeopleSection();
+        return;
       }
 
-      if (searchResult.success && searchResult.suggestion) {
-        const hasMajorFiltering = searchResult.debug && 
-                                  searchResult.debug.majorCompanyFiltering && 
-                                  searchResult.debug.majorCompanyFiltering.applied;
-        this.showSimilarPersonSuggestion(searchResult.suggestion, hasMajorFiltering);
-      } else {
-        console.log('No similar person found or error occurred:', searchResult.error);
-        if (searchResult.errorType === 'api_access_denied') {
-          this.showSimilarPersonUpgradeMessage();
-        } else {
-          const similarPersonSection = this.container?.querySelector('#similar-person-section');
-          if (similarPersonSection) similarPersonSection.style.display = 'none';
+      // Get the recipient's job title and company from the database using LinkedIn URL
+      let jobTitle = '';
+      let company = '';
+      
+      try {
+        const contactData = await window.BackendAPI.getEmailByLinkedIn(currentLinkedInUrl);
+        if (contactData && contactData.found) {
+          jobTitle = contactData.jobTitle || '';
+          company = contactData.company || '';
+          console.log('Found recipient data from database:', { jobTitle, company });
         }
+      } catch (error) {
+        console.log('Could not get recipient data from database, trying profile scraping:', error);
+      }
+
+      // If we couldn't get data from database, try scraping the current profile
+      if (!jobTitle || !company) {
+        try {
+          const profileData = await ProfileScraper.scrapeBasicProfileData();
+          jobTitle = jobTitle || profileData.jobTitle || '';
+          company = company || profileData.company || '';
+          console.log('Scraped profile data:', { jobTitle, company });
+        } catch (error) {
+          console.log('Could not scrape profile data:', error);
+        }
+      }
+
+      // If we still don't have both job title and company, hide the section
+      if (!jobTitle || !company) {
+        console.log('Missing job title or company for recommendations:', { jobTitle, company });
+        this.hideSimilarPeopleSection();
+        return;
+      }
+
+      // Search for similar contacts using the backend API (same logic as feed page)
+      try {
+        const searchResults = await window.BackendAPI.searchContacts(jobTitle, company);
+        
+        if (searchResults && searchResults.results && searchResults.results.length > 0) {
+          // Take up to 3 recommendations (no need to filter by email since we want people with similar job/company)
+          const recommendations = searchResults.results.slice(0, 3);
+          
+          if (recommendations.length > 0) {
+            this.showSimilarPeopleRecommendations(recommendations, jobTitle, company);
+          } else {
+            console.log('No recommendations found');
+            this.hideSimilarPeopleSection();
+          }
+        } else {
+          console.log('No search results found');
+          this.hideSimilarPeopleSection();
+        }
+      } catch (error) {
+        console.error('Error searching for similar contacts:', error);
+        this.hideSimilarPeopleSection();
       }
 
     } catch (error) {
-      console.error('Error finding similar person:', error);
-      const similarPersonSection = this.container?.querySelector('#similar-person-section');
-      if (similarPersonSection) similarPersonSection.style.display = 'none';
+      console.error('Error finding similar people:', error);
+      this.hideSimilarPeopleSection();
     }
   };
 
@@ -72,7 +87,6 @@
   // Show upgrade message when Apollo API access is denied
   window.UIManager.showSimilarPersonUpgradeMessage = function showSimilarPersonUpgradeMessage() {
     try {
-      console.log('Showing disabled message for similar people');
       const similarPersonSection = this.container?.querySelector('#similar-person-section');
       const similarPersonCard = this.container?.querySelector('#similar-person-card');
       if (!similarPersonSection || !similarPersonCard) {
@@ -89,7 +103,6 @@
       similarPersonCard.onclick = null;
       similarPersonCard.style.cursor = 'default';
       similarPersonSection.style.display = 'block';
-      console.log('Similar people disabled message displayed successfully');
     } catch (error) {
       console.error('Error showing Apollo upgrade message:', error);
     }
@@ -98,7 +111,6 @@
   // Show similar person suggestion in the UI
   window.UIManager.showSimilarPersonSuggestion = function showSimilarPersonSuggestion(suggestion, hasMajorFiltering = false) {
     try {
-      console.log('Showing similar person suggestion:', suggestion);
       const similarPersonSection = this.container?.querySelector('#similar-person-section');
       const similarPersonCard = this.container?.querySelector('#similar-person-card');
       const avatarElement = this.container?.querySelector('#similar-person-avatar');
@@ -127,7 +139,6 @@
       reasonElement.textContent = reasonText;
       similarPersonCard.onclick = () => {
         if (suggestion.linkedin_url) {
-          console.log('Navigating to LinkedIn profile:', suggestion.linkedin_url);
           window.open(suggestion.linkedin_url, '_blank');
         } else {
           console.warn('No LinkedIn URL available for suggestion');
@@ -142,10 +153,130 @@
         similarPersonCard.style.transform = 'translateY(0)';
       });
       similarPersonSection.style.display = 'block';
-      console.log('Similar person suggestion displayed successfully');
     } catch (error) {
       console.error('Error showing similar person suggestion:', error);
     }
+  };
+
+  // Hide the similar people section
+  window.UIManager.hideSimilarPeopleSection = function hideSimilarPeopleSection() {
+    const similarPeopleSection = this.container?.querySelector('#similar-people-section');
+    if (similarPeopleSection) {
+      similarPeopleSection.style.display = 'none';
+    }
+  };
+
+  // Show multiple similar people recommendations
+  window.UIManager.showSimilarPeopleRecommendations = function showSimilarPeopleRecommendations(recommendations, searchJobTitle, searchCompany) {
+    try {
+      const similarPeopleSection = this.container?.querySelector('#similar-people-section');
+      const similarPeopleContainer = this.container?.querySelector('#similar-people-container');
+      
+      if (!similarPeopleSection || !similarPeopleContainer) {
+        console.error('Similar people UI elements not found');
+        return;
+      }
+
+      // Clear previous recommendations
+      similarPeopleContainer.innerHTML = '';
+
+      // Create recommendation cards
+      recommendations.forEach((person, index) => {
+        const card = this.createRecommendationCard(person, searchJobTitle, searchCompany);
+        similarPeopleContainer.appendChild(card);
+      });
+
+      // Show the section
+      similarPeopleSection.style.display = 'block';
+      
+      console.log(`Showing ${recommendations.length} recommendations for ${searchJobTitle} at ${searchCompany}`);
+    } catch (error) {
+      console.error('Error showing similar people recommendations:', error);
+    }
+  };
+
+  // Create a recommendation card for a person
+  window.UIManager.createRecommendationCard = function createRecommendationCard(person, searchJobTitle, searchCompany) {
+    const card = document.createElement('div');
+    card.style.cssText = `
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: white;
+      border: 1px solid #e1e5e9;
+      border-radius: 6px;
+      padding: 10px;
+    `;
+
+    const firstName = person.firstName || '';
+    const lastName = person.lastName || '';
+    const name = `${firstName} ${lastName}`.trim() || 'Unknown';
+    const initials = name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+    
+    const jobTitle = person.jobTitle || 'No title available';
+    const company = person.company || '';
+    const displayTitle = company ? `${jobTitle} at ${company}` : jobTitle;
+    
+    // Determine similarity reason
+    let reasonText = '🔍 Similar profile';
+    const isJobTitleMatch = jobTitle.toLowerCase().includes(searchJobTitle.toLowerCase()) || 
+                           searchJobTitle.toLowerCase().includes(jobTitle.toLowerCase());
+    const isCompanyMatch = company.toLowerCase().includes(searchCompany.toLowerCase()) || 
+                          searchCompany.toLowerCase().includes(company.toLowerCase());
+    
+    if (isJobTitleMatch && isCompanyMatch) {
+      reasonText = '🎯 Same company & role';
+    } else if (isCompanyMatch) {
+      reasonText = '🏢 Same company';
+    } else if (isJobTitleMatch) {
+      reasonText = '💼 Same role';
+    }
+
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: #0066cc; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
+          ${initials}
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${name}
+          </div>
+          <div style="font-size: 11px; color: #666; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${displayTitle}
+          </div>
+          <div style="font-size: 10px; color: #0066cc; font-weight: 500;">
+            ${reasonText}
+          </div>
+        </div>
+        <div style="color: #0066cc; font-size: 14px; flex-shrink: 0;">
+          →
+        </div>
+      </div>
+    `;
+
+    // Add click handler to navigate to LinkedIn profile in same tab
+    card.onclick = () => {
+      if (person.linkedinUrl && person.linkedinUrl.trim()) {
+        // Navigate in the same tab
+        window.location.href = person.linkedinUrl;
+      } else {
+        console.warn('No LinkedIn URL available for recommendation:', person);
+      }
+    };
+
+    // Add hover effects
+    card.addEventListener('mouseenter', () => {
+      card.style.backgroundColor = '#f0f4f8';
+      card.style.transform = 'translateY(-1px)';
+      card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.backgroundColor = 'white';
+      card.style.transform = 'translateY(0)';
+      card.style.boxShadow = 'none';
+    });
+
+    return card;
   };
 })();
 
@@ -153,5 +284,6 @@
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {};
 }
+
 
 

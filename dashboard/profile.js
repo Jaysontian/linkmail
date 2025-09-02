@@ -1,4 +1,3 @@
-console.log('Profile module loaded');
 
 // Experience management functionality
 function createExperienceCard(num, data = {}) {
@@ -335,7 +334,6 @@ document.addEventListener('DOMContentLoaded', function() {
           const userData = result.profile;
           loadProfileData(userData);
         } else {
-          console.log('No profile data found via ProfileManager, creating default UI');
           // Add one empty experience card by default
           window.experienceCount++;
           const card = createExperienceCard(window.experienceCount);

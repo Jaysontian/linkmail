@@ -42,7 +42,6 @@
     let allTemplates = [...defaultTemplates];
 
     if (this.userData && this.userData.templates && Array.isArray(this.userData.templates)) {
-      console.log(`Found ${this.userData.templates.length} custom templates`);
       const customTemplates = this.userData.templates
         .filter(template => template && template.name)
         .map((template, index) => ({
@@ -57,7 +56,6 @@
         }));
       allTemplates = [...allTemplates, ...customTemplates];
     } else {
-      console.log('No custom templates found');
     }
 
     allTemplates.forEach(template => {
@@ -116,15 +114,12 @@
 
   window.UIManager.checkForTemplateUpdates = function checkForTemplateUpdates() {
     if (this.isAuthenticated && this.userData && this.userData.email) {
-      console.log('Actively checking for template updates');
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check template updates');
           return;
         }
         chrome.storage.local.get([this.userData.email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             return;
           }
           const storedData = result[this.userData.email];
@@ -132,13 +127,10 @@
             const currentTemplatesLength = this.userData.templates ? this.userData.templates.length : 0;
             const newTemplatesLength = storedData.templates.length;
             if (newTemplatesLength !== currentTemplatesLength) {
-              console.log(`Template count changed: ${currentTemplatesLength} -> ${newTemplatesLength}`);
               const currentView = this.getCurrentView();
-              console.log('Current view before template count update:', currentView);
               this.userData = storedData;
               this.populateTemplateDropdown();
               if (currentView === 'editor') {
-                console.log('Preserving email editor view after template count change');
               }
               return;
             }
@@ -146,20 +138,16 @@
               const currentTemplatesJSON = JSON.stringify(this.userData.templates);
               const newTemplatesJSON = JSON.stringify(storedData.templates);
               if (currentTemplatesJSON !== newTemplatesJSON) {
-                console.log('Template content changed, updating dropdown');
                 const currentView = this.getCurrentView();
-                console.log('Current view before template content update:', currentView);
                 this.userData = storedData;
                 this.populateTemplateDropdown();
                 if (currentView === 'editor') {
-                  console.log('Preserving email editor view after template content change');
                 }
               }
             }
           }
         });
       } catch (error) {
-        console.log('Error checking template updates:', error);
       }
     }
   };
@@ -170,13 +158,10 @@
         const newValue = changes[this.userData.email].newValue;
         const oldValue = changes[this.userData.email].oldValue;
         if (newValue && oldValue && JSON.stringify(newValue.templates) !== JSON.stringify(oldValue.templates)) {
-          console.log('Templates have changed, updating user data and dropdown');
           const currentView = this.getCurrentView();
-          console.log('Current view before storage update:', currentView);
           this.userData = newValue;
           this.populateTemplateDropdown();
           if (currentView === 'editor') {
-            console.log('Preserving email editor view after storage update');
           }
         }
       }

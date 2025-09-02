@@ -8,7 +8,6 @@
   // Load people suggestions for feed page
   window.UIManager.loadPeopleSuggestions = async function loadPeopleSuggestions() {
     try {
-      console.log('Loading people suggestions...');
 
       // Debounce: prevent rapid consecutive calls
       if (this._loadPeopleSuggestionsTimeout) {
@@ -38,7 +37,6 @@
         return;
       }
 
-      console.log('User profile data for suggestions:', userProfileData);
 
       // Caching: use cached suggestions if fresh
       const cacheKey = `peopleSuggestions:${this.userData.email}`;
@@ -47,13 +45,11 @@
       try {
         const stored = await new Promise(resolve => chrome.storage.local.get([cacheKey], r => resolve(r[cacheKey])));
         if (stored && stored.timestamp && Array.isArray(stored.suggestions) && (now - stored.timestamp) < maxAgeMs) {
-          console.log('Using cached people suggestions');
           if (loadingEl) loadingEl.style.display = 'none';
           this.displayPeopleSuggestions(stored.suggestions.slice(0, 3));
           return;
         }
       } catch (e) {
-        console.log('Cache read error (non-fatal):', e);
       }
 
       // Similar people search disabled (no results fetched)
@@ -67,7 +63,6 @@
         try {
           await new Promise(resolve => chrome.storage.local.set({ [cacheKey]: { suggestions: topThree, timestamp: Date.now() } }, resolve));
         } catch (e) {
-          console.log('Cache write error (non-fatal):', e);
         }
         this.displayPeopleSuggestions(topThree); // Show top 3
       } else {
@@ -221,7 +216,6 @@
     try {
       // Get user data from storage which contains their bio information
       if (!this.userData || !this.userData.email) {
-        console.log('No user data available for search');
         return null;
       }
 
@@ -274,7 +268,6 @@
   // Display people suggestions in the UI
   window.UIManager.displayPeopleSuggestions = function displayPeopleSuggestions(suggestions) {
     try {
-      console.log('Displaying people suggestions:', suggestions);
 
       const containerEl = this.container.querySelector('#suggested-people-container');
       if (!containerEl) {
@@ -285,12 +278,11 @@
       // Clear existing content
       containerEl.innerHTML = '';
 
-      suggestions.forEach((person, index) => {
-        const personCard = this.createPersonCard(person, index);
+      suggestions.forEach((person) => {
+        const personCard = this.createPersonCard(person);
         containerEl.appendChild(personCard);
       });
 
-      console.log('People suggestions displayed successfully');
 
     } catch (error) {
       console.error('Error displaying people suggestions:', error);
@@ -299,7 +291,7 @@
   };
 
   // Create a person card element
-  window.UIManager.createPersonCard = function createPersonCard(person, index) {
+  window.UIManager.createPersonCard = function createPersonCard(person) {
     const card = document.createElement('div');
     card.className = 'suggested-person-card';
     card.style.cssText = `
@@ -361,7 +353,6 @@
     // Add click handler to navigate to LinkedIn profile
     card.addEventListener('click', () => {
       if (person.linkedin_url) {
-        console.log('Navigating to LinkedIn profile:', person.linkedin_url);
         window.open(person.linkedin_url, '_blank');
       } else {
         console.warn('No LinkedIn URL available for person:', person.name);

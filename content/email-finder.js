@@ -43,10 +43,8 @@ window.EmailFinder = {
     let email = null;
     if (modalContent) {
       const allText = modalContent.innerText || modalContent.textContent;
-      console.log('Modal content found:', allText);
 
       email = Utils.extractEmail(allText);
-      console.log('Email found:', email);
 
       const closeButton = document.querySelector([
         'button[aria-label="Dismiss"]',
@@ -81,7 +79,6 @@ window.EmailFinder = {
   async findLinkedInEmail(useCache = true) {
     // Check if we have a cached email for this profile
     if (useCache && this._lastFoundEmail && this._lastProfileUrl === window.location.href) {
-      console.log('Using cached email:', this._lastFoundEmail);
       return this._lastFoundEmail;
     }
 

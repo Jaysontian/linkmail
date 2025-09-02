@@ -6,9 +6,7 @@
   window.UIManager = window.UIManager || {};
 
   window.UIManager.cleanupUI = function cleanupUI() {
-    console.log('Cleaning up UI elements with instanceId:', this.instanceId);
     const existingUIs = document.querySelectorAll('.linkmail-container');
-    console.log(`Found ${existingUIs.length} existing UI elements to clean up`);
     existingUIs.forEach(ui => { ui.remove(); console.log('Removed UI element'); });
     this.elements = {};
     this.container = null;
@@ -21,7 +19,6 @@
       this._isCreatingUI = true;
 
       const templateHtml = await this.loadHTML();
-      console.log('HTML template loaded successfully');
       const temp = document.createElement('div');
       temp.innerHTML = templateHtml;
       const styleElement = temp.querySelector('style');
@@ -43,7 +40,6 @@
         }
       }
 
-      console.log('Injecting UI into page...');
       let asideElement = document.querySelector('aside.scaffold-layout__aside');
       let attempts = 0;
       const maxAttempts = 10;
@@ -52,7 +48,6 @@
         await new Promise(r => setTimeout(r, 300));
         asideElement = document.querySelector('aside.scaffold-layout__aside');
       }
-      console.log('Aside element found after attempts:', attempts, !!asideElement);
       if (asideElement) {
         if (!document.querySelector('.linkmail-container')) {
           asideElement.prepend(injectedDiv);
@@ -60,7 +55,6 @@
           console.log('LinkMail UI already present at inject time; aborting duplicate injection');
           this._isCreatingUI = false; return;
         }
-        console.log('UI successfully injected');
       } else {
         console.error('Target aside element not found after waiting. Aborting injection for now.');
         this._isCreatingUI = false; return;
@@ -89,9 +83,7 @@
         if (loadingEl) loadingEl.style.display = 'block';
       }
 
-      console.log('Checking authentication status...');
       await this.checkAuthStatus();
-      console.log('UI creation complete');
     } catch (error) {
       console.error('Error creating UI:', error);
       try {
@@ -105,7 +97,6 @@
             </div>
           `;
           asideElement.prepend(fallbackDiv);
-          console.log('Fallback UI created');
         }
       } catch (fallbackError) {
         console.error('Failed to create fallback UI:', fallbackError);

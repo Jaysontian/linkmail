@@ -125,21 +125,18 @@ window.UIManager = Object.assign(__existingUI, {
           return;
         }
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check user in storage');
           resolve(false);
           return;
         }
 
         chrome.storage.local.get([email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             resolve(false);
             return;
           }
           resolve(result[email] ? true : false);
         });
       } catch (error) {
-        console.log('Error checking user in storage:', error);
         resolve(false);
       }
     });
@@ -155,21 +152,18 @@ window.UIManager = Object.assign(__existingUI, {
           return;
         }
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot get user from storage');
           resolve(null);
           return;
         }
 
         chrome.storage.local.get([email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             resolve(null);
             return;
           }
           resolve(result[email] || null);
         });
       } catch (error) {
-        console.log('Error getting user from storage:', error);
         resolve(null);
       }
     });
@@ -177,14 +171,12 @@ window.UIManager = Object.assign(__existingUI, {
 
   // Removed redirectToBioSetup flow: no profile completion redirects/messages
   redirectToBioSetup(_email) {
-    console.log('redirectToBioSetup disabled');
   },
 
   async checkAuthStatus() {
     try {
       // Check if extension context is still valid
       if (!chrome.runtime?.id) {
-        console.log('Extension context invalidated, cannot check auth status');
         this.isAuthenticated = false;
         this.showSignInUI();
         return this.isAuthenticated;
@@ -192,7 +184,6 @@ window.UIManager = Object.assign(__existingUI, {
 
       // Check backend authentication status
       if (!window.BackendAPI) {
-        console.log('Backend API not available');
         this.isAuthenticated = false;
         this.showSignInUI();
         return this.isAuthenticated;
@@ -238,7 +229,6 @@ window.UIManager = Object.assign(__existingUI, {
   },
 
   showSignInUI() {
-    console.log('Showing sign in UI');
     this.showView('#linkmail-signin');
 
     // Hide user info
@@ -249,15 +239,12 @@ window.UIManager = Object.assign(__existingUI, {
   },
 
   cleanupUI() {
-    console.log('Cleaning up UI elements with instanceId:', this.instanceId);
 
     // Remove any existing UI elements to prevent duplicates
     const existingUIs = document.querySelectorAll('.linkmail-container');
-    console.log(`Found ${existingUIs.length} existing UI elements to clean up`);
 
     existingUIs.forEach(ui => {
       ui.remove();
-      console.log('Removed UI element');
     });
 
     // Reset internal state
@@ -276,23 +263,19 @@ window.UIManager = Object.assign(__existingUI, {
   // Add this new method to UIManager to refresh user data
   async refreshUserData() {
     if (!this.isAuthenticated || !this.userData || !this.userData.email) {
-      console.log('Not authenticated or missing user data, cannot refresh');
       return;
     }
 
-    console.log('Refreshing user data from storage');
 
     return new Promise((resolve) => {
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, skipping storage refresh');
           resolve();
           return;
         }
 
         chrome.storage.local.get([this.userData.email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             resolve();
             return;
           }
@@ -300,7 +283,6 @@ window.UIManager = Object.assign(__existingUI, {
           const storedUserData = result[this.userData.email];
 
           if (storedUserData) {
-            console.log('Found stored user data, updating local copy');
             this.userData = storedUserData;
 
             // Pass updated user data to GmailManager
@@ -308,16 +290,33 @@ window.UIManager = Object.assign(__existingUI, {
               window.GmailManager.setUserData(this.userData);
             }
           } else {
-            console.log('No stored user data found');
           }
 
           resolve();
         });
       } catch (error) {
-        console.log('Error accessing chrome storage:', error);
         resolve();
       }
     });
+  },
+
+  // Method to refresh templates from backend and sync to local storage
+  async refreshTemplatesFromBackend() {
+    if (!this.isAuthenticated || !this.userData || !this.userData.email) {
+      return;
+    }
+
+    try {
+      if (window.TemplateManager) {
+        console.log('Refreshing templates from backend...');
+        const result = await window.TemplateManager.loadTemplates(this.userData.email);
+        if (result.success) {
+          console.log('Templates refreshed successfully from backend:', result.templates.length);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing templates from backend:', error);
+    }
   },
 
   // First, let's modify the UIManager's createUI method to add better error handling and logging
@@ -331,13 +330,11 @@ window.UIManager = Object.assign(__existingUI, {
 
       // Concurrency guard for UI creation
       if (this._isCreatingUI) {
-        console.log('UI creation already in progress, skipping');
         return;
       }
       this._isCreatingUI = true;
 
       const templateHtml = await this.loadHTML();
-      console.log('HTML template loaded successfully');
 
       // Create a temporary container, inject styles
       const temp = document.createElement('div');
@@ -382,7 +379,6 @@ window.UIManager = Object.assign(__existingUI, {
       }
 
 
-      console.log('Injecting UI into page...');
 
       // Insert into the page (wait for LinkedIn aside to be present)
       let asideElement = document.querySelector('aside.scaffold-layout__aside');
@@ -393,7 +389,6 @@ window.UIManager = Object.assign(__existingUI, {
         await new Promise(r => setTimeout(r, 300));
         asideElement = document.querySelector('aside.scaffold-layout__aside');
       }
-      console.log('Aside element found after attempts:', attempts, !!asideElement);
       if (asideElement) {
         // Double-check right before injection
         if (!document.querySelector('.linkmail-container')) {
@@ -403,7 +398,6 @@ window.UIManager = Object.assign(__existingUI, {
           this._isCreatingUI = false;
           return;
         }
-        console.log('UI successfully injected');
       } else {
         console.error('Target aside element not found after waiting. Aborting injection for now.');
         this._isCreatingUI = false;
@@ -440,9 +434,7 @@ window.UIManager = Object.assign(__existingUI, {
       }
 
       // Check authentication status
-      console.log('Checking authentication status...');
       await this.checkAuthStatus();
-      console.log('UI creation complete');
 
     } catch (error) {
       console.error('Error creating UI:', error);
@@ -461,7 +453,6 @@ window.UIManager = Object.assign(__existingUI, {
 
 
           asideElement.prepend(fallbackDiv);
-          console.log('Fallback UI created');
 
         }
       } catch (fallbackError) {
@@ -503,7 +494,6 @@ window.UIManager = Object.assign(__existingUI, {
       try {
         // Check if extension context is still valid
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot sign in');
           this.showTemporaryMessage('Extension needs to be reloaded. Please refresh the page and try again.', 'error');
           return;
         }
@@ -517,14 +507,12 @@ window.UIManager = Object.assign(__existingUI, {
 
         // Prevent multiple authentication attempts
         if (this._authenticationInProgress) {
-          console.log('Authentication already in progress, skipping duplicate request');
           this.showTemporaryMessage('Authentication already in progress. Please wait...', 'info');
           return;
         }
 
         // Check if already authenticated
         if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
-          console.log('User already authenticated, updating UI');
           this.isAuthenticated = true;
           this.userData = window.BackendAPI.userData;
           this.showAuthenticatedUI();
@@ -550,7 +538,6 @@ window.UIManager = Object.assign(__existingUI, {
         const checkAuthInterval = setInterval(async () => {
           try {
             authCheckCount++;
-            console.log(`Checking for authentication... (${authCheckCount}/${maxAuthChecks})`);
             
             // Check BackendAPI for auth status (only poll if not already authenticated)
             if (!window.BackendAPI.isAuthenticated) {
@@ -560,7 +547,6 @@ window.UIManager = Object.assign(__existingUI, {
             if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
               clearInterval(checkAuthInterval);
               this._authenticationInProgress = false; // Reset flag
-              console.log('Authentication detected! Setting up user data...');
               
               this.isAuthenticated = true;
               this.userData = {
@@ -587,11 +573,9 @@ window.UIManager = Object.assign(__existingUI, {
               // Stop checking after max attempts
               clearInterval(checkAuthInterval);
               this._authenticationInProgress = false; // Reset flag
-              console.log('Auth check timeout - stopping polling');
               this.showTemporaryMessage('Authentication timeout. Please try again.', 'error');
             }
           } catch (error) {
-            console.log('Auth check error:', error);
             if (authCheckCount >= maxAuthChecks) {
               clearInterval(checkAuthInterval);
               this._authenticationInProgress = false; // Reset flag
@@ -602,7 +586,6 @@ window.UIManager = Object.assign(__existingUI, {
         // Also listen for storage changes (in case auth data is stored while we're waiting)
         const storageListener = (changes, namespace) => {
           if (namespace === 'local' && (changes.backendToken || changes.backendUserData)) {
-            console.log('Auth storage changed detected, checking authentication...');
             // Trigger an immediate auth check
             setTimeout(async () => {
               try {
@@ -631,7 +614,6 @@ window.UIManager = Object.assign(__existingUI, {
                   }
                 }
               } catch (error) {
-                console.log('Storage change auth check error:', error);
               }
             }, 100);
           }
@@ -676,30 +658,18 @@ window.UIManager = Object.assign(__existingUI, {
     // Add this improvement to the editProfileButton click handler
     // Find this in setupEventListeners
     if (this.elements.editProfileButton) {
-      console.log('✅ Edit Profile button found, setting up event listener');
       this.elements.editProfileButton.addEventListener('click', () => {
-        console.log('🔍 Edit Profile button clicked!');
-        console.log('🔍 Current userData:', this.userData);
-        console.log('🔍 userData type:', typeof this.userData);
-        console.log('🔍 userData keys:', this.userData ? Object.keys(this.userData) : 'null');
-        console.log('🔍 userData.email:', this.userData?.email);
-        console.log('🔍 BackendAPI userData:', window.BackendAPI?.userData);
-        console.log('🔍 Is authenticated:', this.isAuthenticated);
         
         if (this.userData && this.userData.email) {
-          console.log('✅ User data available, opening dashboard...');
           // Open the bio setup page with edit mode
           const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
-          console.log('🔗 Dashboard URL:', bioSetupUrl);
 
           chrome.runtime.sendMessage({
             action: 'openBioSetupPage',
             url: bioSetupUrl
           }, (response) => {
-            console.log('📨 Background response:', response);
             // If the bio setup page was opened successfully, set up a timer to refresh templates
             if (response && response.success) {
-              console.log('Bio setup page opened, setting up refresh timer');
 
               // Check for template updates every 5 seconds while the bio page might be open
               const refreshInterval = setInterval(() => {
@@ -730,17 +700,13 @@ window.UIManager = Object.assign(__existingUI, {
           // Try to use the backend email directly as a fallback
           const fallbackEmail = window.BackendAPI?.userData?.email;
           if (fallbackEmail) {
-            console.log('🔄 Trying fallback with backend email:', fallbackEmail);
             const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(fallbackEmail)}&mode=edit`);
-            console.log('🔗 Fallback Dashboard URL:', bioSetupUrl);
             
             chrome.runtime.sendMessage({
               action: 'openBioSetupPage',
               url: bioSetupUrl
             }, (response) => {
-              console.log('📨 Fallback Background response:', response);
               if (response && response.success) {
-                console.log('✅ Dashboard opened successfully with fallback');
               } else {
                 console.error('❌ Fallback also failed:', response);
               }
@@ -813,7 +779,6 @@ window.UIManager = Object.assign(__existingUI, {
                 emailToUse = data.email;
               }
             } catch (be) {
-              console.log('Backend email lookup failed after scraping:', be);
             }
           }
 
@@ -826,7 +791,6 @@ window.UIManager = Object.assign(__existingUI, {
           };
 
           // Log the complete profile data with email
-          console.log('Complete Profile Data (with email):', JSON.stringify(profileData, null, 2));
         } else {
           // Feed page logic - use recipient email from input field
           const recipientInput = document.getElementById('recipientEmailInput');
@@ -845,7 +809,6 @@ window.UIManager = Object.assign(__existingUI, {
             headline: '',
             location: ''
           };
-          console.log('Feed Page/Own Profile Email Generation - Minimal data, recipient:', emailToUse);
         }
 
         // Update the recipient email field (only for other-profile pages)
@@ -869,7 +832,6 @@ window.UIManager = Object.assign(__existingUI, {
         // Get selected template
         let useTemplate = this.selectedTemplate;
 
-        console.log('Selected template for email generation:', JSON.stringify(useTemplate, null, 2));
 
         // FAILSAFE: Ensure template is selected
         if (!useTemplate.name || !useTemplate.content) {
@@ -903,7 +865,6 @@ window.UIManager = Object.assign(__existingUI, {
 
         const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
 
-        console.log(response);
 
         this.showView('#linkmail-editor');
 
@@ -972,7 +933,6 @@ window.UIManager = Object.assign(__existingUI, {
 
     // Find Email with Apollo button event listener
     if (this.elements.findEmailApolloButton) this.elements.findEmailApolloButton.addEventListener('click', async () => {
-      console.log('Find Email with Apollo button clicked');
 
       // Check if authenticated
       if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
@@ -992,7 +952,6 @@ window.UIManager = Object.assign(__existingUI, {
       try {
         // Get the current profile data
         const profileData = await ProfileScraper.scrapeBasicProfileData();
-        console.log('Profile data for Apollo search:', profileData);
 
         // Call Apollo API via backend
         const apolloData = await window.BackendAPI.findEmailWithApollo({
@@ -1002,7 +961,6 @@ window.UIManager = Object.assign(__existingUI, {
           linkedinUrl: window.location.href
         });
 
-        console.log('[UIManager] Apollo search result:', apolloData);
 
         if (apolloData && apolloData.success && apolloData.email) {
           const recipientInput = document.getElementById('recipientEmailInput');
@@ -1038,7 +996,6 @@ window.UIManager = Object.assign(__existingUI, {
 
     // Replace your current sendGmailButton event listener with this
     if (this.elements.sendGmailButton) this.elements.sendGmailButton.addEventListener('click', async () => {
-      console.log('Send Gmail button clicked');
 
       // Check if authenticated
       if (!this.isAuthenticated) {
@@ -1059,7 +1016,6 @@ window.UIManager = Object.assign(__existingUI, {
         // Disable button and update text
         this.elements.sendGmailButton.disabled = true;
         this.elements.sendGmailButton.textContent = 'Sending...';
-        console.log('Sending email...');
 
         // Get any attachments from the selected template
         const attachments = this.selectedTemplate?.attachments || [];
@@ -1069,7 +1025,6 @@ window.UIManager = Object.assign(__existingUI, {
         try {
           const pageType = this.getSafePageType();
           if (pageType === 'other-profile' && window.ProfileScraper) {
-            console.log('Extracting contact information from profile...');
             const profileData = await window.ProfileScraper.scrapeBasicProfileData();
             
             // Extract job title from headline (remove company part if present)
@@ -1090,7 +1045,6 @@ window.UIManager = Object.assign(__existingUI, {
               linkedinUrl: window.location.href
             };
             
-            console.log('Contact information extracted:', contactInfo);
           }
         } catch (error) {
           console.warn('Failed to extract contact information:', error);
@@ -1099,14 +1053,12 @@ window.UIManager = Object.assign(__existingUI, {
 
         // Send email with attachments and contact information
         await GmailManager.sendAndSaveEmail(email, subject, emailContent, attachments, contactInfo);
-        console.log('Email sent successfully');
 
         // Clear the form
         this.elements.emailResult.value = '';
         this.elements.emailSubject.value = '';
         document.getElementById('recipientEmailInput').value = '';
 
-        console.log('Form cleared, now updating UI');
 
         // IMPORTANT: Directly access views within the container
         // Get direct references to all views
@@ -1125,25 +1077,21 @@ window.UIManager = Object.assign(__existingUI, {
         // Hide all views first
         if (editorView) {
           editorView.style.display = 'none';
-          console.log('Editor view hidden');
         }
 
         if (splashView) {
           splashView.style.display = 'none';
-          console.log('Splash view hidden');
         }
 
         if (signinView) {
           signinView.style.display = 'none';
-          console.log('Sign-in view hidden');
         }
 
         // Show success view
         if (successView) {
           successView.style.display = 'block';
-          console.log('Success view shown');
           
-          // Find and show similar person suggestion
+          // Find and show similar people recommendations
           this.findAndShowSimilarPerson();
         } else {
           console.error('Success view not found!');
@@ -1162,7 +1110,6 @@ window.UIManager = Object.assign(__existingUI, {
     // Retry People Search button
     if (this.elements.retryPeopleSearchButton) {
       this.elements.retryPeopleSearchButton.addEventListener('click', () => {
-        console.log('Retry people search clicked');
         this.loadPeopleSuggestions();
       });
     }
@@ -1173,16 +1120,13 @@ window.UIManager = Object.assign(__existingUI, {
       // Skip storage listener updates if we're in the email success state
       const successView = this.container.querySelector('#linkmail-success');
       if (successView && successView.style.display === 'block') {
-        console.log('Storage change detected but ignoring because success view is displayed');
         return;
       }
 
       if (namespace === 'local' && this.userData?.email && changes[this.userData.email]) {
-        console.log('User data updated in storage, refreshing UI');
 
         // Check current view before updating
         const currentView = this.getCurrentView();
-        console.log('Current view before storage listener update:', currentView);
 
         // User data has been updated, refresh the UI and userData
         this.getUserFromStorage(this.userData.email)
@@ -1198,7 +1142,6 @@ window.UIManager = Object.assign(__existingUI, {
 
               // Preserve current view if user is in editor or success view
               const shouldPreserveView = currentView === 'editor' || currentView === 'success';
-              console.log('Should preserve view:', shouldPreserveView);
 
               // Only update UI if we're not showing the success view
               this.showAuthenticatedUI(shouldPreserveView);
@@ -1259,7 +1202,6 @@ window.UIManager = Object.assign(__existingUI, {
       if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) return;
 
       const currentUrl = window.location.href;
-      console.log('[UIManager] Attempting backend email fetch for URL:', currentUrl);
       const cacheKey = this._normalizeProfileUrlForCache(currentUrl);
 
       // Debounce per URL so we only attempt once per profile load, unless forced
@@ -1289,9 +1231,7 @@ window.UIManager = Object.assign(__existingUI, {
             };
           } catch (_e) {}
           data = await window.BackendAPI.getEmailByLinkedIn(currentUrl, extra);
-          console.log('[UIManager] Backend email result:', data);
         } catch (e) {
-          console.log('Email by LinkedIn fetch failed:', e?.message || e);
           return;
         }
         // Cache result (even negative) to avoid repeat calls
@@ -1319,7 +1259,6 @@ window.UIManager = Object.assign(__existingUI, {
         }
       }
     } catch (err) {
-      console.log('fetchAndFillEmailIfBlank error:', err);
     }
   },
 
@@ -1337,7 +1276,6 @@ window.UIManager = Object.assign(__existingUI, {
   },
 
   async resetUI(forceSignOut = false) {
-    console.log('Resetting UI state with forceSignOut:', forceSignOut);
 
     if (!this.container) {
       console.error('Container not initialized, cannot reset UI');
@@ -1376,7 +1314,6 @@ window.UIManager = Object.assign(__existingUI, {
       try {
         // Check if extension context is still valid
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check user in storage during reset');
           if (signInView) signInView.style.display = 'flex';
           return;
         }
@@ -1431,7 +1368,6 @@ window.UIManager = Object.assign(__existingUI, {
           }
         }
       } catch (error) {
-        console.log('Error checking user in storage during reset:', error);
         if (signInView) signInView.style.display = 'flex';
       }
     } else {
@@ -1516,7 +1452,6 @@ window.UIManager = Object.assign(__existingUI, {
     let allTemplates = [...defaultTemplates];
 
     if (this.userData && this.userData.templates && Array.isArray(this.userData.templates)) {
-      console.log(`Found ${this.userData.templates.length} custom templates`);
 
       const customTemplates = this.userData.templates
         .filter(template => template && template.name)
@@ -1533,7 +1468,6 @@ window.UIManager = Object.assign(__existingUI, {
 
       allTemplates = [...allTemplates, ...customTemplates];
     } else {
-      console.log('No custom templates found');
     }
 
 
@@ -1626,17 +1560,14 @@ window.UIManager = Object.assign(__existingUI, {
   // Also add this method to actively pull the latest templates when a user returns to LinkedIn
   checkForTemplateUpdates() {
     if (this.isAuthenticated && this.userData && this.userData.email) {
-      console.log('Actively checking for template updates');
 
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check template updates');
           return;
         }
 
         chrome.storage.local.get([this.userData.email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             return;
           }
 
@@ -1648,18 +1579,15 @@ window.UIManager = Object.assign(__existingUI, {
             const newTemplatesLength = storedData.templates.length;
 
             if (newTemplatesLength !== currentTemplatesLength) {
-              console.log(`Template count changed: ${currentTemplatesLength} -> ${newTemplatesLength}`);
 
               // Check current UI state before updating
               const currentView = this.getCurrentView();
-              console.log('Current view before template count update:', currentView);
 
               this.userData = storedData;
               this.populateTemplateDropdown();
 
               // Preserve the current view state
               if (currentView === 'editor') {
-                console.log('Preserving email editor view after template count change');
               }
               return;
             }
@@ -1670,25 +1598,21 @@ window.UIManager = Object.assign(__existingUI, {
               const newTemplatesJSON = JSON.stringify(storedData.templates);
 
               if (currentTemplatesJSON !== newTemplatesJSON) {
-                console.log('Template content changed, updating dropdown');
 
                 // Check current UI state before updating
                 const currentView = this.getCurrentView();
-                console.log('Current view before template content update:', currentView);
 
                 this.userData = storedData;
                 this.populateTemplateDropdown();
 
                 // Preserve the current view state
                 if (currentView === 'editor') {
-                  console.log('Preserving email editor view after template content change');
                 }
               }
             }
           }
         });
       } catch (error) {
-        console.log('Error checking template updates:', error);
       }
     }
   },
@@ -1698,7 +1622,6 @@ window.UIManager = Object.assign(__existingUI, {
   // Email history logic remains here (extracted helpers used elsewhere)
   async checkLastEmailSent() {
     try {
-      console.log('Checking last email sent...');
 
       // Check if we're on a supported page (profile or feed)
       const currentProfileUrl = window.location.href;
@@ -1706,27 +1629,23 @@ window.UIManager = Object.assign(__existingUI, {
       const isOnFeedPage = currentProfileUrl.includes('/feed/');
       
       if (!isOnProfilePage && !isOnFeedPage) {
-        console.log('Not on a supported LinkedIn page, skipping email status check');
         return;
       }
 
       // Only check email history for other-profile pages (feed page and own-profile don't have specific profile context)
       const pageType = window.currentPageType || 'other-profile';
       if (pageType !== 'other-profile') {
-        console.log('On feed page or own profile, skipping profile-specific email status check');
         return;
       }
 
       // Check if the UI container exists
       if (!this.container) {
-        console.log('UI container not initialized, skipping email status check');
         return;
       }
 
       // Get the last email status element
       const lastEmailStatus = this.container.querySelector('#lastEmailStatus');
       if (!lastEmailStatus) {
-        console.log('Last email status element not found in container, UI may not be fully initialized');
         return;
       }
 
@@ -1738,34 +1657,28 @@ window.UIManager = Object.assign(__existingUI, {
 
       // If not authenticated, return early (don't call checkAuthStatus to avoid loops)
       if (!this.isAuthenticated || !this.userData || !this.userData.email) {
-        console.log('Not authenticated or missing user data, skipping email history check');
         return;
       }
 
-      console.log('User authenticated, email:', this.userData.email);
 
       // Now we're sure we're authenticated and have user data
       // Get full user data from storage directly
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check last email sent');
           return;
         }
 
         chrome.storage.local.get([this.userData.email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             return;
           }
 
           const storedUserData = result[this.userData.email];
 
           if (!storedUserData || !storedUserData.sentEmails || !storedUserData.sentEmails.length) {
-            console.log('No sent emails found in storage');
             return; // No emails sent yet
           }
 
-          console.log(`Found ${storedUserData.sentEmails.length} sent emails in storage`);
 
           // Find emails sent to this profile by URL match
           let emailsToThisProfile = storedUserData.sentEmails.filter(email =>
@@ -1781,13 +1694,11 @@ window.UIManager = Object.assign(__existingUI, {
 
           // If no match by URL, try match by name (as a fallback)
           if (emailsToThisProfile.length === 0 && profileName) {
-            console.log('No URL match, trying name match with:', profileName);
             emailsToThisProfile = storedUserData.sentEmails.filter(email =>
               email.recipientName && email.recipientName.trim() === profileName.trim()
             );
           }
 
-          console.log(`Found ${emailsToThisProfile.length} emails to this profile`);
 
           if (emailsToThisProfile.length > 0) {
           // Sort by date, newest first
@@ -1805,11 +1716,9 @@ window.UIManager = Object.assign(__existingUI, {
             lastEmailStatus.textContent = `Last Sent on ${formattedDate}`;
             lastEmailStatus.style.display = 'block';
             // lastEmailStatus.style.color = '#4caf50'; // Green color to indicate success
-            console.log('Updated status with last email date:', formattedDate);
           }
         });
       } catch (error) {
-        console.log('Error accessing chrome storage for last email check:', error);
       }
 
     } catch (error) {
@@ -1826,11 +1735,11 @@ window.UIManager = Object.assign(__existingUI, {
         // Check if templates have changed
         if (newValue && oldValue &&
             JSON.stringify(newValue.templates) !== JSON.stringify(oldValue.templates)) {
-          console.log('Templates have changed, updating user data and dropdown');
+
+          console.log('Templates changed in storage, updating UI');
 
           // Check current UI state before updating
           const currentView = this.getCurrentView();
-          console.log('Current view before storage update:', currentView);
 
           // Update local userData
           this.userData = newValue;
@@ -1838,9 +1747,11 @@ window.UIManager = Object.assign(__existingUI, {
           // Update the dropdown without changing the current view
           this.populateTemplateDropdown();
 
+          // Show a brief notification that templates were updated
+          this.showTemporaryMessage('Templates updated!', 'success');
+
           // Preserve the current view state
           if (currentView === 'editor') {
-            console.log('Preserving email editor view after storage update');
             // Don't change the view, user should stay in email editor
           }
         }
@@ -1852,25 +1763,24 @@ window.UIManager = Object.assign(__existingUI, {
   setupFocusRefresh() {
     // Set up a handler to refresh templates when the window regains focus
     window.addEventListener('focus', () => {
-      console.log('Window focused, checking for template updates');
 
       if (this.isAuthenticated && this.userData && this.userData.email) {
         // Check current UI state before refreshing
         const currentView = this.getCurrentView();
-        console.log('Current view before focus refresh:', currentView);
 
-        this.refreshUserData().then(() => {
-          // Only update template dropdown, don't change the current view
-          this.populateTemplateDropdown();
+        // First try to refresh templates from backend
+        this.refreshTemplatesFromBackend().then(() => {
+          this.refreshUserData().then(() => {
+            // Only update template dropdown, don't change the current view
+            this.populateTemplateDropdown();
 
-          // If user was in email editor or success view, preserve it
-          if (currentView === 'editor' || currentView === 'success') {
-            console.log('Preserving current view after focus refresh:', currentView);
-            // Don't call showAuthenticatedUI as it might change the view
-          } else {
-            // Only refresh UI if we're not in a critical view
-            console.log('Safe to refresh UI after focus');
-          }
+            // If user was in email editor or success view, preserve it
+            if (currentView === 'editor' || currentView === 'success') {
+              // Don't call showAuthenticatedUI as it might change the view
+            } else {
+              // Only refresh UI if we're not in a critical view
+            }
+          });
         });
       }
     });

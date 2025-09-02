@@ -197,7 +197,6 @@ window.ProfileManager = (function() {
               return;
             }
 
-            console.log('Profile deleted successfully for', email);
             resolve({ success: true });
           });
         } catch (error) {

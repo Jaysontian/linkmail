@@ -1,4 +1,3 @@
-console.log('Main module loaded');
 
 // Utility function to escape HTML
 function escapeHtml(text) {
@@ -15,7 +14,6 @@ window.notifications = {
   },
   success: function(message) {
     // TODO: Implement success notification
-    console.log(message);
   }
 };
 
@@ -50,16 +48,9 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
 
 document.addEventListener('DOMContentLoaded', function() {
   const bioForm = document.getElementById('bioForm');
-  const messageElement = document.getElementById('message');
   const pageTitle = document.getElementById('pageTitle');
   const submitButton = document.getElementById('submitButton');
   const navItems = document.querySelectorAll('.nav-item');
-  const tabContents = document.querySelectorAll('.content-section');
-  const emailList = document.getElementById('emailList');
-  const emailSearch = document.getElementById('emailSearch');
-  const emailModal = document.getElementById('emailModal');
-  const emailDetail = document.getElementById('emailDetail');
-  const closeModal = document.getElementById('closeModal');
 
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -113,8 +104,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Tab switching
   navItems.forEach(navItem => {
     navItem.addEventListener('click', () => {
-      console.log('Nav item clicked:', navItem);
-      console.log('Nav item classes:', navItem.classList);
 
       // Remove active class from all nav items and contents
       navItems.forEach(item => item.classList.remove('active'));
@@ -136,24 +125,20 @@ document.addEventListener('DOMContentLoaded', function() {
         sectionId = 'templates';
       }
 
-      console.log('Found section ID:', sectionId);
 
       // Only proceed if we have a valid sectionId
       if (!sectionId) {
-        console.log('No section ID found for this nav item, skipping tab switch');
         return;
       }
 
       // Show the corresponding content section
       const targetSection = document.getElementById(sectionId);
-      console.log('Target section element:', targetSection);
 
       if (targetSection) {
         targetSection.classList.add('active');
 
         // If switching to emails tab, refresh the email list
         if (sectionId === 'emails') {
-          console.log('Switching to emails tab, refreshing email list');
           chrome.storage.local.get([email], function(result) {
             const userData = result[email];
             if (userData && typeof window.loadEmailHistory === 'function') {

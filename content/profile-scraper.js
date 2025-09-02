@@ -4,35 +4,25 @@ window.ProfileScraper = {
 
   // Scrape basic profile data without opening contact info overlay
   async scrapeBasicProfileData() {
-    console.log('ProfileScraper: Starting basic profile data scraping');
 
     const name = document.querySelector('h1')?.innerText || '';
-    console.log('ProfileScraper: Name:', name);
 
     const nameParts = name.split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-    console.log('ProfileScraper: First name:', firstName);
-    console.log('ProfileScraper: Last name:', lastName);
 
     const headline = document.querySelector('.text-body-medium')?.innerText || '';
-    console.log('ProfileScraper: Headline:', headline);
 
     const about = document.querySelector('.pv-profile-card .display-flex.ph5.pv3 .inline-show-more-text--is-collapsed')?.innerText || '';
-    console.log('ProfileScraper: About:', about);
 
     // Extract email from about section if present
     const emailFromAbout = this.extractEmailFromText(about);
-    console.log('ProfileScraper: Email from about section:', emailFromAbout);
 
     const company = this.extractCompany();
-    console.log('ProfileScraper: Company:', company);
 
     const location = this.extractLocation();
-    console.log('ProfileScraper: Location:', location);
 
     const experience = this.extractExperience();
-    console.log('ProfileScraper: Experience count:', experience.length);
 
     const cleanedAbout = this._removeDuplicates(about);
     const cleanedCompany = this._cleanCompanyName(this._removeDuplicates(company));
@@ -53,13 +43,11 @@ window.ProfileScraper = {
       linkedinUrl: window.location.href
     };
 
-    console.log('ProfileScraper: Basic profile data scraping complete');
     return result;
   },
 
   // Full profile scrape including email (which requires contact info overlay)
   async scrapeProfileData(forceEmailLookup = false) {
-    console.log('ProfileScraper: Starting full profile data scraping, forceEmailLookup:', forceEmailLookup);
 
     // Get basic data first
     const basicData = await this.scrapeBasicProfileData();
@@ -69,14 +57,11 @@ window.ProfileScraper = {
 
     // Only try to find email via contact info overlay if explicitly requested and not found in about
     if (forceEmailLookup && !email) {
-      console.log('ProfileScraper: Looking up email via EmailFinder');
       const foundEmail = await EmailFinder.findLinkedInEmail();
-      console.log('ProfileScraper: Email result from finder:', foundEmail);
 
       // Clean up email if needed
       if (foundEmail) {
         email = this.cleanupEmail(foundEmail);
-        console.log('ProfileScraper: Cleaned email:', email);
       }
     }
 
@@ -89,16 +74,13 @@ window.ProfileScraper = {
       email: email
     };
 
-    console.log('ProfileScraper: Full profile data scraping complete');
     return result;
   },
 
   // Extract experience data
   extractExperience() {
-    console.log('ProfileScraper: Extracting experience data');
 
     const experienceItems = Array.from((document.querySelector('#experience')?.parentElement || document.createElement('div')).querySelectorAll('li.artdeco-list__item'));
-    console.log('ProfileScraper: Found experience items:', experienceItems.length);
 
     const result = experienceItems
       .map((li, index) => {
@@ -111,19 +93,16 @@ window.ProfileScraper = {
           .filter(text => text)
           .join(' · ');
 
-        console.log(`ProfileScraper: Experience ${index + 1}:`, content);
 
         return { content };
       })
       .filter(item => item !== null);
 
-    console.log('ProfileScraper: Experience extraction complete');
     return result;
   },
 
   // Extract company from the profile
   extractCompany() {
-    console.log('ProfileScraper: Extracting company');
 
     // Try to find current company in the experience section
     const experienceSection = document.querySelector('#experience')?.parentElement;
@@ -134,7 +113,6 @@ window.ProfileScraper = {
         const companyElement = firstExperience.querySelector('.t-normal');
         if (companyElement) {
           const company = companyElement.textContent.trim();
-          console.log('ProfileScraper: Company found in experience section:', company);
           return company;
         }
       }
@@ -144,26 +122,21 @@ window.ProfileScraper = {
     const headline = document.querySelector('.text-body-medium')?.innerText || '';
     if (headline.includes(' at ')) {
       const company = headline.split(' at ')[1].trim();
-      console.log('ProfileScraper: Company extracted from headline:', company);
       return company;
     }
 
-    console.log('ProfileScraper: No company found');
     return '';
   },
 
   // Extract location from the profile
   extractLocation() {
-    console.log('ProfileScraper: Extracting location');
 
     const locationElement = document.querySelector('.pv-text-details__left-panel .text-body-small:not(.inline)');
     if (locationElement) {
       const location = locationElement.textContent.trim();
-      console.log('ProfileScraper: Location found:', location);
       return location;
     }
 
-    console.log('ProfileScraper: No location found');
     return '';
   },
 
@@ -176,7 +149,6 @@ window.ProfileScraper = {
     const matches = text.match(emailRegex);
 
     if (matches && matches.length > 0) {
-      console.log('ProfileScraper: Found email in text:', matches[0]);
       return matches[0];
     }
 

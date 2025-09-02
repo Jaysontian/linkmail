@@ -1,6 +1,5 @@
 window.URLObserver = {
   init() {
-    console.log('URLObserver initialization skipped - using simplified approach in content.js');
     // This is now handled directly in content.js
   },
 

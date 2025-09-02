@@ -1,4 +1,3 @@
-console.log('Templates module loaded');
 
 // Templates management functionality
 let templates = [];
@@ -57,7 +56,6 @@ function updateAttachmentsList() {
 }
 
 function initializeTemplatesManagement() {
-  console.log('Initializing template management');
 
   // Initialize current template attachments array
   window.currentTemplateAttachments = [];
@@ -87,7 +85,6 @@ function initializeTemplatesManagement() {
       }
 
       if (confirm('Are you sure you want to delete this template?')) {
-        console.log('Deleting template at index:', editIndex);
 
         // Remove the template from the array
         templates.splice(parseInt(editIndex), 1);
@@ -185,10 +182,9 @@ function initializeTemplatesManagement() {
       window.TemplateManager.loadTemplates(email).then(result => {
         if (result.success) {
           templates = JSON.parse(JSON.stringify(result.templates)); // Deep clone to avoid reference issues
-          console.log('Loaded', templates.length, 'templates via TemplateManager');
           updateSidebarTemplates(); // Update sidebar immediately after loading
+          console.log('Templates loaded and synced from backend:', templates.length);
         } else {
-          console.log('No existing templates found via TemplateManager');
           templates = result.templates || []; // Use the templates from result
           updateSidebarTemplates(); // Update sidebar with empty state
         }
@@ -203,10 +199,8 @@ function initializeTemplatesManagement() {
         const userData = result[email];
         if (userData && userData.templates && Array.isArray(userData.templates)) {
           templates = JSON.parse(JSON.stringify(userData.templates)); // Deep clone to avoid reference issues
-          console.log('Loaded', templates.length, 'templates');
           updateSidebarTemplates(); // Update sidebar immediately after loading
         } else {
-          console.log('No existing templates found');
           templates = []; // Initialize empty array if no templates exist
           updateSidebarTemplates(); // Update sidebar with empty state
         }
@@ -369,7 +363,6 @@ function initializeTemplatesManagement() {
 
 // Function to update sidebar templates
 function updateSidebarTemplates() {
-  console.log('Updating sidebar templates:', templates.length);
   const sidebarTemplatesList = document.getElementById('sidebar-templates-list');
   if (!sidebarTemplatesList) {
     console.error('Sidebar templates list element not found');
@@ -428,7 +421,6 @@ function updateSidebarTemplates() {
 
 // Function to load template for editing
 function loadTemplateForEditing(template, index) {
-  console.log('Loading template for editing:', template, 'at index:', index);
   const templateForm = document.getElementById('templateForm');
   const templateName = document.getElementById('templateName');
   const templateSubjectLine = document.getElementById('templateSubjectLine');
@@ -453,7 +445,6 @@ function loadTemplateForEditing(template, index) {
 
   // Store current template index
   templateForm.dataset.editIndex = index;
-  console.log('Set editIndex to:', index);
 
   // Scroll to form
   templateForm.scrollIntoView({ behavior: 'smooth' });
@@ -497,13 +488,11 @@ function saveTemplates() {
     return;
   }
 
-  console.log('Saving templates to storage:', templates.length);
 
   // Delegate to TemplateManager if available
   if (window.TemplateManager) {
     window.TemplateManager.saveTemplates(email, templates).then(success => {
       if (success) {
-        console.log('Templates saved successfully via TemplateManager');
         // Update sidebar after saving
         updateSidebarTemplates();
       } else {
@@ -527,7 +516,6 @@ function saveTemplates() {
       data[email] = userData;
 
       chrome.storage.local.set(data, function() {
-        console.log('Templates saved successfully');
         // Update sidebar after saving
         updateSidebarTemplates();
       });

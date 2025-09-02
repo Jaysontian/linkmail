@@ -9,20 +9,17 @@
     return new Promise((resolve) => {
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check user in storage');
           resolve(false);
           return;
         }
         chrome.storage.local.get([email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             resolve(false);
             return;
           }
           resolve(result[email] ? true : false);
         });
       } catch (error) {
-        console.log('Error checking user in storage:', error);
         resolve(false);
       }
     });
@@ -32,20 +29,17 @@
     return new Promise((resolve) => {
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot get user from storage');
           resolve(null);
           return;
         }
         chrome.storage.local.get([email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             resolve(null);
             return;
           }
           resolve(result[email] || null);
         });
       } catch (error) {
-        console.log('Error getting user from storage:', error);
         resolve(null);
       }
     });
@@ -55,35 +49,28 @@
 
   window.UIManager.refreshUserData = async function refreshUserData() {
     if (!this.isAuthenticated || !this.userData || !this.userData.email) {
-      console.log('Not authenticated or missing user data, cannot refresh');
       return;
     }
-    console.log('Refreshing user data from storage');
     return new Promise((resolve) => {
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, skipping storage refresh');
           resolve();
           return;
         }
         chrome.storage.local.get([this.userData.email], (result) => {
           if (chrome.runtime.lastError) {
-            console.log('Chrome storage error:', chrome.runtime.lastError);
             resolve();
             return;
           }
           const storedUserData = result[this.userData.email];
           if (storedUserData) {
-            console.log('Found stored user data, updating local copy');
             this.userData = storedUserData;
             if (window.GmailManager) window.GmailManager.setUserData(this.userData);
           } else {
-            console.log('No stored user data found');
           }
           resolve();
         });
       } catch (error) {
-        console.log('Error accessing chrome storage:', error);
         resolve();
       }
     });
@@ -92,13 +79,11 @@
   window.UIManager.checkAuthStatus = async function checkAuthStatus() {
     try {
       if (!chrome.runtime?.id) {
-        console.log('Extension context invalidated, cannot check auth status');
         this.isAuthenticated = false;
         this.showSignInUI();
         return this.isAuthenticated;
       }
       if (!window.BackendAPI) {
-        console.log('Backend API not available');
         this.isAuthenticated = false;
         this.showSignInUI();
         return this.isAuthenticated;

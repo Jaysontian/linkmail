@@ -6,7 +6,6 @@
   window.UIManager = window.UIManager || {};
 
   window.UIManager.showSignInUI = function showSignInUI() {
-    console.log('Showing sign in UI');
     this.showView('#linkmail-signin');
     const accountInfo = this.container.querySelector('.account-dropdown');
     if (accountInfo) accountInfo.style.display = 'none';
@@ -18,7 +17,6 @@
   
   // Manual reset function for debugging
   window.UIManager.resetAuthUICircuitBreaker = function() {
-    console.log('[resetAuthUICircuitBreaker] Manually resetting circuit breaker');
     this._authUIBlocked = false;
     this._authUICallHistory = [];
   };
@@ -48,7 +46,6 @@
       
       // Auto-reset after 10 seconds
       setTimeout(() => {
-        console.log('[showAuthenticatedUI] Circuit breaker auto-reset after 10 seconds');
         this._authUIBlocked = false;
         this._authUICallHistory = [];
       }, 10000);
@@ -57,7 +54,6 @@
     }
     
     try {
-      console.log('[showAuthenticatedUI] Legitimate call, preserveCurrentView:', preserveCurrentView);
 
       const pageType = this.getSafePageType();
       const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
@@ -66,10 +62,8 @@
       if (!preserveCurrentView) {
         const currentView = this.getCurrentView();
         const shouldAutoPreserve = currentView === 'editor' || currentView === 'success';
-        console.log(`[showAuthenticatedUI] Current view: ${currentView}, should auto-preserve: ${shouldAutoPreserve}`);
         
         if (shouldAutoPreserve) {
-          console.log('[showAuthenticatedUI] Auto-preserving current view because user is in editor/success state');
           preserveCurrentView = true;
         }
       }
@@ -81,7 +75,6 @@
           this.showView('#linkmail-splash');
         }
       } else {
-        console.log('[showAuthenticatedUI] Preserving current view, not changing view');
       }
 
       try {
@@ -92,7 +85,6 @@
           if (userEmailDisplay) userEmailDisplay.textContent = this.userData.email;
         }
       } catch (domError) {
-        console.log('Error accessing DOM elements:', domError);
       }
 
       // Set flag to prevent storage listener loops
@@ -102,19 +94,17 @@
         if (window.GmailManager && this.userData) window.GmailManager.setUserData(this.userData);
         this.populateTemplateDropdown();
         this.checkLastEmailSent();
-      }).catch(error => console.log('Error refreshing user data:', error)).finally(() => {
+      }).catch(error => console.warn('Error refreshing user data:', error)).finally(() => {
         // Reset flag after operations complete
         setTimeout(() => {
           this._updatingStorage = false;
         }, 500);
       });
     } catch (error) {
-      console.log('Error in showAuthenticatedUI:', error);
     }
   };
 
   window.UIManager.resetUI = async function resetUI(forceSignOut = false) {
-    console.log('Resetting UI state with forceSignOut:', forceSignOut);
     if (!this.container) { console.error('Container not initialized, cannot reset UI'); return; }
 
     const editorView = this.container.querySelector('#linkmail-editor');
@@ -139,7 +129,6 @@
     if (this.isAuthenticated && !forceSignOut) {
       try {
         if (!chrome.runtime?.id) {
-          console.log('Extension context invalidated, cannot check user in storage during reset');
           if (signInView) signInView.style.display = 'flex';
           return;
         }
@@ -164,7 +153,6 @@
           if (signInView) signInView.style.display = 'flex';
         }
       } catch (error) {
-        console.log('Error checking user in storage during reset:', error);
         if (signInView) signInView.style.display = 'flex';
       }
     } else {
@@ -193,21 +181,18 @@
   };
 
   window.UIManager.showView = function showView(viewName) {
-    console.log(`[SHOWVIEW] Showing view: ${viewName}`);
     if (!this.container) { 
       console.error('[SHOWVIEW] Container not initialized, cannot show view'); 
       return; 
     }
     
     const allViews = this.ALL_VIEWS;
-    console.log(`[SHOWVIEW] All views to manage: ${allViews.join(', ')}`);
     
     // FORCE hide all views first with !important style
     allViews.forEach(selector => {
       const view = this.container.querySelector(selector);
       if (view) { 
         view.style.setProperty('display', 'none', 'important');
-        console.log(`[SHOWVIEW] FORCE Hidden view: ${selector}, actual display: ${getComputedStyle(view).display}`); 
       }
       else { console.warn(`[SHOWVIEW] View not found: ${selector}`); }
     });
@@ -217,17 +202,14 @@
     if (targetView) {
       const displayValue = (viewName === '#linkmail-splash') ? 'flex' : 'block';
       targetView.style.setProperty('display', displayValue, 'important');
-      console.log(`[SHOWVIEW] FORCE Displayed view: ${viewName}, set display to: ${displayValue}, computed display: ${getComputedStyle(targetView).display}`);
       
       // Double-check that other views are actually hidden using computed styles
       setTimeout(() => {
-        console.log(`[SHOWVIEW] Verifying view states after 100ms...`);
         allViews.forEach(selector => {
           const view = this.container.querySelector(selector);
           if (view) {
             const computedDisplay = getComputedStyle(view).display;
             const isTarget = selector === viewName;
-            console.log(`[SHOWVIEW] ${selector}: computed display = ${computedDisplay}, should be ${isTarget ? displayValue : 'none'}`);
             
             if (!isTarget && computedDisplay !== 'none') {
               console.error(`[SHOWVIEW] ERROR: View ${selector} should be hidden but computed display is: ${computedDisplay}`);
@@ -270,7 +252,6 @@
     }
     
     if (activeViews.length === 1) {
-      console.log(`[getCurrentView] Current view: ${activeViews[0]}`);
       return activeViews[0];
     } else if (activeViews.length > 1) {
       console.warn(`[getCurrentView] Multiple active views detected: ${activeViews.join(', ')}, returning first one: ${activeViews[0]}`);

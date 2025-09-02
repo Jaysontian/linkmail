@@ -1,4 +1,3 @@
-console.log('Email History module loaded');
 
 function formatDate(emailDate) {
   const now = new Date();
@@ -187,7 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (result.success) {
           displayEmailHistory(result.emails);
         } else {
-          console.log('No email history found via EmailHistory');
           displayEmailHistory([]);
         }
       }).catch(error => {
