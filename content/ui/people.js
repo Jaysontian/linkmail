@@ -33,8 +33,8 @@
       const userProfileData = await this.getUserProfileDataForSearch();
       
       if (!userProfileData) {
-        this.showPeopleSuggestionsError('Unable to load your profile information');
-        return;
+        // Profile data not available, but continue with search functionality
+        console.log('Profile data not available for suggestions');
       }
 
 
@@ -66,8 +66,14 @@
         }
         this.displayPeopleSuggestions(topThree); // Show top 3
       } else {
-        const errorMessage = searchResult.error || 'No relevant people found at the moment';
-        this.showPeopleSuggestionsError(errorMessage);
+        // Don't show error if similar people search is disabled - just hide the error section silently
+        if (searchResult.error === 'Similar people search disabled') {
+          const errorEl = this.container.querySelector('#people-suggestions-error');
+          if (errorEl) errorEl.style.display = 'none';
+        } else {
+          const errorMessage = searchResult.error || 'No relevant people found at the moment';
+          this.showPeopleSuggestionsError(errorMessage);
+        }
       }
 
     } catch (error) {
