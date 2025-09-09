@@ -69,7 +69,15 @@
         
         <div id="message" class="message" style="display: none;"></div>
         
-        <form id="bioForm" class="">
+        <!-- Loading state for profile data -->
+        <div id="profileLoadingContainer" class="loading-container" style="display: none;">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Loading your profile...</div>
+        </div>
+        
+        <!-- Profile form container -->
+        <div id="profileFormContainer" class="form-container">
+          <form id="bioForm" class="">
           <div class="form-group">
             <div class="form-row">
               <div class="form-field">
@@ -131,6 +139,7 @@
           
           <button type="submit" id="submitButton" class="primary-button">Save & Continue</button>
         </form>
+        </div>
       </div>
 
       <!-- Email History Section -->

@@ -54,9 +54,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);
-  const email = urlParams.get('email');
+  let email = urlParams.get('email');
   const mode = urlParams.get('mode');
   const isEditMode = mode === 'edit';
+
+  // Fallback to backend email if URL parameter is missing
+  if (!email && window.BackendAPI?.userData?.email) {
+    email = window.BackendAPI.userData.email;
+    console.log('📧 Using fallback email from BackendAPI:', email);
+  }
 
   if (!email) {
     window.showError('Email parameter is missing. Please try again.');

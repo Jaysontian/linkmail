@@ -66,10 +66,23 @@ window.ProfileManager = (function() {
         console.error('Email is required to load profile');
         return { success: false, error: 'Email is required', profile: null };
       }
-      // Prefer backend if authenticated
+      
+      let backendProfile = null;
+      let backendError = null;
+      
+      // Try backend first if authenticated
       try {
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
-          const resp = await window.BackendAPI.getUserBio();
+          console.log('[ProfileManager] Loading profile from backend...');
+          
+          // Add timeout to backend call to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Backend request timeout')), 10000);
+          });
+          
+          const backendPromise = window.BackendAPI.getUserBio();
+          const resp = await Promise.race([backendPromise, timeoutPromise]);
+          
           if (resp && resp.success) {
             const p = resp.profile;
             if (p) {
@@ -93,17 +106,56 @@ window.ProfileManager = (function() {
                 sentEmails: [],
                 setupCompleted: true
               };
+              console.log('[ProfileManager] Successfully loaded profile from backend');
               return { success: true, profile: mapped };
+            } else {
+              console.log('[ProfileManager] Backend returned no profile data');
+              backendProfile = null;
             }
-            return { success: true, profile: null };
+          } else {
+            console.log('[ProfileManager] Backend response unsuccessful');
+            backendError = 'Backend response unsuccessful';
           }
+        } else {
+          console.log('[ProfileManager] Backend not authenticated, falling back to local storage');
         }
       } catch (error) {
-        console.error('Backend loadProfile failed, falling back to storage:', error);
+        console.error('[ProfileManager] Backend loadProfile failed:', error);
+        backendError = error.message;
       }
 
-      // Backend-only: no local storage fallback
-      return { success: true, profile: null };
+      // Fallback to Chrome storage
+      try {
+        console.log('[ProfileManager] Attempting to load from Chrome storage...');
+        return new Promise((resolve) => {
+          chrome.storage.local.get([email], function(result) {
+            const userData = result[email];
+            if (userData && userData.setupCompleted) {
+              console.log('[ProfileManager] Successfully loaded profile from Chrome storage');
+              resolve({ success: true, profile: userData });
+            } else {
+              console.log('[ProfileManager] No profile found in Chrome storage or setup not completed');
+              // If we had a backend error, include it in the response
+              if (backendError) {
+                resolve({ 
+                  success: false, 
+                  error: `Backend failed: ${backendError}. No local profile found.`, 
+                  profile: null 
+                });
+              } else {
+                resolve({ success: true, profile: null });
+              }
+            }
+          });
+        });
+      } catch (storageError) {
+        console.error('[ProfileManager] Chrome storage access failed:', storageError);
+        return { 
+          success: false, 
+          error: `Failed to access storage: ${storageError.message}`, 
+          profile: null 
+        };
+      }
     },
 
     // Save a user profile to storage

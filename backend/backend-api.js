@@ -396,21 +396,63 @@ window.BackendAPI = {
     if (!this.isAuthenticated) {
       throw new Error('User not authenticated');
     }
-    const response = await fetch(`${this.baseURL}/api/user/bio`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.userToken}`,
-        'Content-Type': 'application/json'
+
+    try {
+      console.log('[BackendAPI] Fetching user bio...');
+      
+      const response = await fetch(`${this.baseURL}/api/user/bio`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.userToken}`,
+          'Content-Type': 'application/json'
+        },
+        // Add timeout to prevent hanging requests
+        signal: AbortSignal.timeout(15000) // 15 second timeout
+      });
+
+      if (response.status === 401) {
+        console.log('[BackendAPI] Authentication expired while fetching bio');
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
       }
-    });
-    if (response.status === 401) {
-      await this.clearAuth();
-      throw new Error('Authentication expired. Please sign in again.');
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('[BackendAPI] Server error fetching bio:', errorData);
+        } catch (parseError) {
+          console.error('[BackendAPI] Failed to parse bio error response:', parseError);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(`Failed to fetch user bio: ${errorMessage}`);
+      }
+
+      const result = await response.json();
+      console.log('[BackendAPI] Successfully fetched user bio');
+      return result;
+      
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('[BackendAPI] Bio fetch timeout');
+        throw new Error('Request timeout: Unable to fetch profile data. Please check your connection and try again.');
+      }
+      
+      if (error.message.includes('Authentication expired')) {
+        // Re-throw auth errors as-is
+        throw error;
+      }
+      
+      if (error.message.includes('Failed to fetch')) {
+        console.error('[BackendAPI] Network error fetching bio');
+        throw new Error('Network error: Unable to connect to profile service. Please check your internet connection and try again.');
+      }
+      
+      console.error('[BackendAPI] Error fetching user bio:', error);
+      throw new Error(`Profile fetch failed: ${error.message}`);
     }
-    if (!response.ok) {
-      throw new Error('Failed to fetch user bio');
-    }
-    return await response.json();
   },
 
   /**

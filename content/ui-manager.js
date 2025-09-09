@@ -687,19 +687,10 @@ window.UIManager = Object.assign(__existingUI, {
             }
           });
         } else {
-          console.error('❌ User data not available:', {
-            userData: this.userData,
-            userDataKeys: this.userData ? Object.keys(this.userData) : 'null',
-            userDataStringified: JSON.stringify(this.userData),
-            email: this.userData?.email,
-            isAuthenticated: this.isAuthenticated,
-            backendUserData: window.BackendAPI?.userData,
-            backendUserDataKeys: window.BackendAPI?.userData ? Object.keys(window.BackendAPI.userData) : 'null'
-          });
-          
           // Try to use the backend email directly as a fallback
           const fallbackEmail = window.BackendAPI?.userData?.email;
           if (fallbackEmail) {
+            console.log('📧 Primary user data email not available, using backend fallback:', fallbackEmail);
             const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(fallbackEmail)}&mode=edit`);
             
             chrome.runtime.sendMessage({
@@ -712,7 +703,15 @@ window.UIManager = Object.assign(__existingUI, {
               }
             });
           } else {
-            console.error('❌ No fallback email available either');
+            console.error('❌ No email available from userData or BackendAPI:', {
+              userData: this.userData,
+              userDataKeys: this.userData ? Object.keys(this.userData) : 'null',
+              userDataStringified: JSON.stringify(this.userData),
+              email: this.userData?.email,
+              isAuthenticated: this.isAuthenticated,
+              backendUserData: window.BackendAPI?.userData,
+              backendUserDataKeys: window.BackendAPI?.userData ? Object.keys(window.BackendAPI.userData) : 'null'
+            });
           }
         }
       });

@@ -243,13 +243,22 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       try {
+        // Show form loading overlay
+        showFormLoading();
+
         // Experiences already collected and validated above
 
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const email = urlParams.get('email');
+        let email = urlParams.get('email');
         const mode = urlParams.get('mode');
         const isEditMode = mode === 'edit';
+
+        // Fallback to backend email if URL parameter is missing
+        if (!email && window.BackendAPI?.userData?.email) {
+          email = window.BackendAPI.userData.email;
+          console.log('📧 Form submission using fallback email from BackendAPI:', email);
+        }
 
         // Prepare user data
         const userData = {
@@ -266,6 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Delegate to ProfileManager if available
         if (window.ProfileManager) {
           window.ProfileManager.updateProfile(email, userData).then(result => {
+            hideFormLoading();
             if (result.success) {
               // Show success message
               window.showSuccess('Profile saved successfully!');
@@ -281,12 +291,14 @@ document.addEventListener('DOMContentLoaded', function() {
               window.showError(`Error saving profile: ${result.error}`);
             }
           }).catch(error => {
+            hideFormLoading();
             console.error('Error saving profile via ProfileManager:', error);
             window.showError(`Error saving profile: ${error.message}`);
           });
         } else {
           // Fallback to direct Chrome storage
           chrome.storage.local.get([email], function(result) {
+            hideFormLoading();
             const existingData = result[email] || {};
 
             // Merge with other existing data (like sent emails and templates)
@@ -313,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
           });
         }
       } catch (error) {
+        hideFormLoading();
         console.error('Error saving profile:', error);
         const actionText = isEditMode ? 'updating' : 'saving';
         window.showError(`Error ${actionText} profile: ${error.message}`);
@@ -322,49 +335,237 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load existing data if in edit mode
   const urlParams = new URLSearchParams(window.location.search);
-  const email = urlParams.get('email');
+  let email = urlParams.get('email');
   const mode = urlParams.get('mode');
   const isEditMode = mode === 'edit';
 
+  // Fallback to backend email if URL parameter is missing
+  if (!email && window.BackendAPI?.userData?.email) {
+    email = window.BackendAPI.userData.email;
+    console.log('📧 Profile.js using fallback email from BackendAPI:', email);
+  }
+
   if (isEditMode && email) {
-    // Delegate to ProfileManager if available
-    if (window.ProfileManager) {
-      window.ProfileManager.getProfile(email).then(result => {
-        if (result.success && result.profile) {
-          const userData = result.profile;
-          loadProfileData(userData);
-        } else {
-          // Add one empty experience card by default
-          window.experienceCount++;
-          const card = createExperienceCard(window.experienceCount);
-          experiencesContainer.appendChild(card);
-        }
-      }).catch(error => {
-        console.error('Error loading profile via ProfileManager:', error);
-        // Add one empty experience card by default on error
-        window.experienceCount++;
-        const card = createExperienceCard(window.experienceCount);
-        experiencesContainer.appendChild(card);
-      });
-    } else {
-      // Fallback to direct Chrome storage
-      chrome.storage.local.get([email], function(result) {
-        const userData = result[email];
-        if (userData) {
-          loadProfileData(userData);
-        } else {
-          // Add one empty experience card by default
-          window.experienceCount++;
-          const card = createExperienceCard(window.experienceCount);
-          experiencesContainer.appendChild(card);
-        }
-      });
-    }
+    // Show loading state
+    showProfileLoading();
+    
+    // Load profile with retry functionality
+    loadProfileWithRetry(email, 3); // Allow up to 3 retries
   } else {
     // Add one empty experience card by default for new users
     window.experienceCount++;
     const card = createExperienceCard(window.experienceCount);
     experiencesContainer.appendChild(card);
+  }
+
+  // Profile loading function with retry capability
+  async function loadProfileWithRetry(email, maxRetries = 3) {
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        attempt++;
+        console.log(`[ProfileLoad] Attempt ${attempt}/${maxRetries} to load profile for ${email}`);
+        
+        // Try ProfileManager first if available
+        if (window.ProfileManager) {
+          const result = await window.ProfileManager.getProfile(email);
+          
+          if (result.success && result.profile) {
+            console.log('[ProfileLoad] Successfully loaded profile from ProfileManager');
+            hideProfileLoading();
+            const userData = result.profile;
+            loadProfileData(userData);
+            return; // Success, exit function
+          } else if (result.success && !result.profile) {
+            // No profile exists yet - this is normal for new users
+            console.log('[ProfileLoad] No profile found - showing empty form for new user');
+            hideProfileLoading();
+            addDefaultExperienceCard();
+            return; // This is not an error, exit function
+          } else if (result.error) {
+            // Error occurred - check if we should retry
+            console.error(`[ProfileLoad] Error loading profile (attempt ${attempt}): ${result.error}`);
+            
+            if (attempt < maxRetries && (
+              result.error.includes('Backend request timeout') ||
+              result.error.includes('Network error') ||
+              result.error.includes('Backend failed')
+            )) {
+              // Wait before retry
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              continue; // Try again
+            } else {
+              // Don't retry or max retries reached
+              hideProfileLoading();
+              showProfileError(result.error, email);
+              return;
+            }
+          }
+        } else {
+          // Fallback to direct Chrome storage
+          console.log('[ProfileLoad] ProfileManager not available, using Chrome storage');
+          const result = await new Promise((resolve) => {
+            chrome.storage.local.get([email], function(result) {
+              resolve(result);
+            });
+          });
+          
+          const userData = result[email];
+          if (userData && userData.setupCompleted) {
+            console.log('[ProfileLoad] Successfully loaded profile from Chrome storage');
+            hideProfileLoading();
+            loadProfileData(userData);
+            return;
+          } else {
+            console.log('[ProfileLoad] No profile found in Chrome storage');
+            hideProfileLoading();
+            addDefaultExperienceCard();
+            return;
+          }
+        }
+      } catch (error) {
+        console.error(`[ProfileLoad] Unexpected error on attempt ${attempt}:`, error);
+        
+        if (attempt >= maxRetries) {
+          hideProfileLoading();
+          showProfileError(`Failed to load profile after ${maxRetries} attempts: ${error.message}`, email);
+          return;
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  }
+
+  // Show profile loading error with retry option
+  function showProfileError(errorMessage, email) {
+    const formContainer = document.getElementById('profileFormContainer');
+    if (formContainer) {
+      // Create error message container
+      const errorContainer = document.createElement('div');
+      errorContainer.className = 'profile-error-container';
+      errorContainer.style.cssText = `
+        text-align: center;
+        padding: 40px 20px;
+        background: #fff3f3;
+        border: 1px solid #ffebee;
+        border-radius: 8px;
+        margin: 20px 0;
+      `;
+      
+      errorContainer.innerHTML = `
+        <div style="color: #d32f2f; font-size: 18px; font-weight: 600; margin-bottom: 12px;">
+          Failed to Load Profile
+        </div>
+        <div style="color: #666; margin-bottom: 20px;">
+          ${errorMessage}
+        </div>
+        <button id="retryProfileLoad" style="
+          background: #1976d2;
+          color: white;
+          border: none;
+          padding: 10px 24px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          margin-right: 10px;
+        ">
+          Retry Loading
+        </button>
+        <button id="startFresh" style="
+          background: #757575;
+          color: white;
+          border: none;
+          padding: 10px 24px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+        ">
+          Start Fresh
+        </button>
+      `;
+      
+      // Insert error container at the top of the form
+      formContainer.insertBefore(errorContainer, formContainer.firstChild);
+      
+      // Add retry functionality
+      document.getElementById('retryProfileLoad').addEventListener('click', () => {
+        errorContainer.remove();
+        showProfileLoading();
+        loadProfileWithRetry(email, 3);
+      });
+      
+      // Add start fresh functionality
+      document.getElementById('startFresh').addEventListener('click', () => {
+        errorContainer.remove();
+        addDefaultExperienceCard();
+        window.showSuccess('Started with a fresh profile. You can enter your information below.');
+      });
+    }
+    
+    // Also show notification
+    window.showError(`Unable to load profile: ${errorMessage}`);
+    
+    // Add default experience card as fallback
+    addDefaultExperienceCard();
+  }
+
+  // Helper function to add default experience card
+  function addDefaultExperienceCard() {
+    // Only add if no experience cards exist yet
+    const existingCards = experiencesContainer.querySelectorAll('.experience-card');
+    if (existingCards.length === 0) {
+      window.experienceCount++;
+      const card = createExperienceCard(window.experienceCount);
+      experiencesContainer.appendChild(card);
+    }
+  }
+
+  // Helper functions for loading state
+  function showProfileLoading() {
+    const loadingContainer = document.getElementById('profileLoadingContainer');
+    const formContainer = document.getElementById('profileFormContainer');
+    if (loadingContainer) loadingContainer.style.display = 'flex';
+    if (formContainer) formContainer.style.display = 'none';
+  }
+
+  function hideProfileLoading() {
+    const loadingContainer = document.getElementById('profileLoadingContainer');
+    const formContainer = document.getElementById('profileFormContainer');
+    if (loadingContainer) loadingContainer.style.display = 'none';
+    if (formContainer) formContainer.style.display = 'block';
+  }
+
+  function showFormLoading() {
+    const formContainer = document.getElementById('profileFormContainer');
+    if (formContainer) {
+      // Create overlay if it doesn't exist
+      let overlay = formContainer.querySelector('.form-loading-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'form-loading-overlay';
+        overlay.innerHTML = `
+          <div class="loading-container" style="min-height: auto; padding: 24px;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Saving profile...</div>
+          </div>
+        `;
+        formContainer.appendChild(overlay);
+      }
+      overlay.style.display = 'flex';
+    }
+  }
+
+  function hideFormLoading() {
+    const formContainer = document.getElementById('profileFormContainer');
+    if (formContainer) {
+      const overlay = formContainer.querySelector('.form-loading-overlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+    }
   }
 
   // Helper function to load profile data into the UI
