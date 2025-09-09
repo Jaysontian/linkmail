@@ -1102,8 +1102,8 @@ window.BackendAPI = {
       throw new Error('User not authenticated');
     }
 
-    if (!type || !['jobTitle', 'company'].includes(type)) {
-      throw new Error('type must be either "jobTitle" or "company"');
+    if (!type || !['jobTitle', 'company', 'category'].includes(type)) {
+      throw new Error('type must be either "jobTitle", "company", or "category"');
     }
 
     if (!query || typeof query !== 'string') {
@@ -1116,6 +1116,7 @@ window.BackendAPI = {
     }
 
     try {
+      // Try the dedicated autocomplete endpoint first
       const base = this.apiBaseURL || this.baseURL;
       const params = new URLSearchParams({ type, q: trimmedQuery });
       const url = `${base}/api/contacts/autocomplete?${params.toString()}`;
@@ -1143,7 +1144,10 @@ window.BackendAPI = {
         } catch (_) {
           errText = await response.text().catch(() => 'Unknown error');
         }
-        throw new Error(errText || `HTTP ${response.status}`);
+        
+        // If autocomplete endpoint fails, try fallback using facets
+        console.warn('Autocomplete endpoint failed, trying fallback:', errText);
+        return await this._getAutocompleteFallback(type, trimmedQuery);
       }
 
       const json = await response.json();
@@ -1151,7 +1155,8 @@ window.BackendAPI = {
       return { suggestions };
     } catch (error) {
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout: Unable to fetch suggestions. Please check your connection and try again.');
+        console.warn('Autocomplete request timed out, trying fallback');
+        return await this._getAutocompleteFallback(type, trimmedQuery);
       }
       
       if (error.message.includes('Authentication expired')) {
@@ -1159,12 +1164,75 @@ window.BackendAPI = {
         throw error;
       }
       
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Network error: Unable to connect to autocomplete service. Please check your internet connection and try again.');
+      if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
+        console.warn('Network error in autocomplete, trying fallback:', error.message);
+        return await this._getAutocompleteFallback(type, trimmedQuery);
       }
       
       console.error('Failed to get autocomplete suggestions:', error);
-      throw error;
+      // Try fallback before throwing error
+      try {
+        return await this._getAutocompleteFallback(type, trimmedQuery);
+      } catch (fallbackError) {
+        throw error; // Throw original error if fallback also fails
+      }
+    }
+  },
+
+  /**
+   * Fallback autocomplete using facets endpoint
+   * @private
+   */
+  async _getAutocompleteFallback(type, query) {
+    try {
+      const facets = await this.getContactFacets();
+      let sourceArray;
+      
+      if (type === 'jobTitle') {
+        sourceArray = facets.jobTitles;
+      } else if (type === 'company') {
+        sourceArray = facets.companies;
+      } else if (type === 'category') {
+        sourceArray = facets.categories;
+      }
+      
+      if (!Array.isArray(sourceArray)) {
+        return { suggestions: [] };
+      }
+
+      const queryLower = query.toLowerCase();
+      
+      // Filter and sort suggestions similar to server-side logic
+      const filtered = sourceArray.filter(item => 
+        item && item.toLowerCase().includes(queryLower)
+      );
+
+      // Sort: exact matches first, then starts with, then contains
+      const sorted = filtered.sort((a, b) => {
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        
+        // Exact match priority
+        if (aLower === queryLower && bLower !== queryLower) return -1;
+        if (bLower === queryLower && aLower !== queryLower) return 1;
+        
+        // Starts with priority
+        const aStarts = aLower.startsWith(queryLower);
+        const bStarts = bLower.startsWith(queryLower);
+        if (aStarts && !bStarts) return -1;
+        if (bStarts && !aStarts) return 1;
+        
+        // Length priority (shorter first)
+        if (a.length !== b.length) return a.length - b.length;
+        
+        // Alphabetical
+        return a.localeCompare(b);
+      });
+
+      return { suggestions: sorted.slice(0, 10) };
+    } catch (error) {
+      console.error('Fallback autocomplete failed:', error);
+      return { suggestions: [] };
     }
   },
 

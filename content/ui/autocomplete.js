@@ -114,6 +114,18 @@
     }
 
     async fetchSuggestions(query) {
+      // Special handling for jobTitle type - use predefined categories instead of API
+      if (this.type === 'jobTitle') {
+        this.handlePredefinedJobTitles(query);
+        return;
+      }
+
+      // Special handling for category type - use predefined list
+      if (this.type === 'category') {
+        this.handlePredefinedJobTitles(query);
+        return;
+      }
+
       if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
         this.suggestions = [];
         this.hideDropdown();
@@ -136,6 +148,62 @@
       } catch (error) {
         console.error('Failed to fetch autocomplete suggestions:', error);
         this.suggestions = [];
+        this.hideDropdown();
+      }
+    }
+
+    handlePredefinedJobTitles(query) {
+      // Predefined job title categories for feed page autocomplete
+      const predefinedJobTitles = [
+        'Analyst',
+        'CEO', 
+        'Founder',
+        'Co-Founder',
+        'Consultant',
+        'Data Scientist',
+        'Designer',
+        'Product Manager',
+        'Recruiter',
+        'University Recruiter',
+        'Software Engineer',
+        'Talent Acquisition'
+      ];
+
+      const queryLower = query.toLowerCase();
+      
+      // Filter job titles that contain the query
+      const filtered = predefinedJobTitles.filter(jobTitle => 
+        jobTitle.toLowerCase().includes(queryLower)
+      );
+
+      // Sort: exact matches first, then starts with, then contains
+      const sorted = filtered.sort((a, b) => {
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        
+        // Exact match priority
+        if (aLower === queryLower && bLower !== queryLower) return -1;
+        if (bLower === queryLower && aLower !== queryLower) return 1;
+        
+        // Starts with priority
+        const aStarts = aLower.startsWith(queryLower);
+        const bStarts = bLower.startsWith(queryLower);
+        if (aStarts && !bStarts) return -1;
+        if (bStarts && !aStarts) return 1;
+        
+        // Length priority (shorter first)
+        if (a.length !== b.length) return a.length - b.length;
+        
+        // Alphabetical
+        return a.localeCompare(b);
+      });
+
+      this.suggestions = sorted.slice(0, this.options.maxSuggestions || 12);
+      
+      if (this.suggestions.length > 0) {
+        this.renderSuggestions();
+        this.showDropdown();
+      } else {
         this.hideDropdown();
       }
     }

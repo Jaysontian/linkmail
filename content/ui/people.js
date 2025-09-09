@@ -97,14 +97,14 @@
       // Initialize autocomplete for job title and company fields
       try {
         if (window.UIManager.initAutocomplete) {
-          // Initialize autocomplete for job title field
+          // Initialize autocomplete for job title field (uses predefined categories)
           window.UIManager.initAutocomplete(jobTitleInput, 'jobTitle', {
             minLength: 1,
-            maxSuggestions: 10,
-            debounceMs: 300
+            maxSuggestions: 12, // Show all 12 predefined job titles if they match
+            debounceMs: 200 // Faster response for predefined list
           });
 
-          // Initialize autocomplete for company field
+          // Initialize autocomplete for company field (uses API)
           window.UIManager.initAutocomplete(companyInput, 'company', {
             minLength: 1,
             maxSuggestions: 10,
