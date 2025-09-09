@@ -16,16 +16,18 @@
         return;
       }
 
-      // Get the recipient's job title and company from the database using LinkedIn URL
+      // Get the recipient's job title, company, and category from the database using LinkedIn URL
       let jobTitle = '';
       let company = '';
+      let category = '';
       
       try {
         const contactData = await window.BackendAPI.getEmailByLinkedIn(currentLinkedInUrl);
         if (contactData && contactData.found) {
           jobTitle = contactData.jobTitle || '';
           company = contactData.company || '';
-          console.log('Found recipient data from database:', { jobTitle, company });
+          category = contactData.category || '';
+          console.log('Found recipient data from database:', { jobTitle, company, category });
         }
       } catch (error) {
         console.log('Could not get recipient data from database, trying profile scraping:', error);
@@ -45,21 +47,30 @@
 
       // If we still don't have both job title and company, hide the section
       if (!jobTitle || !company) {
-        console.log('Missing job title or company for recommendations:', { jobTitle, company });
+        console.log('Missing job title or company for recommendations:', { jobTitle, company, category });
         this.hideSimilarPeopleSection();
         return;
       }
 
-      // Search for similar contacts using the backend API (same logic as feed page)
+      // Search for similar contacts using the new prioritized logic
       try {
-        const searchResults = await window.BackendAPI.searchContacts(jobTitle, company);
+        let searchResults = null;
+        
+        // Use new prioritized search if we have category, otherwise fall back to old logic
+        if (category) {
+          console.log('Using prioritized search with category:', { category, company });
+          searchResults = await window.BackendAPI.searchSimilarContacts(category, company);
+        } else {
+          console.log('No category available, falling back to job title search:', { jobTitle, company });
+          searchResults = await window.BackendAPI.searchContacts(jobTitle, company);
+        }
         
         if (searchResults && searchResults.results && searchResults.results.length > 0) {
-          // Take up to 3 recommendations (no need to filter by email since we want people with similar job/company)
+          // Take up to 3 recommendations
           const recommendations = searchResults.results.slice(0, 3);
           
           if (recommendations.length > 0) {
-            this.showSimilarPeopleRecommendations(recommendations, jobTitle, company);
+            this.showSimilarPeopleRecommendations(recommendations, jobTitle, company, category);
           } else {
             console.log('No recommendations found');
             this.hideSimilarPeopleSection();
@@ -167,7 +178,7 @@
   };
 
   // Show multiple similar people recommendations
-  window.UIManager.showSimilarPeopleRecommendations = function showSimilarPeopleRecommendations(recommendations, searchJobTitle, searchCompany) {
+  window.UIManager.showSimilarPeopleRecommendations = function showSimilarPeopleRecommendations(recommendations, searchJobTitle, searchCompany, searchCategory) {
     try {
       const similarPeopleSection = this.container?.querySelector('#similar-people-section');
       const similarPeopleContainer = this.container?.querySelector('#similar-people-container');
@@ -182,21 +193,21 @@
 
       // Create recommendation cards
       recommendations.forEach((person, index) => {
-        const card = this.createRecommendationCard(person, searchJobTitle, searchCompany);
+        const card = this.createRecommendationCard(person, searchJobTitle, searchCompany, searchCategory);
         similarPeopleContainer.appendChild(card);
       });
 
       // Show the section
       similarPeopleSection.style.display = 'block';
       
-      console.log(`Showing ${recommendations.length} recommendations for ${searchJobTitle} at ${searchCompany}`);
+      console.log(`Showing ${recommendations.length} recommendations for ${searchJobTitle} at ${searchCompany}${searchCategory ? ` (category: ${searchCategory})` : ''}`);
     } catch (error) {
       console.error('Error showing similar people recommendations:', error);
     }
   };
 
   // Create a recommendation card for a person
-  window.UIManager.createRecommendationCard = function createRecommendationCard(person, searchJobTitle, searchCompany) {
+  window.UIManager.createRecommendationCard = function createRecommendationCard(person, searchJobTitle, searchCompany, searchCategory) {
     const card = document.createElement('div');
     card.style.cssText = `
       cursor: pointer;
@@ -216,19 +227,36 @@
     const company = person.company || '';
     const displayTitle = company ? `${jobTitle} at ${company}` : jobTitle;
     
-    // Determine similarity reason
+    // Determine similarity reason based on matchType from backend
     let reasonText = '🔍 Similar profile';
-    const isJobTitleMatch = jobTitle.toLowerCase().includes(searchJobTitle.toLowerCase()) || 
-                           searchJobTitle.toLowerCase().includes(jobTitle.toLowerCase());
-    const isCompanyMatch = company.toLowerCase().includes(searchCompany.toLowerCase()) || 
-                          searchCompany.toLowerCase().includes(company.toLowerCase());
-    
-    if (isJobTitleMatch && isCompanyMatch) {
-      reasonText = '🎯 Same company & role';
-    } else if (isCompanyMatch) {
-      reasonText = '🏢 Same company';
-    } else if (isJobTitleMatch) {
-      reasonText = '💼 Same role';
+    if (person.matchType) {
+      switch (person.matchType) {
+        case 'category_and_company':
+          reasonText = '🎯 Same category & company';
+          break;
+        case 'company_only':
+          reasonText = '🏢 Same company';
+          break;
+        case 'category_only':
+          reasonText = '💼 Same category';
+          break;
+        default:
+          reasonText = '🔍 Similar profile';
+      }
+    } else {
+      // Fallback to old logic if no matchType available
+      const isJobTitleMatch = jobTitle.toLowerCase().includes(searchJobTitle.toLowerCase()) || 
+                             searchJobTitle.toLowerCase().includes(jobTitle.toLowerCase());
+      const isCompanyMatch = company.toLowerCase().includes(searchCompany.toLowerCase()) || 
+                            searchCompany.toLowerCase().includes(company.toLowerCase());
+      
+      if (isJobTitleMatch && isCompanyMatch) {
+        reasonText = '🎯 Same company & role';
+      } else if (isCompanyMatch) {
+        reasonText = '🏢 Same company';
+      } else if (isJobTitleMatch) {
+        reasonText = '💼 Same role';
+      }
     }
 
     card.innerHTML = `

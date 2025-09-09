@@ -627,6 +627,73 @@ window.BackendAPI = {
   },
 
   /**
+   * Search similar contacts by category and company with prioritized logic
+   * @param {string} category - Category to search for
+   * @param {string} company - Company name to search for
+   * @returns {Promise<Object>} SearchSimilarContactsResponse
+   */
+  async searchSimilarContacts(category, company) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!category || !company) {
+      throw new Error('Both category and company are required');
+    }
+
+    try {
+      const params = new URLSearchParams({
+        category: category.trim(),
+        company: company.trim()
+      });
+
+      const primaryBase = this.apiBaseURL || this.baseURL;
+      const candidates = [primaryBase];
+      
+      // Host fallback
+      try {
+        const u = new URL(primaryBase);
+        if (u.hostname.includes('linkmail-sending')) {
+          candidates.push('https://linkmail-api.vercel.app');
+        } else if (u.hostname.includes('linkmail-api')) {
+          candidates.push('https://linkmail-sending.vercel.app');
+        }
+      } catch (_) {}
+
+      let response = null;
+      let lastError = '';
+      for (let i = 0; i < candidates.length; i++) {
+        const base = candidates[i];
+        try {
+          response = await fetch(`${base}/api/contacts/search-similar?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${this.userToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (response.ok) break;
+          lastError = `${response.status}: ${await response.text()}`;
+        } catch (error) {
+          lastError = error.message;
+          continue;
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`Search similar contacts failed: ${lastError}`);
+      }
+
+      const json = await response.json();
+      const results = Array.isArray(json.results) ? json.results : [];
+      return { results };
+    } catch (error) {
+      console.error('Search similar contacts error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Search contacts by jobTitle and company (returns up to 3)
    * @param {string} jobTitle
    * @param {string} company
