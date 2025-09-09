@@ -56,6 +56,7 @@
       "history/email-history.js",
       "content/ui/helpers.js",
       "content/ui/auth.js",
+      "content/ui/autocomplete.js",
       "content/ui/similar.js",
       "content/ui/people.js",
       "content/ui/templates.js",

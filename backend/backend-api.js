@@ -1092,6 +1092,83 @@ window.BackendAPI = {
   },
 
   /**
+   * Get autocomplete suggestions for job titles or companies
+   * @param {string} type - 'jobTitle' or 'company'
+   * @param {string} query - Search query string
+   * @returns {Promise<{suggestions: string[]}>} Autocomplete suggestions
+   */
+  async getAutocompleteSuggestions(type, query) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!type || !['jobTitle', 'company'].includes(type)) {
+      throw new Error('type must be either "jobTitle" or "company"');
+    }
+
+    if (!query || typeof query !== 'string') {
+      return { suggestions: [] };
+    }
+
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 1) {
+      return { suggestions: [] };
+    }
+
+    try {
+      const base = this.apiBaseURL || this.baseURL;
+      const params = new URLSearchParams({ type, q: trimmedQuery });
+      const url = `${base}/api/contacts/autocomplete?${params.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.userToken}`,
+          'Content-Type': 'application/json'
+        },
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      if (response.status === 401) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      const suggestions = Array.isArray(json.suggestions) ? json.suggestions : [];
+      return { suggestions };
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout: Unable to fetch suggestions. Please check your connection and try again.');
+      }
+      
+      if (error.message.includes('Authentication expired')) {
+        // Re-throw auth errors as-is
+        throw error;
+      }
+      
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to autocomplete service. Please check your internet connection and try again.');
+      }
+      
+      console.error('Failed to get autocomplete suggestions:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Debug method to check authentication state
    * @returns {Promise<Object>} Current auth state
    */

@@ -94,6 +94,27 @@
       const resultsContainer = this.container?.querySelector('#people-search-results');
       if (!jobTitleInput || !companyInput || !resultsContainer) return;
 
+      // Initialize autocomplete for job title and company fields
+      try {
+        if (window.UIManager.initAutocomplete) {
+          // Initialize autocomplete for job title field
+          window.UIManager.initAutocomplete(jobTitleInput, 'jobTitle', {
+            minLength: 1,
+            maxSuggestions: 10,
+            debounceMs: 300
+          });
+
+          // Initialize autocomplete for company field
+          window.UIManager.initAutocomplete(companyInput, 'company', {
+            minLength: 1,
+            maxSuggestions: 10,
+            debounceMs: 300
+          });
+        }
+      } catch (autocompleteError) {
+        console.error('Failed to initialize autocomplete:', autocompleteError);
+      }
+
       // Helper to render results
       const renderResults = (results) => {
         resultsContainer.innerHTML = '';

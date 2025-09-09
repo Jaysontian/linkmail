@@ -346,11 +346,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (isEditMode && email) {
-    // Show loading state
+    // Show loading state and keep it visible until profile is loaded or all retries fail
     showProfileLoading();
+    console.log('[Dashboard] Edit Profile mode - starting profile load with 5 retry attempts');
     
-    // Load profile with retry functionality
-    loadProfileWithRetry(email, 3); // Allow up to 3 retries
+    // Load profile with enhanced retry functionality (5 attempts)
+    loadProfileWithRetry(email, 5); // Allow up to 5 retries as requested
   } else {
     // Add one empty experience card by default for new users
     window.experienceCount++;
@@ -358,45 +359,60 @@ document.addEventListener('DOMContentLoaded', function() {
     experiencesContainer.appendChild(card);
   }
 
-  // Profile loading function with retry capability
-  async function loadProfileWithRetry(email, maxRetries = 3) {
+  // Profile loading function with retry capability (enhanced for Edit Profile)
+  async function loadProfileWithRetry(email, maxRetries = 5) {
     let attempt = 0;
+    console.log(`[Dashboard] Starting profile load with up to ${maxRetries} retry attempts for email: ${email}`);
     
     while (attempt < maxRetries) {
       try {
         attempt++;
-        console.log(`[ProfileLoad] Attempt ${attempt}/${maxRetries} to load profile for ${email}`);
+        console.log(`[Dashboard] 🔄 Attempt ${attempt}/${maxRetries} - Retrieving profile from database...`);
+        
+        // Keep loading animation visible during all attempts
+        if (!document.getElementById('profileLoadingContainer') || 
+            document.getElementById('profileLoadingContainer').style.display === 'none') {
+          showProfileLoading();
+        }
         
         // Try ProfileManager first if available
         if (window.ProfileManager) {
           const result = await window.ProfileManager.getProfile(email);
           
           if (result.success && result.profile) {
-            console.log('[ProfileLoad] Successfully loaded profile from ProfileManager');
+            console.log(`[Dashboard] ✅ Successfully retrieved profile from database on attempt ${attempt}`);
             hideProfileLoading();
             const userData = result.profile;
             loadProfileData(userData);
+            console.log('[Dashboard] Profile loaded into dashboard successfully');
             return; // Success, exit function
           } else if (result.success && !result.profile) {
             // No profile exists yet - this is normal for new users
-            console.log('[ProfileLoad] No profile found - showing empty form for new user');
+            console.log(`[Dashboard] ℹ️ No profile found in database on attempt ${attempt} - new user`);
             hideProfileLoading();
             addDefaultExperienceCard();
+            console.log('[Dashboard] Showing empty form for new user');
             return; // This is not an error, exit function
           } else if (result.error) {
             // Error occurred - check if we should retry
-            console.error(`[ProfileLoad] Error loading profile (attempt ${attempt}): ${result.error}`);
+            console.error(`[Dashboard] ❌ Database retrieval failed (attempt ${attempt}/${maxRetries}): ${result.error}`);
             
             if (attempt < maxRetries && (
               result.error.includes('Backend request timeout') ||
+              result.error.includes('Request timeout') ||
               result.error.includes('Network error') ||
-              result.error.includes('Backend failed')
+              result.error.includes('Backend failed') ||
+              result.error.includes('Failed to fetch') ||
+              result.error.includes('Authentication expired')
             )) {
-              // Wait before retry
-              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              // Calculate exponential backoff delay
+              const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Max 5 second delay
+              console.log(`[Dashboard] ⏳ Waiting ${delay}ms before retry attempt ${attempt + 1}...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
               continue; // Try again
             } else {
               // Don't retry or max retries reached
+              console.error(`[Dashboard] 🚫 Final failure after ${attempt} attempts, showing error`);
               hideProfileLoading();
               showProfileError(result.error, email);
               return;
@@ -404,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         } else {
           // Fallback to direct Chrome storage
-          console.log('[ProfileLoad] ProfileManager not available, using Chrome storage');
+          console.log(`[Dashboard] 📁 ProfileManager not available, trying Chrome storage (attempt ${attempt})`);
           const result = await new Promise((resolve) => {
             chrome.storage.local.get([email], function(result) {
               resolve(result);
@@ -413,30 +429,50 @@ document.addEventListener('DOMContentLoaded', function() {
           
           const userData = result[email];
           if (userData && userData.setupCompleted) {
-            console.log('[ProfileLoad] Successfully loaded profile from Chrome storage');
+            console.log(`[Dashboard] ✅ Successfully retrieved profile from Chrome storage on attempt ${attempt}`);
             hideProfileLoading();
             loadProfileData(userData);
+            console.log('[Dashboard] Profile loaded into dashboard from local storage');
             return;
           } else {
-            console.log('[ProfileLoad] No profile found in Chrome storage');
-            hideProfileLoading();
-            addDefaultExperienceCard();
-            return;
+            console.log(`[Dashboard] 📭 No profile found in Chrome storage on attempt ${attempt}`);
+            
+            if (attempt < maxRetries) {
+              // Continue retrying - maybe backend will become available
+              const delay = Math.min(1000 * attempt, 3000); // Max 3 second delay for storage retries
+              console.log(`[Dashboard] ⏳ Waiting ${delay}ms before retry attempt ${attempt + 1}...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            } else {
+              // Final attempt, show empty form
+              console.log('[Dashboard] All attempts exhausted, showing empty form');
+              hideProfileLoading();
+              addDefaultExperienceCard();
+              return;
+            }
           }
         }
       } catch (error) {
-        console.error(`[ProfileLoad] Unexpected error on attempt ${attempt}:`, error);
+        console.error(`[Dashboard] ⚠️ Unexpected error on attempt ${attempt}/${maxRetries}:`, error);
         
         if (attempt >= maxRetries) {
+          console.error(`[Dashboard] 🚫 All ${maxRetries} attempts failed, showing final error`);
           hideProfileLoading();
-          showProfileError(`Failed to load profile after ${maxRetries} attempts: ${error.message}`, email);
+          showProfileError(`Failed to retrieve profile from database after ${maxRetries} attempts: ${error.message}`, email);
           return;
         }
         
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        // Wait before retry with exponential backoff
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        console.log(`[Dashboard] ⏳ Error occurred, waiting ${delay}ms before retry attempt ${attempt + 1}...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
+    
+    // This should never be reached, but just in case
+    console.error('[Dashboard] 🚫 Unexpected end of retry loop');
+    hideProfileLoading();
+    showProfileError('Unable to load profile after all retry attempts', email);
   }
 
   // Show profile loading error with retry option
@@ -494,7 +530,8 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('retryProfileLoad').addEventListener('click', () => {
         errorContainer.remove();
         showProfileLoading();
-        loadProfileWithRetry(email, 3);
+        console.log('[Dashboard] User manually triggered profile retry');
+        loadProfileWithRetry(email, 5); // Use 5 retries for manual retries too
       });
       
       // Add start fresh functionality
