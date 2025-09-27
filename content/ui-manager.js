@@ -463,6 +463,50 @@ window.UIManager = Object.assign(__existingUI, {
     }
   },
 
+  // Update Apollo usage display
+  async updateApolloUsageDisplay() {
+    if (!this.elements.findEmailApolloButton || !this.elements.apolloUsageCounter || !this.elements.apolloLimitMessage) {
+      return;
+    }
+
+    try {
+      if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
+        return;
+      }
+
+      const usageInfo = await window.BackendAPI.getApolloUsage();
+      
+      if (usageInfo && usageInfo.success) {
+        const { currentUsage, limit, hasReachedLimit } = usageInfo;
+        
+        // Update usage counter text
+        this.elements.apolloUsageCounter.textContent = `Current Usage: ${currentUsage}/${limit}`;
+        
+        if (hasReachedLimit) {
+          // Hide Apollo button and usage counter, show limit message
+          this.elements.findEmailApolloButton.style.display = 'none';
+          this.elements.apolloUsageCounter.style.display = 'none';
+          this.elements.apolloLimitMessage.style.display = 'block';
+        } else {
+          // Show usage counter, hide limit message
+          this.elements.apolloUsageCounter.style.display = 'block';
+          this.elements.apolloLimitMessage.style.display = 'none';
+          // Only show Apollo button if we're in the editor view and no email is filled
+          const recipientInput = document.getElementById('recipientEmailInput');
+          const editorView = document.querySelector('#linkmail-editor');
+          if (editorView && editorView.style.display === 'block' && recipientInput && !recipientInput.value) {
+            this.elements.findEmailApolloButton.style.display = 'block';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating Apollo usage display:', error);
+      // On error, hide usage counter but don't show limit message
+      this.elements.apolloUsageCounter.style.display = 'none';
+      this.elements.apolloLimitMessage.style.display = 'none';
+    }
+  },
+
   setupEventListeners() {
 
     // Use this.container instead of injectedDiv
@@ -973,13 +1017,24 @@ window.UIManager = Object.assign(__existingUI, {
           // Show success message
           this.showTemporaryMessage('Email found with Apollo!', 'success');
 
+          // Update Apollo usage display after successful call
+          await this.updateApolloUsageDisplay();
+
         } else {
           this.showTemporaryMessage('No email found with Apollo. The person may not be in Apollo\'s database.', 'error');
         }
 
       } catch (error) {
         console.error('Error in Apollo email search:', error);
-        this.showTemporaryMessage(error.message || 'Failed to find email with Apollo. Please try again.', 'error');
+        
+        // Check if this is a usage limit error
+        if (error.message && error.message.includes('Usage limit exceeded')) {
+          this.showTemporaryMessage('You have reached your Apollo API usage limit. Please upgrade to get more calls.', 'error');
+          // Update display to show limit message
+          await this.updateApolloUsageDisplay();
+        } else {
+          this.showTemporaryMessage(error.message || 'Failed to find email with Apollo. Please try again.', 'error');
+        }
       } finally {
         // Reset button state
         this.elements.findEmailApolloButton.disabled = false;
@@ -1250,10 +1305,11 @@ window.UIManager = Object.assign(__existingUI, {
           this.showTemporaryMessage('Email autofilled from your contacts', 'success');
         }
       } else if (!recipientInput.value) {
-        // No email found through scraping or backend - show Apollo button if authenticated
+        // No email found through scraping or backend - check Apollo usage and show button if authenticated and within limits
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
           if (this.elements.findEmailApolloButton && document.querySelector('#linkmail-editor').style.display === 'block') {
-            this.elements.findEmailApolloButton.style.display = 'block';
+            // Update Apollo usage display first to determine if button should be shown
+            await this.updateApolloUsageDisplay();
           }
         }
       }

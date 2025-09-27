@@ -64,6 +64,8 @@
       menuToggle: container.querySelector('#menuToggle'),
       menuContent: container.querySelector('#menuContent'),
       findEmailApolloButton: container.querySelector('#findEmailApolloButton'),
+      apolloUsageCounter: container.querySelector('#apolloUsageCounter'),
+      apolloLimitMessage: container.querySelector('#apolloLimitMessage'),
       retryPeopleSearchButton: container.querySelector('#retry-people-search')
     };
   };

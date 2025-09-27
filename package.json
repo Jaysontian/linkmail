@@ -4,6 +4,5 @@
   "description": "Email Client for LinkedIn - Chrome Extension",
   "scripts": {
     "build": "node build.js"
-  },
-
+  }
 } 

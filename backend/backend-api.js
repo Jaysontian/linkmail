@@ -538,6 +538,33 @@ window.BackendAPI = {
   },
 
   /**
+   * Get current Apollo API usage information
+   * @returns {Promise<Object>} Usage information object
+   */
+  async getApolloUsage() {
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+    const response = await fetch(`${this.baseURL}/api/user/apollo-usage`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.userToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.status === 401) {
+      await this.clearAuth();
+      throw new Error('Authentication expired. Please sign in again.');
+    }
+    if (!response.ok) {
+      let err = 'Failed to get Apollo usage information';
+      try { const e = await response.json(); err = e.message || e.error || err; } catch (_e) {}
+      throw new Error(err);
+    }
+    return await response.json();
+  },
+
+  /**
    * Sign out user
    * @returns {Promise<void>}
    */
