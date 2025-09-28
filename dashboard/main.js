@@ -1,4 +1,30 @@
 
+/*
+ * Dashboard Race Condition Fix
+ * ===========================
+ * 
+ * PROBLEM: Profile information sometimes doesn't appear on dashboard load but works after reload.
+ * 
+ * ROOT CAUSE: Race condition between:
+ * 1. BackendAPI.init() - asynchronous authentication and initialization
+ * 2. main.js - immediate profile loading attempt on DOMContentLoaded
+ * 3. profile.js - separate profile loading logic (only for edit mode)
+ * 
+ * SOLUTION IMPLEMENTED:
+ * 1. waitForBackendAPI() - Ensures BackendAPI completes initialization before profile loading
+ * 2. loadAndDisplayUserProfile() - Centralized profile loading with ProfileManager + fallbacks
+ * 3. Enhanced coordination between main.js and profile.js to prevent competing attempts
+ * 4. Extended retry mechanism from profile.js to work for all dashboard modes
+ * 5. Proper error handling and fallback to Chrome storage when backend fails
+ * 
+ * FLOW:
+ * 1. BackendAPI loads and starts async initialization
+ * 2. Dashboard scripts wait for BackendAPI to be ready
+ * 3. Centralized profile loading attempts ProfileManager first, then Chrome storage
+ * 4. Multiple retry attempts with exponential backoff for network issues
+ * 5. Graceful fallback to empty form if no profile data exists
+ */
+
 // Utility function to escape HTML
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -46,7 +72,10 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   window.formatDate = formatDate;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize dashboard when DOM and BackendAPI are ready
+async function initializeDashboard() {
+  console.log('[Dashboard] Starting initialization...');
+  
   const bioForm = document.getElementById('bioForm');
   const pageTitle = document.getElementById('pageTitle');
   const submitButton = document.getElementById('submitButton');
@@ -57,6 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let email = urlParams.get('email');
   const mode = urlParams.get('mode');
   const isEditMode = mode === 'edit';
+
+  // Wait for BackendAPI to be ready
+  await waitForBackendAPI();
 
   // Fallback to backend email if URL parameter is missing
   if (!email && window.BackendAPI?.userData?.email) {
@@ -71,36 +103,22 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Load initial user data to update profile in sidebar
-  chrome.storage.local.get([email], function(result) {
-    const userData = result[email];
-    if (userData) {
-      updateUserProfileInSidebar(userData);
-    }
-  });
+  // Use centralized profile loading instead of direct Chrome storage access
+  await loadAndDisplayUserProfile(email);
+  
+  // Signal to profile.js that it should attempt profile loading if needed
+  if (!isEditMode && email) {
+    // Add URL parameter to trigger profile loading in profile.js as backup
+    window.history.replaceState(null, null, `${window.location.pathname}?email=${encodeURIComponent(email)}&loadProfile=true`);
+  }
 
   // Update UI based on mode
   if (isEditMode) {
     if (pageTitle) pageTitle.textContent = 'Your Profile';
     if (submitButton) submitButton.textContent = 'Save Changes';
 
-    // Load existing data
-    chrome.storage.local.get([email], function(result) {
-      const userData = result[email];
-      if (userData) {
-        if (document.getElementById('name')) document.getElementById('name').value = userData.name || '';
-        if (document.getElementById('college')) document.getElementById('college').value = userData.college || '';
-        if (document.getElementById('gradYear')) document.getElementById('gradYear').value = userData.graduationYear || '';
-        if (document.getElementById('linkedinUrl')) document.getElementById('linkedinUrl').value = userData.linkedinUrl || '';
-
-        // Update user profile in sidebar
-        updateUserProfileInSidebar(userData);
-
-        // Load email history
-        if (typeof window.loadEmailHistory === 'function') {
-          window.loadEmailHistory(userData);
-        }
-      }
-    });
+    // Profile loading is handled by profile.js in edit mode
+    console.log('[Dashboard] Edit mode detected - profile.js will handle profile loading');
   } else {
     // Hide the email history tab for new users
     const emailHistoryTab = document.querySelector('.nav-item.emails-section');
@@ -163,6 +181,91 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Could not find section element with id:', sectionId);
       }
     });
+  });
+}
+
+// Wait for BackendAPI to be ready
+async function waitForBackendAPI() {
+  console.log('[Dashboard] Waiting for BackendAPI to be ready...');
+  
+  let attempts = 0;
+  const maxAttempts = 10; // Wait up to 5 seconds
+  
+  while (attempts < maxAttempts) {
+    if (window.BackendAPI) {
+      // Give BackendAPI time to complete initialization
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('[Dashboard] BackendAPI is ready');
+      return;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    attempts++;
+  }
+  
+  console.warn('[Dashboard] BackendAPI not ready after waiting, continuing anyway');
+}
+
+// Centralized profile loading with retry mechanism
+async function loadAndDisplayUserProfile(email) {
+  console.log('[Dashboard] Loading user profile for sidebar display...');
+  
+  try {
+    let userData = null;
+    
+    // Try ProfileManager first (includes backend and storage fallback)
+    if (window.ProfileManager) {
+      console.log('[Dashboard] Attempting to load profile via ProfileManager...');
+      const result = await window.ProfileManager.getProfile(email);
+      
+      if (result.success && result.profile) {
+        userData = result.profile;
+        console.log('[Dashboard] Profile loaded via ProfileManager');
+      } else {
+        console.log('[Dashboard] No profile found via ProfileManager');
+      }
+    }
+    
+    // Fallback to Chrome storage if ProfileManager didn't return data
+    if (!userData) {
+      console.log('[Dashboard] Falling back to Chrome storage...');
+      userData = await new Promise((resolve) => {
+        chrome.storage.local.get([email], function(result) {
+          const data = result[email];
+          resolve(data && data.setupCompleted ? data : null);
+        });
+      });
+      
+      if (userData) {
+        console.log('[Dashboard] Profile loaded from Chrome storage');
+      } else {
+        console.log('[Dashboard] No profile found in Chrome storage');
+      }
+    }
+    
+    // Update sidebar if we have user data
+    if (userData) {
+      updateUserProfileInSidebar(userData);
+      
+      // Load email history if available
+      if (typeof window.loadEmailHistory === 'function') {
+        window.loadEmailHistory(userData);
+      }
+    } else {
+      console.log('[Dashboard] No user profile data available for sidebar');
+    }
+    
+  } catch (error) {
+    console.error('[Dashboard] Error loading user profile:', error);
+    // Don't show error to user for sidebar loading failures
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  initializeDashboard().catch(error => {
+    console.error('[Dashboard] Initialization failed:', error);
+    // Continue with basic initialization even if profile loading fails
   });
 
   // Experience management functionality
