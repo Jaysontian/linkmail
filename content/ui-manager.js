@@ -228,6 +228,30 @@ window.UIManager = Object.assign(__existingUI, {
     return this.isAuthenticated;
   },
 
+  /**
+   * Get user name with fallback to firstName + lastName combination
+   * @returns {string} User's full name
+   */
+  _getUserNameWithFallback() {
+    // First try the direct name field (from Google auth)
+    if (this.userData && this.userData.name && this.userData.name.trim()) {
+      return this.userData.name.trim();
+    }
+
+    // Fallback to combining firstName + lastName (from profile)
+    if (this.userData && (this.userData.firstName || this.userData.lastName)) {
+      const firstName = this.userData.firstName || '';
+      const lastName = this.userData.lastName || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      if (fullName) {
+        return fullName;
+      }
+    }
+
+    // No name available
+    return null;
+  },
+
   showSignInUI() {
     this.showView('#linkmail-signin');
 
@@ -899,6 +923,8 @@ window.UIManager = Object.assign(__existingUI, {
         if (this.userData) {
           useTemplate.userData = {
             name: this.userData.name,
+            firstName: this.userData.firstName,
+            lastName: this.userData.lastName,
             college: this.userData.college,
             graduationYear: this.userData.graduationYear,
             experiences: this.userData.experiences,
@@ -921,9 +947,13 @@ window.UIManager = Object.assign(__existingUI, {
             this.elements.emailSubject.value = response.subject;
           } else {
             // This is a normal email, process it
-            if (this.userData && this.userData.name) {
+            // Get the user's name with fallback to firstName + lastName
+            const userName = this._getUserNameWithFallback();
+            
+            if (userName && userName !== 'undefined' && userName.trim()) {
               // Replace various name placeholders with the user's actual name
-              emailContent = emailContent.replace(/\[My Name\]/g, this.userData.name);
+              emailContent = emailContent.replace(/\[My Name\]/g, userName);
+              emailContent = emailContent.replace(/\[Your Name\]/g, userName);
 
               // Fix case where recipient name might have been used in signature
               const profileData = await ProfileScraper.scrapeBasicProfileData();
@@ -933,7 +963,7 @@ window.UIManager = Object.assign(__existingUI, {
                 // Look for patterns like "Best regards,\n  [RecipientName]" and replace with user name
                 emailContent = emailContent.replace(
                   new RegExp(`(Best regards,\\s*\\n\\s*)(${recipientName})`, 'gi'),
-                  `$1${this.userData.name}`
+                  `$1${userName}`
                 );
               }
             }

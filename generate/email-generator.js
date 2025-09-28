@@ -104,6 +104,7 @@ CRITICAL RULES:
 4. Keep all formatting, punctuation, and paragraph breaks outside brackets
 5. Write in a professional, networking-appropriate tone
 6. Make the email sound natural and personally written
+7. IMPORTANT: Replace [My Name] with the sender's actual name, NOT with "[Your Name]" or any other placeholder
 
 EXAMPLES:
 Template: "I think it's really cool how [talk about the company's work]"
@@ -122,8 +123,37 @@ Template: "[Connect their company's work to my own experience]. I'd love to lear
 ✓ GOOD: "Given my background in machine learning and data analytics, I'm particularly drawn to your AI-driven approach. I'd love to learn about opportunities."
 ✗ BAD: "Connect their company's work to your own experience. I'd love to learn about opportunities."
 
+Template: "Best regards,\n[My Name]"
+✓ GOOD: "Best regards,\nIshaan"
+✗ BAD: "Best regards,\n[Your Name]" or "Best regards,\n[My Name]"
+
 Format: Subject$$$Body (no extra explanations)
 `;
+  },
+
+  /**
+   * Get user name with fallback to firstName + lastName combination
+   * @param {Object} userData - User data object
+   * @returns {string} User's full name
+   */
+  _getUserName(userData) {
+    // First try the direct name field (from Google auth)
+    if (userData?.name && userData.name.trim()) {
+      return userData.name.trim();
+    }
+
+    // Fallback to combining firstName + lastName (from profile)
+    if (userData && (userData.firstName || userData.lastName)) {
+      const firstName = userData.firstName || '';
+      const lastName = userData.lastName || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      if (fullName) {
+        return fullName;
+      }
+    }
+
+    // Final fallback
+    return 'Not specified';
   },
 
   /**
@@ -157,12 +187,12 @@ Headline: ${profileData.headline || 'Not specified'}
 About Section: ${profileData.about || 'Not specified'}
 Experience: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join('; ') : 'Not specified'}
 
-==== SENDER INFORMATION ====
+  ==== SENDER INFORMATION ====
 
-My Name: ${userData?.name}
-My College: ${userData?.college || 'Not specified'}
-My Graduation Year: ${userData?.graduationYear || 'Not specified'}
-My Experiences: ${userExperiencesText}
+  My Name: ${this._getUserName(userData)}
+  My College: ${userData?.college || 'Not specified'}
+  My Graduation Year: ${userData?.graduationYear || 'Not specified'}
+  My Experiences: ${userExperiencesText}
 
 ==== INSTRUCTIONS ====
 
