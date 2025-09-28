@@ -15,19 +15,19 @@ window.TemplateManager = (function() {
   const DEFAULT_TEMPLATES = [
     {
       icon: '☕',
-      name: 'Coffee Chat',
+      name: 'Coffee Chat Request',
       description: 'Send a friendly request to chat with this person.',
       purpose: 'to schedule a coffee chat to the recipient',
-      subjectLine: 'Coffee Chat with [Recipient Name]',
-      content: 'Hi [Recipient First Name],\n\nI\'m a 3rd year Computer Science student at UCLA. [Mention something specific about their company or recent work that interests you].\n\nI\'d love to connect and learn more about your experience in [mention their field/industry]. Would you be open to a brief coffee chat?\n\nBest regards,\n[Sender Name]'
+      subjectLine: 'Coffee Chat Request',
+      content: 'Hi [Recipient First Name],\n\n[Mention something specific about recipient company or recent work that interests me].\n\nI\'d love to connect and learn more about your experience in [mention recipient field/industry]. Would you be open to a brief coffee chat?\n\nBest regards,\n[My Name]'
     },
     {
       icon: '💼',
-      name: 'Job Application',
+      name: 'Inquire About Open Roles',
       description: 'Craft a professional email to a recruiter or manager',
       purpose: 'to inquire if there is internship or job',
-      subjectLine: 'Internship Inquiry - [Sender Name]',
-      content: 'Hi [Recipient First Name],\n\nI\'m [brief personal introduction including your background]. I\'m really impressed by [mention something specific about their company\'s work or mission].\n\n[Connect their company\'s work to your own experience or interests]. I\'d love to learn about potential internship opportunities at [Company Name].\n\nBest regards,\n[Sender Name]'
+      subjectLine: 'Wondering About Potential Opportunities at [Recipient Company Name]',
+      content: 'Hi [Recipient First Name],\n\nI\'m [brief personal introduction including my background]. I\'m really impressed by [mention something specific about recipient company\'s work or mission].\n\n[Connect recipient company\'s work to my own experience or interests]. I\'d love to learn about potential opportunities at [Recipient Company Name].\n\nBest regards,\n[My Name]'
     }
   ];
 

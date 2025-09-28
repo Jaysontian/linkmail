@@ -114,11 +114,11 @@ Template: "[mention something specific about their background]"
 ✓ GOOD: "I noticed your experience leading product development at Microsoft"
 ✗ BAD: "mention something specific about their background"
 
-Template: "[brief personal introduction including your background]" 
+Template: "[brief personal introduction including my background]" 
 ✓ GOOD: "a senior Computer Science student at UCLA with internship experience at Google and Meta"
 ✗ BAD: "brief personal introduction including your background"
 
-Template: "[Connect their company's work to your own experience]. I'd love to learn about opportunities."
+Template: "[Connect their company's work to my own experience]. I'd love to learn about opportunities."
 ✓ GOOD: "Given my background in machine learning and data analytics, I'm particularly drawn to your AI-driven approach. I'd love to learn about opportunities."
 ✗ BAD: "Connect their company's work to your own experience. I'd love to learn about opportunities."
 
@@ -143,10 +143,10 @@ Format: Subject$$$Body (no extra explanations)
 ==== EMAIL TEMPLATES ====
 
 SUBJECT TEMPLATE:
-${templateData.subjectLine || 'Coffee Chat with [Recipient Name]'}
+${templateData.subjectLine}
 
 BODY TEMPLATE:
-${templateData.content || 'Hey [NAME], I saw that XXX. I\'m really interested in XXX and would love to learn more about it as well as potential opportunities for an internship, if you guys are currently looking for summer interns. Let me know if you are down to schedule a time for a chat! Best regards,'}
+${templateData.content}
 
 ==== RECIPIENT INFORMATION ====
 
@@ -159,36 +159,35 @@ Experience: ${profileData.experience && profileData.experience.length > 0 ? prof
 
 ==== SENDER INFORMATION ====
 
-Your Name: ${userData?.name || '[Your Name]'}
-Your College: ${userData?.college || 'UCLA'}
-Your Graduation Year: ${userData?.graduationYear || '2025'}
-Your Experiences: ${userExperiencesText}
+My Name: ${userData?.name}
+My College: ${userData?.college || 'Not specified'}
+My Graduation Year: ${userData?.graduationYear || 'Not specified'}
+My Experiences: ${userExperiencesText}
 
 ==== INSTRUCTIONS ====
 
 1. Replace [Recipient Name] with the recipient's full name
 2. Replace [Recipient First Name] with the recipient's first name
-3. Replace [NAME] with the recipient's first name
-4. Replace [Sender Name] with your name
-5. For instruction placeholders (like "[talk about...]"), write natural content following the instruction
-6. Use the recipient's company information, experience, and background to personalize the content
-7. Connect the recipient's work to your own experiences when relevant and instructed
-8. Make the email sound professional but friendly, appropriate for networking
-9. Keep all text outside brackets exactly the same
+3. Replace [My Name] with the user's name
+4. For instruction placeholders (like "[talk about...]"), write natural content following the instruction
+5. Use the recipient's company information, experience, and background to personalize the content
+6. Connect the recipient's work to your own experiences when relevant and instructed
+7. Make the email sound professional but friendly, appropriate for networking
+8. Keep all text outside brackets exactly the same
 
 REQUIRED OUTPUT FORMAT: 
 You MUST respond with this exact format:
 [Subject Line]$$$[Email Body]
 
 Example:
-Coffee Chat with John Smith$$$Hi John,
+Coffee Chat Request$$$Hi John,
 
-I'm a 3rd year Computer Science student at UCLA. I'm really impressed by how Microsoft is advancing AI research and its practical applications in cloud computing.
+I'm really impressed by how Microsoft is advancing AI research and its practical applications in cloud computing.
 
 I'd love to connect and learn more about your experience in the tech industry. Would you be open to a brief coffee chat?
 
 Best regards,
-[Your Name]
+Ishaan
 
 Remember: Use $$$ as the delimiter between subject and body.
   `;

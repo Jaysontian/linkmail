@@ -44,19 +44,19 @@ window.UIManager = Object.assign(__existingUI, {
   templates: [
     {
       icon: '☕',
-      name: 'Coffee Chat',
+      name: 'Coffee Chat Request',
       description: 'Send a friendly request to chat with this person.',
       purpose: 'to schedule a coffee chat to the recipient',
-      subjectLine: 'Coffee Chat with [Recipient Name]',
-      content: 'Hi [Recipient First Name],\n\nI\'m a 3rd year Computer Science student at UCLA. [Mention something specific about their company or recent work that interests you].\n\nI\'d love to connect and learn more about your experience in [mention their field/industry]. Would you be open to a brief coffee chat?\n\nBest regards,\n[Sender Name]'
+      subjectLine: 'Coffee Chat Request',
+      content: 'Hi [Recipient First Name],\n\n[Mention something specific about recipient company or recent work that interests me].\n\nI\'d love to connect and learn more about your experience in [mention recipient field/industry]. Would you be open to a brief coffee chat?\n\nBest regards,\n[My Name]'
     },
     {
       icon: '💼',
-      name: 'Job Application',
+      name: 'Inquire About Open Roles',
       description: 'Craft a professional email to a recruiter or manager',
       purpose: 'to inquire if there is internship or job',
-      subjectLine: 'Internship Inquiry - [Sender Name]',
-      content: 'Hi [Recipient First Name],\n\nI\'m [brief personal introduction including your background]. I\'m really impressed by [mention something specific about their company\'s work or mission].\n\n[Connect their company\'s work to your own experience or interests]. I\'d love to learn about potential internship opportunities at [Company Name].\n\nBest regards,\n[Sender Name]'
+      subjectLine: 'Wondering About Potential Opportunities at [Recipient Company Name]',
+      content: 'Hi [Recipient First Name],\n\nI\'m [brief personal introduction including my background]. I\'m really impressed by [mention something specific about recipient company\'s work or mission].\n\n[Connect recipient company\'s work to my own experience or interests]. I\'d love to learn about potential opportunities at [Recipient Company Name].\n\nBest regards,\n[My Name]'
     }
   ],
 
@@ -885,9 +885,9 @@ window.UIManager = Object.assign(__existingUI, {
           // If still empty, use default template
           if (!useTemplate.name || !useTemplate.content) {
             useTemplate = {
-              name: 'Coffee Chat',
+              name: 'Coffee Chat Request',
               content: this.templates[0].content,
-              subjectLine: this.templates[0].subjectLine || 'Coffee Chat with [Recipient Name]',
+              subjectLine: this.templates[0].subjectLine || 'Coffee Chat Request',
               purpose: 'to send a coffee chat request',
               attachments: []
             };
@@ -923,8 +923,7 @@ window.UIManager = Object.assign(__existingUI, {
             // This is a normal email, process it
             if (this.userData && this.userData.name) {
               // Replace various name placeholders with the user's actual name
-              emailContent = emailContent.replace(/\[Your Name\]/g, this.userData.name);
-              emailContent = emailContent.replace(/\[Sender Name\]/g, this.userData.name);
+              emailContent = emailContent.replace(/\[My Name\]/g, this.userData.name);
 
               // Fix case where recipient name might have been used in signature
               const profileData = await ProfileScraper.scrapeBasicProfileData();
@@ -1485,20 +1484,20 @@ window.UIManager = Object.assign(__existingUI, {
       {
         id: 'coffee-chat',
         icon: '☕',
-        name: 'Coffee Chat',
+        name: 'Coffee Chat Request',
         description: 'A friendly intro to chat',
         content: this.templates[0].content,
-        subjectLine: this.templates[0].subjectLine || 'Coffee Chat with [Recipient Name]',
+        subjectLine: this.templates[0].subjectLine || 'Coffee Chat Request',
         purpose: 'to send a coffee chat request',
         attachments: [] // Add empty attachments array
       },
       {
         id: 'job-application',
         icon: '💼',
-        name: 'Job Application',
+        name: 'Inquire About Open Roles',
         description: 'A professional email for recruiting',
         content: this.templates[1].content,
-        subjectLine: this.templates[1].subjectLine || 'Job Application - [Your Name] ([User College])',
+        subjectLine: this.templates[1].subjectLine || 'Wondering About Potential Opportunities at [Recipient Company Name]',
         purpose: 'to send a job application',
         attachments: [] // Add empty attachments array
       }

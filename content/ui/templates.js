@@ -21,20 +21,20 @@
       {
         id: 'coffee-chat',
         icon: '☕',
-        name: 'Coffee Chat',
+        name: 'Coffee Chat Request',
         description: 'A friendly intro to chat',
         content: this.templates[0].content,
-        subjectLine: this.templates[0].subjectLine || 'Coffee Chat with [Recipient Name]',
+        subjectLine: this.templates[0].subjectLine || 'Coffee Chat Request',
         purpose: 'to send a coffee chat request',
         attachments: []
       },
       {
         id: 'job-application',
         icon: '💼',
-        name: 'Job Application',
+        name: 'Inquire About Open Roles',
         description: 'A professional email for recruiting',
         content: this.templates[1].content,
-        subjectLine: this.templates[1].subjectLine || 'Job Application - [Your Name] ([User College])',
+        subjectLine: this.templates[1].subjectLine || 'Wondering About Potential Opportunities at [Recipient Company Name]',
         purpose: 'to send a job application',
         attachments: []
       }
