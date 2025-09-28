@@ -124,7 +124,7 @@ Template: "[Connect their company's work to my own experience]. I'd love to lear
 ✗ BAD: "Connect their company's work to your own experience. I'd love to learn about opportunities."
 
 Template: "Best regards,\n[My Name]"
-✓ GOOD: "Best regards,\nIshaan"
+✓ GOOD: "Best regards,\nTom"
 ✗ BAD: "Best regards,\n[Your Name]" or "Best regards,\n[My Name]"
 
 Format: Subject$$$Body (no extra explanations)
@@ -217,7 +217,7 @@ I'm really impressed by how Microsoft is advancing AI research and its practical
 I'd love to connect and learn more about your experience in the tech industry. Would you be open to a brief coffee chat?
 
 Best regards,
-Ishaan
+James
 
 Remember: Use $$$ as the delimiter between subject and body.
   `;
