@@ -336,6 +336,11 @@ window.UIManager = Object.assign(__existingUI, {
         const result = await window.TemplateManager.loadTemplates(this.userData.email);
         if (result.success) {
           console.log('Templates refreshed successfully from backend:', result.templates.length);
+          // Refresh userData from storage to get the newly synced templates
+          const updatedUserData = await this.getUserFromStorage(this.userData.email);
+          if (updatedUserData) {
+            this.userData = { ...this.userData, ...updatedUserData };
+          }
         }
       }
     } catch (error) {
@@ -727,61 +732,32 @@ window.UIManager = Object.assign(__existingUI, {
     // Find this in setupEventListeners
     if (this.elements.editProfileButton) {
       this.elements.editProfileButton.addEventListener('click', () => {
+        // Redirect to web dashboard profile page
+        const profileUrl = 'https://www.linkmail.dev/dashboard/profile';
         
-        if (this.userData && this.userData.email) {
-          // Open the bio setup page with edit mode
-          const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(this.userData.email)}&mode=edit`);
-
-          chrome.runtime.sendMessage({
-            action: 'openBioSetupPage',
-            url: bioSetupUrl
-          }, (response) => {
-            // If the bio setup page was opened successfully, set up a timer to refresh templates
-            if (response && response.success) {
-
-              // Check for template updates every 5 seconds while the bio page might be open
-              const refreshInterval = setInterval(() => {
-                this.refreshUserData().then(() => {
-                  this.populateTemplateDropdown();
-                });
-              }, 5000);
-
-              // Stop checking after 10 minutes (600000 ms)
-              setTimeout(() => {
-                clearInterval(refreshInterval);
-              }, 600000);
-            } else {
-              console.error('❌ Failed to open dashboard:', response);
-            }
-          });
-        } else {
-          // Try to use the backend email directly as a fallback
-          const fallbackEmail = window.BackendAPI?.userData?.email;
-          if (fallbackEmail) {
-            console.log('📧 Primary user data email not available, using backend fallback:', fallbackEmail);
-            const bioSetupUrl = chrome.runtime.getURL(`dashboard.html?email=${encodeURIComponent(fallbackEmail)}&mode=edit`);
+        // Open in new tab
+        chrome.runtime.sendMessage({
+          action: 'openBioSetupPage',
+          url: profileUrl
+        }, (response) => {
+          if (response && response.success) {
+            console.log('✅ Opened web dashboard profile page');
             
-            chrome.runtime.sendMessage({
-              action: 'openBioSetupPage',
-              url: bioSetupUrl
-            }, (response) => {
-              if (response && response.success) {
-              } else {
-                console.error('❌ Fallback also failed:', response);
-              }
-            });
+            // Set up a timer to refresh templates when user returns
+            const refreshInterval = setInterval(() => {
+              this.refreshUserData().then(() => {
+                this.populateTemplateDropdown();
+              });
+            }, 5000);
+
+            // Stop checking after 10 minutes (600000 ms)
+            setTimeout(() => {
+              clearInterval(refreshInterval);
+            }, 600000);
           } else {
-            console.error('❌ No email available from userData or BackendAPI:', {
-              userData: this.userData,
-              userDataKeys: this.userData ? Object.keys(this.userData) : 'null',
-              userDataStringified: JSON.stringify(this.userData),
-              email: this.userData?.email,
-              isAuthenticated: this.isAuthenticated,
-              backendUserData: window.BackendAPI?.userData,
-              backendUserDataKeys: window.BackendAPI?.userData ? Object.keys(window.BackendAPI.userData) : 'null'
-            });
+            console.error('❌ Failed to open dashboard:', response);
           }
-        }
+        });
       });
     } else {
       console.error('❌ Edit Profile button not found in DOM!');

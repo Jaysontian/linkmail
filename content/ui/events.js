@@ -42,11 +42,16 @@
     window.addEventListener('focus', () => {
       if (this.isAuthenticated && this.userData && this.userData.email) {
         const currentView = this.getCurrentView();
-        this.refreshUserData().then(() => {
+        // Refresh templates from backend when window gets focus
+        this.refreshTemplatesFromBackend().then(() => {
+          return this.refreshUserData();
+        }).then(() => {
           this.populateTemplateDropdown();
           if (currentView === 'editor' || currentView === 'success') {
           } else {
           }
+        }).catch(error => {
+          console.warn('Error refreshing templates on focus:', error);
         });
       }
     });
@@ -101,6 +106,21 @@
                 this.userData = { ...this.userData, ...storedUserData };
               }
               
+              // Fetch latest templates from backend before showing UI
+              if (window.TemplateManager && this.userData.email) {
+                try {
+                  console.log('[UIManager] Loading templates from backend after sign in...');
+                  await window.TemplateManager.loadTemplates(this.userData.email);
+                  // Refresh userData from storage to get the newly synced templates
+                  const updatedUserData = await this.getUserFromStorage(this.userData.email);
+                  if (updatedUserData) {
+                    this.userData = { ...this.userData, ...updatedUserData };
+                  }
+                } catch (templateError) {
+                  console.warn('[UIManager] Failed to load templates from backend:', templateError);
+                }
+              }
+              
               // Show authenticated UI for all authenticated users - no profile setup redirection
               this.showAuthenticatedUI();
               this.showTemporaryMessage('Authentication successful!', 'success');
@@ -131,6 +151,21 @@
                   if (userExists) {
                     const storedUserData = await this.getUserFromStorage(this.userData.email);
                     this.userData = { ...this.userData, ...storedUserData };
+                  }
+                  
+                  // Fetch latest templates from backend before showing UI
+                  if (window.TemplateManager && this.userData.email) {
+                    try {
+                      console.log('[UIManager] Loading templates from backend after storage change...');
+                      await window.TemplateManager.loadTemplates(this.userData.email);
+                      // Refresh userData from storage to get the newly synced templates
+                      const updatedUserData = await this.getUserFromStorage(this.userData.email);
+                      if (updatedUserData) {
+                        this.userData = { ...this.userData, ...updatedUserData };
+                      }
+                    } catch (templateError) {
+                      console.warn('[UIManager] Failed to load templates from backend:', templateError);
+                    }
                   }
                   
                   // Show authenticated UI for all authenticated users - no profile setup redirection

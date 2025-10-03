@@ -90,7 +90,11 @@
       // Set flag to prevent storage listener loops
       this._updatingStorage = true;
       
-      this.refreshUserData().then(() => {
+      // First, fetch the latest templates from backend
+      this.refreshTemplatesFromBackend().then(() => {
+        // Then refresh user data from local storage (which now has the latest templates)
+        return this.refreshUserData();
+      }).then(() => {
         if (window.GmailManager && this.userData) window.GmailManager.setUserData(this.userData);
         this.populateTemplateDropdown();
         this.checkLastEmailSent();

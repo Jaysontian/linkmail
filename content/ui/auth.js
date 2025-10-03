@@ -105,6 +105,21 @@
           this.updateOwnProfileIdFromUserData();
         }
         
+        // Fetch latest templates from backend before showing UI
+        if (window.TemplateManager && this.userData.email) {
+          try {
+            console.log('[UIManager] Loading templates from backend...');
+            await window.TemplateManager.loadTemplates(this.userData.email);
+            // Refresh userData from storage to get the newly synced templates
+            const updatedUserData = await this.getUserFromStorage(this.userData.email);
+            if (updatedUserData) {
+              this.userData = { ...this.userData, ...updatedUserData };
+            }
+          } catch (templateError) {
+            console.warn('[UIManager] Failed to load templates from backend:', templateError);
+          }
+        }
+        
         // Show authenticated UI for all authenticated users - no profile setup redirection
         this.showAuthenticatedUI();
       } else {

@@ -18,8 +18,6 @@
   "web_accessible_resources": [{
     "resources": [
       "content/linkedin-div.html",
-      "dashboard.html",
-      "dashboard/*.js",
       "generate/*.js",
       "send/*.js",
       "templates/*.js",
@@ -43,7 +41,6 @@
       "styles/main.css",
       "styles/ui.css",
       "styles/linkedin-div.css",
-      "styles/dashboard.css",
       "styles/anim.css"
     ],
     "js": [
