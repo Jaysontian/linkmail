@@ -45,7 +45,6 @@
     animation: lm-fadeIn 0.3s ease;
 }
 
-/* Allow JavaScript to control editor view display */
 
 #linkmail-signin p{
     text-align: center; 
@@ -55,6 +54,7 @@
 }
 
 .linkmail-header {
+    font-family: 'Tiempo' !important;
     font-size:14pt;
     font-weight:600;
     text-align: center;

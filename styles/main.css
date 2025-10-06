@@ -16,6 +16,18 @@
 }
 
 /* ==========================================================================
+   Fonts
+   ========================================================================== */
+
+@font-face {
+    font-family: 'Tiempo';
+    src: url('../assets/Tiempo-Medium.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ==========================================================================
    Base Layout
    ========================================================================== */
 .linkmail body {
@@ -39,7 +51,14 @@
     line-height: 20px;
 }
 
+.linkmail h1 {
+    font-family: 'Tiempo';
+    font-weight: 600;
+}
+
+
 .linkmail h1, .linkmail h2, .linkmail h3 {
+    
     color: var(--text-color);
     margin-bottom: 12px;
 }
