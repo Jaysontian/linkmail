@@ -1,7 +1,9 @@
 <div class="linkmail-container linkmail">
 
-    <div style="display:flex;">
-        <img src="https://i.imgur.com/LtIDUzZ.png" style="width:50px; margin:20px auto;"/>
+    <div class="linkmail-header-container">
+        <div class="linkmail-logo">
+            <div class="linkmail-pointer"></div>
+        </div>
     </div>
 
     <!-- New Sign-in View -->
@@ -21,7 +23,7 @@
 
     <div id="linkmail-splash" style="display: none;">
         <h2 id="title" class="linkmail-header"></h2>
-        <div id="lastEmailStatus" class="linkmail-last-email-status">No Email Sent Yet</div>
+            <div id="lastEmailStatus" class="linkmail-last-email-status">No Email Sent Yet</div>
         <br>
         <div class="linkmail-template-select" style="margin-bottom: 20px; width: 100%;">
             <div id="template-dropdown" class="template-dropdown">
@@ -37,13 +39,13 @@
         </div>
 
 
-        <button id="generateButton" class="lm-btn">
+        <button id="generateButton" class="lm-btn-black">
             Generate
-            <svg xmlns="http://www.w3.org/2000/svg" style="margin-left:8px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal-icon lucide-send-horizontal"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
         </button>
     </div>
 
     <div id="linkmail-editor" style="display: none;">
+        <h2 id="editor-title" class="linkmail-header"></h2>
         <div style="display:flex; flex-direction:column; gap:8px;">
             <div style="position: relative;">
                 <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt;">
@@ -106,7 +108,7 @@
             </div>
         </div>
         
-        <a class="lm-btn" href="https://mail.google.com/mail/u/0/#sent" target="_blank" style="width:fit-content; color: white !important; text-decoration: none !important;">Check in Gmail</a>
+        <a class="lm-btn-black" href="https://mail.google.com/mail/u/0/#sent" target="_blank" style="width:fit-content; color: white !important; text-decoration: none !important;">Check in Gmail</a>
     </div>
 
     <!-- People Suggestions View for Feed Page -->

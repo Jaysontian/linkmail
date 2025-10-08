@@ -9,7 +9,7 @@
     --border-color: rgba(0, 0, 0, 0.15);
     --bg-light: #f7f7f7;
     --bg-light-hover: #f2f2f2;
-    --border-radius: 8px;
+    --border-radius: 10px;
     --button-radius: 100px;
     --transition: all 0.2s ease;
     --shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -21,7 +21,7 @@
 
 @font-face {
     font-family: 'Tiempo';
-    src: url('../assets/Tiempo-Medium.otf') format('opentype');
+    src: url('chrome-extension://__MSG_@@extension_id__/assets/Tiempo-Medium.otf') format('opentype');
     font-weight: 600;
     font-style: normal;
     font-display: swap;
@@ -51,14 +51,8 @@
     line-height: 20px;
 }
 
-.linkmail h1 {
-    font-family: 'Tiempo';
-    font-weight: 600;
-}
-
 
 .linkmail h1, .linkmail h2, .linkmail h3 {
-    
     color: var(--text-color);
     margin-bottom: 12px;
 }
@@ -70,10 +64,11 @@
     font-weight: 600;
 }
 
-.linkmail h2, .linkmail h3 {
-    font-size: 16pt;
+.linkmail h2 {
+    font-size: 13pt;
     font-weight: 600;
 }
+
 
 .description {
     text-align: center;
@@ -83,12 +78,44 @@
 /* ==========================================================================
    Animations
    ========================================================================== */
-@keyframes spin {
-    from {
+@keyframes loading {
+    0% {
         transform: rotate(0deg);
+        opacity: 0.3;
     }
-    to {
+    25% {
         transform: rotate(360deg);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(360deg);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes sendAway {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    30% {
+        opacity: 1;
+        transform: translateY(-10px) scale(1.05);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(0.85);
     }
 }
 
@@ -148,3 +175,69 @@
     margin-right: 6px;
     color: var(--primary-color);
 }
+
+/* ==========================================================================
+   Logo Styles
+   ========================================================================== */
+   .linkmail-header-container{
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 28px;
+    margin-bottom: 20px;
+   }
+
+   .linkmail-logo {
+        height: 50px;
+        width: 50px;
+        display:flex;
+        justify-content: center;
+        align-items: center;
+        padding:6px;
+        background-color: var(--primary-color);
+        border-radius: 10px;
+    }
+
+    .linkmail-pointer {
+        margin-bottom: -2px;
+        width: 32px;
+        height: 32px;
+        margin: auto;
+        background-image: url('chrome-extension://__MSG_@@extension_id__/assets/pointer.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        transition: transform 0.3s ease;
+    }
+
+    /* Loading state */
+    .linkmail-pointer.loading {
+        animation: loading 2s ease-in-out infinite;
+    }
+
+    /* Sending state */
+    .linkmail-pointer.sending {
+        animation: sendAway 1.2s cubic-bezier(0.3, 0.1, 0.2, 0.9) forwards;
+    }
+
+    /* Fade out animation */
+    .fade-out-up {
+        animation: fadeOutUp 0.3s ease-out forwards;
+    }
+
+    /* Container height animation */
+    .linkmail-container.compact {
+        height: 200px;
+        transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    /* Hide editor title by default */
+    #editor-title {
+        display: none;
+    }
+
+    /* Show editor title only during sending state */
+    .linkmail-container.compact #editor-title {
+        display: block;
+    }

@@ -336,6 +336,7 @@ window.UIManager = Object.assign(__existingUI, {
         const result = await window.TemplateManager.loadTemplates(this.userData.email);
         if (result.success) {
           console.log('Templates refreshed successfully from backend:', result.templates.length);
+
           // Refresh userData from storage to get the newly synced templates
           const updatedUserData = await this.getUserFromStorage(this.userData.email);
           if (updatedUserData) {
@@ -773,6 +774,34 @@ window.UIManager = Object.assign(__existingUI, {
 
       this.elements.generateButton.disabled = true;
       this.elements.generateButton.innerText = 'Generating...';
+      
+      // Start loading animation
+      const pointer = document.querySelector('.linkmail-pointer');
+      if (pointer) {
+        pointer.classList.add('loading');
+      }
+
+      // Shrink container height
+      const container = document.querySelector('.linkmail-container');
+      if (container) {
+        container.classList.add('compact');
+      }
+
+      // Hide template dropdown and generate button with fade out animation
+      const templateDropdown = document.querySelector('.linkmail-template-select');
+      if (templateDropdown) {
+        templateDropdown.classList.add('fade-out-up');
+      }
+      if (this.elements.generateButton) {
+        this.elements.generateButton.classList.add('fade-out-up');
+      }
+
+      // Change heading to "Cooking..."
+      const titleElement = document.getElementById('title');
+      if (titleElement) {
+        this.originalTitle = titleElement.textContent; // Store original title
+        titleElement.textContent = 'Cooking...';
+      }
 
       function adjustHeight(element) {
         element.style.height = 'auto';
@@ -913,6 +942,20 @@ window.UIManager = Object.assign(__existingUI, {
 
         this.showView('#linkmail-editor');
 
+        // Set the editor title
+        const editorTitle = document.getElementById('editor-title');
+        if (editorTitle) {
+          const pageType = window.currentPageType || 'other-profile';
+          if (pageType === 'other-profile') {
+            const h1Element = document.querySelector('h1');
+            const fullName = h1Element?.innerText || '';
+            const firstName = fullName.split(' ')[0]?.charAt(0).toUpperCase() + fullName.split(' ')[0]?.slice(1) || '';
+            editorTitle.textContent = `Draft an email to ${firstName}`;
+          } else {
+            editorTitle.textContent = 'Draft personalized emails with AI';
+          }
+        }
+
         if (response?.email) {
           let emailContent = response.email;
 
@@ -964,6 +1007,33 @@ window.UIManager = Object.assign(__existingUI, {
       } finally {
         this.elements.generateButton.disabled = false;
         this.elements.generateButton.innerText = 'Generate';
+        
+        // Stop loading animation
+        const pointer = document.querySelector('.linkmail-pointer');
+        if (pointer) {
+          pointer.classList.remove('loading');
+        }
+
+        // Restore container height
+        const container = document.querySelector('.linkmail-container');
+        if (container) {
+          container.classList.remove('compact');
+        }
+
+        // Restore template dropdown and generate button
+        const templateDropdown = document.querySelector('.linkmail-template-select');
+        if (templateDropdown) {
+          templateDropdown.classList.remove('fade-out-up');
+        }
+        if (this.elements.generateButton) {
+          this.elements.generateButton.classList.remove('fade-out-up');
+        }
+
+        // Restore original heading
+        const titleElement = document.getElementById('title');
+        if (titleElement && this.originalTitle) {
+          titleElement.textContent = this.originalTitle;
+        }
       }
     });
 
@@ -1076,6 +1146,42 @@ window.UIManager = Object.assign(__existingUI, {
         this.elements.sendGmailButton.disabled = true;
         this.elements.sendGmailButton.textContent = 'Sending...';
 
+        // Start loading animation during sending
+        const pointer = document.querySelector('.linkmail-pointer');
+        if (pointer) {
+          pointer.classList.remove('sending'); // Remove any existing sending state
+          pointer.classList.add('loading');
+        }
+
+        // Shrink container height
+        const container = document.querySelector('.linkmail-container');
+        if (container) {
+          container.classList.add('compact');
+        }
+
+        // Hide form elements with fade out animation
+        const recipientInput = document.getElementById('recipientEmailInput');
+        const emailSubject = document.getElementById('emailSubject');
+        const emailResult = document.getElementById('emailResult');
+        const copyButton = document.getElementById('copyButton');
+        const emailAttachments = document.getElementById('emailAttachments');
+
+        if (recipientInput) recipientInput.classList.add('fade-out-up');
+        if (emailSubject) emailSubject.classList.add('fade-out-up');
+        if (emailResult) emailResult.classList.add('fade-out-up');
+        if (copyButton) copyButton.classList.add('fade-out-up');
+        if (emailAttachments) emailAttachments.classList.add('fade-out-up');
+        if (this.elements.sendGmailButton) {
+          this.elements.sendGmailButton.classList.add('fade-out-up');
+        }
+
+        // Change heading to "Sending..."
+        const titleElement = document.getElementById('editor-title');
+        if (titleElement) {
+          this.originalTitle = titleElement.textContent; // Store original title
+          titleElement.textContent = 'Sending...';
+        }
+
         // Get any attachments from the selected template
         const attachments = this.selectedTemplate?.attachments || [];
 
@@ -1146,6 +1252,20 @@ window.UIManager = Object.assign(__existingUI, {
           signinView.style.display = 'none';
         }
 
+        // Trigger sending animation before showing success
+        const successPointer = document.querySelector('.linkmail-pointer');
+        if (successPointer) {
+          successPointer.classList.remove('loading');
+          successPointer.classList.add('sending');
+          
+          // Reset pointer after animation completes (1.2s duration)
+          setTimeout(() => {
+            successPointer.classList.remove('sending');
+            successPointer.style.transform = 'translateY(0) scale(1)';
+            successPointer.style.opacity = '1';
+          }, 1200);
+        }
+
         // Show success view
         if (successView) {
           successView.style.display = 'block';
@@ -1163,6 +1283,36 @@ window.UIManager = Object.assign(__existingUI, {
         // Re-enable button
         this.elements.sendGmailButton.disabled = false;
         this.elements.sendGmailButton.textContent = 'Send Email';
+
+        // Don't reset pointer animation here - let it stay in sending state for success screen
+
+        // Restore container height
+        const container = document.querySelector('.linkmail-container');
+        if (container) {
+          container.classList.remove('compact');
+        }
+
+        // Restore form elements
+        const recipientInput = document.getElementById('recipientEmailInput');
+        const emailSubject = document.getElementById('emailSubject');
+        const emailResult = document.getElementById('emailResult');
+        const copyButton = document.getElementById('copyButton');
+        const emailAttachments = document.getElementById('emailAttachments');
+
+        if (recipientInput) recipientInput.classList.remove('fade-out-up');
+        if (emailSubject) emailSubject.classList.remove('fade-out-up');
+        if (emailResult) emailResult.classList.remove('fade-out-up');
+        if (copyButton) copyButton.classList.remove('fade-out-up');
+        if (emailAttachments) emailAttachments.classList.remove('fade-out-up');
+        if (this.elements.sendGmailButton) {
+          this.elements.sendGmailButton.classList.remove('fade-out-up');
+        }
+
+        // Restore original heading
+        const titleElement = document.getElementById('editor-title');
+        if (titleElement && this.originalTitle) {
+          titleElement.textContent = this.originalTitle;
+        }
       }
     });
 

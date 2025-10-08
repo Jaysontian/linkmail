@@ -49,7 +49,7 @@ window.TemplateManager = (function() {
             name: t.title || '', 
             content: t.body || '',
             subjectLine: `${t.title || 'Template'} with [Recipient Name]`,
-            icon: '📝',
+            icon: t.icon || '📝',
             attachments: []
           })) : [];
           templates = JSON.parse(JSON.stringify(fromDb));
