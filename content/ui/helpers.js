@@ -60,6 +60,7 @@
       sendGmailButton: container.querySelector('#sendGmailButton'),
       signOutButton: container.querySelector('#signOutButton'),
       editProfileButton: container.querySelector('#editProfileButton'),
+      settingsButton: container.querySelector('#settingsButton'),
       templateDropdown: container.querySelector('#template-dropdown'),
       menuToggle: container.querySelector('#menuToggle'),
       menuContent: container.querySelector('#menuContent'),

@@ -30,6 +30,7 @@
     font-family: inherit;
     outline: none;
     transition: all 0.1s ease-in-out;
+    resize: none;
 }
 
 .lm-input:hover, .lm-textarea:hover, .lm-input:hover:not(:focus), .lm-textarea:hover:not(:focus) {
@@ -122,6 +123,31 @@
 
 .lm-btn-2:hover {
     background-color: #dddddd !important;
+}
+
+.find-email-button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 4px 14px;
+    margin: 0px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    width: fit-content;
+    height: auto;
+}
+
+.find-email-button p {
+    margin: 0;
+    color: white;
+    font-size: 9pt;
+    font-weight: 500;
 }
 
 /* ==========================================================================
@@ -255,4 +281,16 @@
 
 .help-text p {
     margin: 4px 0;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }

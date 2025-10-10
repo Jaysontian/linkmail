@@ -47,21 +47,35 @@
     <div id="linkmail-editor" style="display: none;">
         <h2 id="editor-title" class="linkmail-header"></h2>
         <div style="display:flex; flex-direction:column; gap:8px;">
-            <div style="position: relative;">
-                <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt;">
-                <button id="findEmailApolloButton" class="lm-btn-2" style="display: none; margin-top: 4px; font-size: 9pt; padding: 4px 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2L2 7v10c0 5.55 3.84 10 9 9s9-4.03 9-9V7l-8-5z"/>
-                        <path d="M12 22s8-4 8-10V7l-8-5-8 5v5c0 6 8 10 8 10"/>
-                    </svg>
-                    Find Email with Apollo
+            <div style="position: relative; display: flex; gap: 8px; align-items: stretch; min-height: 40px;">
+                <input id="recipientEmailInput" class="lm-input" placeholder="Recipient Email" style="font-size:10pt; flex: 1;">
+                <button id="findEmailApolloButton" class="find-email-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
                 </button>
-                <div id="apolloUsageCounter" style="display: none; font-size: 8pt; color: #666; text-align: center; margin-top: 2px;">
-                    Current Usage: 0/50
+            </div>
+
+            <!-- Dismissable message box for when no email is found -->
+            <div id="noEmailFoundMessage" class="no-email-message" style="display: none;">
+                <div class="no-email-content">
+                    <div class="no-email-icon">😔</div>
+                    <div class="no-email-text">
+                        <div class="no-email-title">Couldn't find it</div>
+                        <div class="no-email-subtitle">You can manually enter the email address above.</div>
+                    </div>
+                    <button class="no-email-dismiss" id="noEmailDismissButton">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
-                <div id="apolloLimitMessage" style="display: none; font-size: 9pt; color: #e74c3c; text-align: center; margin-top: 4px; padding: 4px 8px; border: 1px solid #e74c3c; border-radius: 4px; background: #fdf2f2;">
-                    You've used all your Apollo Calls. Please upgrade to get more.
-                </div>
+            </div>
+
+            <!-- <div id="apolloUsageCounter" style="display: none; font-size: 8pt; color: #666; text-align: center; margin-top: 2px;">
+                Current Usage: 0/50
+            </div> -->
+            <div id="apolloLimitMessage" style="display: none; font-size: 9pt; color: #e74c3c; text-align: center; padding: 4px 8px; border: 1px solid #e74c3c; border-radius: 4px; background: #fdf2f2;">
+                You've used all your 50 email finding calls. Please upgrade to get more.
             </div>
             
             <input id="emailSubject" class="lm-input linkmail-subject" placeholder="Empty Subject" style="font-size:10pt;">
@@ -146,11 +160,11 @@
         <div class="account-dropdown-con">
             <p id="user-email-display" class="account-email">example@gmail.com</p>
             <div class="dropdown-container">
-                <button id="menuToggle" class="menu-toggle-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="black" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                <button id="menuToggle" class="menu-toggle-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
                 <div id="menuContent" class="dropdown-menu">
                     <div href="#" id="editProfileButton" class="dropdown-item">Edit Profile</div>
+                    <div href="#" id="settingsButton" class="dropdown-item">Edit Templates</div>
                     <div href="#" id="signOutButton" class="dropdown-item">Sign Out</div>
-                    <div href="#" id="settingsButton" class="dropdown-item">Settings</div>
                 </div>
             </div>
         </div>

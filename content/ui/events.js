@@ -63,11 +63,36 @@
     this.elements.menuToggle.addEventListener('click', (event) => {
       event.stopPropagation();
       const dropdown = this.elements.menuContent;
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      
+      if (dropdown.classList.contains('show')) {
+        // Hide dropdown with animation
+        dropdown.classList.remove('show');
+        dropdown.classList.add('hide');
+        
+        // Remove from DOM after animation completes
+        setTimeout(() => {
+          dropdown.style.display = 'none';
+          dropdown.classList.remove('hide');
+        }, 200); // Match CSS transition duration
+      } else {
+        // Show dropdown with animation
+        dropdown.style.display = 'block';
+        // Force reflow to ensure display change is applied
+        dropdown.offsetHeight;
+        dropdown.classList.add('show');
+      }
     });
     window.addEventListener('click', (event) => {
-      if (!this.elements.menuContent.contains(event.target)){
-        this.elements.menuContent.style.display = 'none';
+      if (!this.elements.menuContent.contains(event.target) && this.elements.menuContent.classList.contains('show')){
+        const dropdown = this.elements.menuContent;
+        dropdown.classList.remove('show');
+        dropdown.classList.add('hide');
+        
+        // Remove from DOM after animation completes
+        setTimeout(() => {
+          dropdown.style.display = 'none';
+          dropdown.classList.remove('hide');
+        }, 200); // Match CSS transition duration
       }
     });
 
