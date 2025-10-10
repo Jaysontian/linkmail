@@ -45,13 +45,24 @@ window.TemplateManager = (function() {
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
           const resp = await window.BackendAPI.getUserBio();
           const p = resp && resp.profile ? resp.profile : null;
-          const fromDb = Array.isArray(p?.templates) ? p.templates.map(t => ({ 
-            name: t.title || '', 
-            content: t.body || '',
-            subjectLine: `${t.title || 'Template'} with [Recipient Name]`,
-            icon: t.icon || '📝',
-            attachments: []
-          })) : [];
+          const fromDb = Array.isArray(p?.templates) ? p.templates.map(t => {
+            const template = {
+              name: t.title || '', 
+              content: t.body || '',
+              // IMPORTANT: Use t.subject first (the actual subject line from database)
+              // Fall back to t.title only if subject is not set
+              subjectLine: t.subject || t.title || 'Template Subject',
+              icon: t.icon || '📝',
+              attachments: t.file ? [{ url: t.file }] : []
+            };
+            
+            // Debug logging to help diagnose template loading issues
+            if (!t.subject && t.title) {
+              console.warn(`[TemplateManager] Template "${t.title}" missing subject field, using title as fallback`);
+            }
+            
+            return template;
+          }) : [];
           templates = JSON.parse(JSON.stringify(fromDb));
           
           // Sync loaded templates to local storage for LinkedIn injection
@@ -78,7 +89,14 @@ window.TemplateManager = (function() {
 
       try {
         if (window.BackendAPI && window.BackendAPI.isAuthenticated) {
-          const simplified = templatesData.map(t => ({ title: t.name, body: t.content }));
+          const simplified = templatesData.map(t => ({ 
+            title: t.name, 
+            body: t.content,
+            subject: t.subjectLine || t.name || 'Subject Line',
+            icon: t.icon || '📝',
+            file: t.attachments && t.attachments.length > 0 ? t.attachments[0].url : null,
+            strict_template: t.strict_template || false
+          }));
           await window.BackendAPI.saveTemplates(simplified);
           
           // Also save to Chrome local storage for LinkedIn injection synchronization

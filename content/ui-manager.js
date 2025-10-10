@@ -1704,7 +1704,9 @@ window.UIManager = Object.assign(__existingUI, {
           name: template.name,
           description: template.description || 'Custom email template',
           content: template.content,
-          subjectLine: template.subjectLine || `${template.name} with [Recipient Name]`,
+          // Use template.subjectLine if available, otherwise use template.name as subject
+          // Do NOT use placeholders like [Recipient Name] as fallback since they'll be replaced by AI
+          subjectLine: template.subjectLine || template.name || 'Subject Line',
           purpose: `to send a ${template.name} email`,
           attachments: template.attachments || [] // Include attachments
         }));
