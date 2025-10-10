@@ -46,7 +46,10 @@ window.EmailGenerator = {
       const response = await this._callGenerationAPI(userPrompt, systemPrompt);
       
       // Parse and return response
-      return this._parseAPIResponse(response);
+      const parsedResponse = this._parseAPIResponse(response);
+      
+      // Post-process to ensure name placeholders are replaced
+      return this._ensureNameReplacement(parsedResponse, templateData.userData);
 
     } catch (error) {
       console.error('Error generating email:', error);
@@ -104,7 +107,7 @@ CRITICAL RULES:
 4. Keep all formatting, punctuation, and paragraph breaks outside brackets
 5. Write in a professional, networking-appropriate tone
 6. Make the email sound natural and personally written
-7. IMPORTANT: Replace [My Name] with the sender's actual name, NOT with "[Your Name]" or any other placeholder
+7. CRITICAL: When you see [My Name], [Your Name], or any name placeholder at the end of the email, you MUST replace it with the ACTUAL sender's name provided in the SENDER INFORMATION section. NEVER leave it as a placeholder or use generic terms.
 
 EXAMPLES:
 Template: "I think it's really cool how [talk about the company's work]"
@@ -124,8 +127,16 @@ Template: "[Connect their company's work to my own experience]. I'd love to lear
 ✗ BAD: "Connect their company's work to your own experience. I'd love to learn about opportunities."
 
 Template: "Best regards,\n[My Name]"
-✓ GOOD: "Best regards,\nTom"
-✗ BAD: "Best regards,\n[Your Name]" or "Best regards,\n[My Name]"
+If sender's name is "Sarah Chen":
+✓ GOOD: "Best regards,\nSarah Chen"
+✗ BAD: "Best regards,\n[Your Name]"
+✗ BAD: "Best regards,\n[My Name]"
+✗ BAD: "Best regards,\n[Name]"
+
+Template: "Thanks,\n[Your Name]"
+If sender's name is "Michael Johnson":
+✓ GOOD: "Thanks,\nMichael Johnson"
+✗ BAD: "Thanks,\n[Your Name]"
 
 Format: Subject$$$Body (no extra explanations)
 `;
@@ -137,10 +148,24 @@ Format: Subject$$$Body (no extra explanations)
    * @returns {string} User's full name
    */
   _getUserName(userData) {
+    // Debug logging to understand what data we have
+    console.log('======================================');
+    console.log('🔍 [EmailGenerator] _getUserName called');
+    console.log('📦 userData received:', userData);
+    console.log('📧 Available fields:', Object.keys(userData || {}));
+    console.log('📊 Field values:');
+    console.log('  - email:', userData?.email);
+    console.log('  - name:', userData?.name);
+    console.log('  - firstName:', userData?.firstName);
+    console.log('  - lastName:', userData?.lastName);
+    console.log('======================================');
+    
     // First try the direct name field (from Google auth)
-    if (userData?.name && userData.name.trim()) {
+    if (userData?.name && typeof userData.name === 'string' && userData.name.trim()) {
+      console.log('✅ Found name in userData.name:', userData.name);
       return userData.name.trim();
     }
+    console.log('❌ userData.name not found or empty (value:', userData?.name, ')');
 
     // Fallback to combining firstName + lastName (from profile)
     if (userData && (userData.firstName || userData.lastName)) {
@@ -148,11 +173,34 @@ Format: Subject$$$Body (no extra explanations)
       const lastName = userData.lastName || '';
       const fullName = `${firstName} ${lastName}`.trim();
       if (fullName) {
+        console.log('✅ Found name from firstName + lastName:', fullName);
         return fullName;
       }
     }
+    console.log('❌ firstName/lastName not found or empty');
+    
+    // Try email-based name (before @ symbol, capitalize first letter)
+    if (userData?.email && userData.email.trim()) {
+      const emailName = userData.email.split('@')[0];
+      // Convert "john.doe" or "john_doe" to "John Doe"
+      const formattedName = emailName
+        .replace(/[._-]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      if (formattedName) {
+        console.log('⚠️  Generated name from email:', formattedName);
+        console.warn('⚠️  USER NAME NOT FOUND: Using email-based fallback. Please complete your profile setup.');
+        return formattedName;
+      }
+    }
+    console.log('❌ email not found or empty');
 
-    // Final fallback
+    // Final fallback with warning
+    console.error('❌ CRITICAL: Could not find user name in userData. Email will end with "Not specified".');
+    console.error('💡 SOLUTION: Please reload the extension or complete your profile.');
+    console.error('Available userData fields:', Object.keys(userData || {}));
+    console.error('userData values:', userData);
     return 'Not specified';
   },
 
@@ -187,29 +235,30 @@ Headline: ${profileData.headline || 'Not specified'}
 About Section: ${profileData.about || 'Not specified'}
 Experience: ${profileData.experience && profileData.experience.length > 0 ? profileData.experience.map(e => e.content).join('; ') : 'Not specified'}
 
-  ==== SENDER INFORMATION ====
+  ==== SENDER INFORMATION (THIS IS WHO IS SENDING THE EMAIL) ====
 
-  My Name: ${this._getUserName(userData)}
+  SENDER'S FULL NAME: ${this._getUserName(userData)}
   My College: ${userData?.college || 'Not specified'}
   My Graduation Year: ${userData?.graduationYear || 'Not specified'}
   My Experiences: ${userExperiencesText}
 
 ==== INSTRUCTIONS ====
 
-1. Replace [Recipient Name] with the recipient's full name
-2. Replace [Recipient First Name] with the recipient's first name
-3. Replace [My Name] with the user's name
+1. Replace [Recipient Name] with the recipient's full name: ${profileData.name}
+2. Replace [Recipient First Name] with the recipient's first name: ${firstName}
+3. Replace [My Name], [Your Name], or any name placeholder with the SENDER'S FULL NAME: ${this._getUserName(userData)}
 4. For instruction placeholders (like "[talk about...]"), write natural content following the instruction
 5. Use the recipient's company information, experience, and background to personalize the content
 6. Connect the recipient's work to your own experiences when relevant and instructed
 7. Make the email sound professional but friendly, appropriate for networking
 8. Keep all text outside brackets exactly the same
+9. CRITICAL: The email signature MUST end with the sender's actual name (${this._getUserName(userData)}), NOT with a placeholder
 
 REQUIRED OUTPUT FORMAT: 
 You MUST respond with this exact format:
 [Subject Line]$$$[Email Body]
 
-Example:
+Example (if sender's name is "James Miller"):
 Coffee Chat Request$$$Hi John,
 
 I'm really impressed by how Microsoft is advancing AI research and its practical applications in cloud computing.
@@ -217,9 +266,9 @@ I'm really impressed by how Microsoft is advancing AI research and its practical
 I'd love to connect and learn more about your experience in the tech industry. Would you be open to a brief coffee chat?
 
 Best regards,
-James
+James Miller
 
-Remember: Use $$$ as the delimiter between subject and body.
+Remember: Use $$$ as the delimiter between subject and body. The email MUST end with the sender's actual name (${this._getUserName(userData)}), NOT a placeholder.
   `;
   },
 
@@ -363,6 +412,47 @@ Remember: Use $$$ as the delimiter between subject and body.
     return {
       subject: subject,
       email: email
+    };
+  },
+
+  /**
+   * Ensure name placeholders are replaced with actual user name
+   * This is a safeguard in case the AI doesn't follow instructions
+   */
+  _ensureNameReplacement(parsedResponse, userData) {
+    const userName = this._getUserName(userData);
+    
+    // If we don't have a valid user name, return as is
+    if (!userName || userName === 'Not specified') {
+      return parsedResponse;
+    }
+    
+    // List of common name placeholder patterns
+    const namePlaceholders = [
+      /\[My Name\]/gi,
+      /\[Your Name\]/gi,
+      /\[Name\]/gi,
+      /\[my name\]/g,
+      /\[your name\]/g,
+      /\[sender name\]/gi,
+      /\[sender's name\]/gi
+    ];
+    
+    // Replace placeholders in the email body
+    let cleanedEmail = parsedResponse.email;
+    namePlaceholders.forEach(placeholder => {
+      cleanedEmail = cleanedEmail.replace(placeholder, userName);
+    });
+    
+    // Also replace in subject (less common but possible)
+    let cleanedSubject = parsedResponse.subject;
+    namePlaceholders.forEach(placeholder => {
+      cleanedSubject = cleanedSubject.replace(placeholder, userName);
+    });
+    
+    return {
+      subject: cleanedSubject,
+      email: cleanedEmail
     };
   },
 

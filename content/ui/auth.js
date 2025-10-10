@@ -64,9 +64,20 @@
           }
           const storedUserData = result[this.userData.email];
           if (storedUserData) {
-            this.userData = storedUserData;
+            console.log('[UIManager] refreshUserData - BEFORE merge, this.userData:', this.userData);
+            console.log('[UIManager] refreshUserData - storedUserData from Chrome storage:', storedUserData);
+            // MERGE stored data with current userData, preserving name fields from BackendAPI
+            this.userData = {
+              ...storedUserData,  // Get templates, sentEmails from storage
+              ...this.userData,   // Preserve name, firstName, lastName, email, picture from BackendAPI
+              // Explicitly preserve critical fields from stored data that we want to keep
+              templates: storedUserData.templates || this.userData.templates,
+              sentEmails: storedUserData.sentEmails || this.userData.sentEmails
+            };
+            console.log('[UIManager] refreshUserData - AFTER merge, this.userData:', this.userData);
             if (window.GmailManager) window.GmailManager.setUserData(this.userData);
           } else {
+            console.log('[UIManager] refreshUserData - No stored data found for email:', this.userData.email);
           }
           resolve();
         });
@@ -91,11 +102,15 @@
       await window.BackendAPI.init();
       if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
         this.isAuthenticated = true;
+        console.log('[UIManager] Setting userData from BackendAPI:', window.BackendAPI.userData);
         this.userData = {
           email: window.BackendAPI.userData.email,
           name: window.BackendAPI.userData.name,
+          firstName: window.BackendAPI.userData.firstName,
+          lastName: window.BackendAPI.userData.lastName,
           picture: window.BackendAPI.userData.picture
         };
+        console.log('[UIManager] userData set to:', this.userData);
         this.updateOwnProfileIdFromUserData();
         // Check if user exists in local storage for additional user data (bio, templates, etc.)
         const userExists = await this.checkUserInStorage(this.userData.email);

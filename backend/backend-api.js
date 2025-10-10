@@ -16,18 +16,33 @@ window.BackendAPI = {
    * Initialize the backend API client
    */
   async init() {
+    console.log('[BackendAPI] init() called');
     // Check if user is already authenticated
     const result = await this.getStoredAuth();
+    console.log('[BackendAPI] init - stored auth result:', result);
     if (result.token && result.userData) {
       this.userToken = result.token;
       this.userData = result.userData;
       this.isAuthenticated = true;
+      console.log('[BackendAPI] init - Using stored auth, userData:', this.userData);
       
       // Verify token is still valid
       const isValid = await this.verifyToken();
       if (!isValid) {
         await this.clearAuth();
+        return;
       }
+      
+      // Fetch and merge profile data from database
+      try {
+        console.log('[BackendAPI] init - Fetching updated profile from database...');
+        await this.getUserProfile();
+        console.log('[BackendAPI] init - Profile fetched successfully, userData now:', this.userData);
+      } catch (error) {
+        console.warn('[BackendAPI] init - Could not fetch updated profile during init:', error);
+        // Continue with cached userData
+      }
+      
       return; // Don't poll if already authenticated
     }
     
@@ -84,10 +99,12 @@ window.BackendAPI = {
   async getStoredAuth() {
     return new Promise((resolve) => {
       chrome.storage.local.get(['backendToken', 'backendUserData'], (result) => {
-        resolve({
+        const authData = {
           token: result.backendToken,
           userData: result.backendUserData
-        });
+        };
+        console.log('[BackendAPI] getStoredAuth - Retrieved from storage:', authData);
+        resolve(authData);
       });
     });
   },
@@ -98,6 +115,7 @@ window.BackendAPI = {
    * @param {Object} userData - User data
    */
   async storeAuth(token, userData) {
+    console.log('[BackendAPI] storeAuth - Storing userData:', userData);
     return new Promise((resolve) => {
       chrome.storage.local.set({
         backendToken: token,
@@ -106,6 +124,7 @@ window.BackendAPI = {
         this.userToken = token;
         this.userData = userData;
         this.isAuthenticated = true;
+        console.log('[BackendAPI] storeAuth - Stored successfully, this.userData now:', this.userData);
         resolve();
       });
     });
@@ -349,7 +368,7 @@ window.BackendAPI = {
   },
 
   /**
-   * Get user profile data
+   * Get user profile data (merged from session + database)
    * @returns {Promise<Object>} User profile
    */
   async getUserProfile() {
@@ -377,6 +396,34 @@ window.BackendAPI = {
 
       const json = await response.json();
       const user = json && json.user ? json.user : json;
+      console.log('[BackendAPI] getUserProfile - Initial user data from /api/user/profile:', user);
+      
+      // Also fetch bio data from user_profiles table
+      try {
+        const bioResponse = await this.getUserBio();
+        console.log('[BackendAPI] getUserProfile - Bio response:', bioResponse);
+        if (bioResponse && bioResponse.profile) {
+          const profile = bioResponse.profile;
+          console.log('[BackendAPI] getUserProfile - Profile from database:', profile);
+          // Merge database profile data with session data
+          user.firstName = profile.first_name || user.firstName;
+          user.lastName = profile.last_name || user.lastName;
+          console.log('[BackendAPI] getUserProfile - After merging firstName:', user.firstName, 'lastName:', user.lastName);
+          // If we don't have a full name but we have first/last, construct it
+          if (!user.name && (user.firstName || user.lastName)) {
+            user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+            console.log('[BackendAPI] getUserProfile - Constructed name from first+last:', user.name);
+          }
+          user.linkedinUrl = profile.linkedin_url || user.linkedinUrl;
+          user.experiences = profile.experiences || user.experiences;
+          user.skills = profile.skills || user.skills;
+          user.school = profile.school || user.school;
+        }
+      } catch (bioError) {
+        console.warn('[BackendAPI] Could not fetch bio data, continuing with session data only:', bioError);
+      }
+      
+      console.log('[BackendAPI] getUserProfile - Final merged user data:', user);
       this.userData = user;
       
       // Update stored user data

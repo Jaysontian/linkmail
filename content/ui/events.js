@@ -94,11 +94,15 @@
             if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
               clearInterval(checkAuthInterval);
               this.isAuthenticated = true;
+              console.log('[UIManager] Sign in successful, setting userData:', window.BackendAPI.userData);
               this.userData = {
                 email: window.BackendAPI.userData.email,
                 name: window.BackendAPI.userData.name,
+                firstName: window.BackendAPI.userData.firstName,
+                lastName: window.BackendAPI.userData.lastName,
                 picture: window.BackendAPI.userData.picture
               };
+              console.log('[UIManager] userData set to:', this.userData);
               // Check if user exists in local storage for additional user data (bio, templates, etc.)
               const userExists = await this.checkUserInStorage(this.userData.email);
               if (userExists) {

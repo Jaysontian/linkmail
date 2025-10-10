@@ -140,6 +140,38 @@ window.ProfileScraper = {
     return '';
   },
 
+  // Extract profile picture URL
+  extractProfilePictureUrl() {
+    try {
+      // Try to find the profile picture image element
+      // LinkedIn profile pictures are typically in an img tag within the profile header
+      const profileImage = document.querySelector('img[class*="pv-top-card-profile-picture__image"]') ||
+                          document.querySelector('img.profile-photo-edit__preview') ||
+                          document.querySelector('.pv-top-card--photo img') ||
+                          document.querySelector('button.profile-photo-edit__preview img') ||
+                          document.querySelector('img.ember-view.profile-photo-edit__preview');
+      
+      if (profileImage && profileImage.src) {
+        // Return the src URL of the image
+        return profileImage.src;
+      }
+
+      // Fallback: try to find any img in the profile header section
+      const headerSection = document.querySelector('.pv-top-card');
+      if (headerSection) {
+        const anyProfileImg = headerSection.querySelector('img');
+        if (anyProfileImg && anyProfileImg.src && !anyProfileImg.src.includes('data:image')) {
+          return anyProfileImg.src;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('Error extracting profile picture URL:', error);
+      return null;
+    }
+  },
+
   // Extract email from text using regex
   extractEmailFromText(text) {
     if (!text) return null;

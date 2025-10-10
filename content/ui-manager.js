@@ -194,11 +194,15 @@ window.UIManager = Object.assign(__existingUI, {
       
       if (window.BackendAPI.isAuthenticated && window.BackendAPI.userData) {
         this.isAuthenticated = true;
+        console.log('[UIManager] Setting userData from BackendAPI:', window.BackendAPI.userData);
         this.userData = {
           email: window.BackendAPI.userData.email,
           name: window.BackendAPI.userData.name,
+          firstName: window.BackendAPI.userData.firstName,
+          lastName: window.BackendAPI.userData.lastName,
           picture: window.BackendAPI.userData.picture
         };
+        console.log('[UIManager] userData set to:', this.userData);
 
         // Keep cached own-profile id updated for stable page-type detection
         this.updateOwnProfileIdFromUserData();
@@ -307,7 +311,17 @@ window.UIManager = Object.assign(__existingUI, {
           const storedUserData = result[this.userData.email];
 
           if (storedUserData) {
-            this.userData = storedUserData;
+            console.log('[UIManager] refreshUserData - BEFORE merge, this.userData:', this.userData);
+            console.log('[UIManager] refreshUserData - storedUserData from Chrome storage:', storedUserData);
+            // MERGE stored data with current userData, preserving name fields from BackendAPI
+            this.userData = {
+              ...storedUserData,  // Get templates, sentEmails from storage
+              ...this.userData,   // Preserve name, firstName, lastName, email, picture from BackendAPI
+              // Explicitly preserve critical fields from stored data that we want to keep
+              templates: storedUserData.templates || this.userData.templates,
+              sentEmails: storedUserData.sentEmails || this.userData.sentEmails
+            };
+            console.log('[UIManager] refreshUserData - AFTER merge, this.userData:', this.userData);
 
             // Pass updated user data to GmailManager
             if (window.GmailManager) {
@@ -925,8 +939,15 @@ window.UIManager = Object.assign(__existingUI, {
         }
 
         // Add user data to the template
+        console.log('[UIManager] Generate button clicked - this.userData:', this.userData);
+        console.log('[UIManager] Generate button clicked - this.userData values:');
+        console.log('  - email:', this.userData?.email);
+        console.log('  - name:', this.userData?.name);
+        console.log('  - firstName:', this.userData?.firstName);
+        console.log('  - lastName:', this.userData?.lastName);
         if (this.userData) {
           useTemplate.userData = {
+            email: this.userData.email,
             name: this.userData.name,
             firstName: this.userData.firstName,
             lastName: this.userData.lastName,
@@ -935,6 +956,9 @@ window.UIManager = Object.assign(__existingUI, {
             experiences: this.userData.experiences,
             skills: this.userData.skills
           };
+          console.log('[UIManager] useTemplate.userData created:', useTemplate.userData);
+        } else {
+          console.error('[UIManager] ERROR: this.userData is null/undefined!');
         }
 
         const response = await ProfileScraper.generateColdEmail(profileData, useTemplate);
@@ -1202,12 +1226,21 @@ window.UIManager = Object.assign(__existingUI, {
               }
             }
             
+            // Extract profile picture URL
+            let profilePictureUrl = null;
+            try {
+              profilePictureUrl = window.ProfileScraper.extractProfilePictureUrl();
+            } catch (imgError) {
+              console.warn('Failed to extract profile picture URL:', imgError);
+            }
+            
             contactInfo = {
               firstName: profileData?.firstName || null,
               lastName: profileData?.lastName || null,
               jobTitle: jobTitle,
               company: profileData?.company || null,
-              linkedinUrl: window.location.href
+              linkedinUrl: window.location.href,
+              profilePictureUrl: profilePictureUrl
             };
             
           }
