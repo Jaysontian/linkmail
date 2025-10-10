@@ -6,49 +6,54 @@
   window.UIManager = window.UIManager || {};
 
   window.UIManager.showTemporaryMessage = function showTemporaryMessage(message, type = 'info') {
-    let messageEl = this.container.querySelector('#linkmail-temp-message');
-    if (!messageEl) {
-      messageEl = document.createElement('div');
-      messageEl.id = 'linkmail-temp-message';
-      messageEl.style.cssText = `
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-        z-index: 1000;
-        max-width: 300px;
-        text-align: center;
-        transition: opacity 0.3s ease;
-      `;
-      this.container.style.position = 'relative';
-      this.container.appendChild(messageEl);
-    }
-    messageEl.textContent = message;
-    if (type === 'success') {
-      messageEl.style.backgroundColor = '#d4edda';
-      messageEl.style.color = '#155724';
-      messageEl.style.border = '1px solid #c3e6cb';
-    } else if (type === 'error') {
-      messageEl.style.backgroundColor = '#f8d7da';
-      messageEl.style.color = '#721c24';
-      messageEl.style.border = '1px solid #f5c6cb';
-    } else {
-      messageEl.style.backgroundColor = '#d1ecf1';
-      messageEl.style.color = '#0c5460';
-      messageEl.style.border = '1px solid #bee5eb';
-    }
-    messageEl.style.opacity = '1';
-    messageEl.style.display = 'block';
-    setTimeout(() => {
-      if (messageEl) {
-        messageEl.style.opacity = '0';
-        setTimeout(() => { if (messageEl && messageEl.parentNode) messageEl.parentNode.removeChild(messageEl); }, 300);
-      }
-    }, 3000);
+    // let messageEl = this.container.querySelector('#linkmail-temp-message');
+    // if (!messageEl) {
+    //   messageEl = document.createElement('div');
+    //   messageEl.id = 'linkmail-temp-message';
+    //   messageEl.className = 'linkmail-temp-message';
+    //   messageEl.style.cssText = `
+    //     position: absolute;
+    //     top: 16px;
+    //     left: 50%;
+    //     transform: translateX(-50%);
+    //     padding: 12px 16px;
+    //     border-radius: 10px;
+    //     font-size: 11pt;
+    //     z-index: 1000;
+    //     max-width: 320px;
+    //     text-align: center;
+    //     box-shadow: var(--shadow);
+    //     border: 1px solid var(--border-color);
+    //     background-color: white;
+    //     animation: lm-fadeIn 0.3s ease;
+    //     transition: all 0.2s ease;
+    //     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    //   `;
+    //   this.container.style.position = 'relative';
+    //   this.container.appendChild(messageEl);
+    // }
+    
+    // messageEl.textContent = message;
+    
+    // // Keep it clean and white - no colors
+    // messageEl.style.color = 'var(--text-color)';
+    // messageEl.style.borderColor = 'var(--border-color)';
+    // messageEl.style.backgroundColor = 'white';
+    
+    // messageEl.style.opacity = '1';
+    // messageEl.style.display = 'block';
+    
+    // setTimeout(() => {
+    //   if (messageEl) {
+    //     messageEl.style.opacity = '0';
+    //     messageEl.style.transform = 'translateX(-50%) translateY(-8px)';
+    //     setTimeout(() => { 
+    //       if (messageEl && messageEl.parentNode) {
+    //         messageEl.parentNode.removeChild(messageEl);
+    //       }
+    //     }, 200);
+    //   }
+    // }, 3000);
   };
 })();
 

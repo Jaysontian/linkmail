@@ -539,7 +539,9 @@ window.UIManager = Object.assign(__existingUI, {
           const recipientInput = document.getElementById('recipientEmailInput');
           const editorView = document.querySelector('#linkmail-editor');
           if (editorView && editorView.style.display === 'block' && recipientInput && !recipientInput.value) {
-            this.elements.findEmailApolloButton.style.display = 'block';
+            this.elements.findEmailApolloButton.style.display = 'flex';
+            // Reset button to default search icon state
+            this.resetFindEmailButtonToDefault();
           }
         }
       }
@@ -564,7 +566,24 @@ window.UIManager = Object.assign(__existingUI, {
       this.elements.menuToggle.addEventListener('click', (event) => {
         event.stopPropagation();
         const dropdown = this.elements.menuContent;
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        
+        if (dropdown.classList.contains('show')) {
+          // Hide dropdown with animation
+          dropdown.classList.remove('show');
+          dropdown.classList.add('hide');
+          
+          // Remove from DOM after animation completes
+          setTimeout(() => {
+            dropdown.style.display = 'none';
+            dropdown.classList.remove('hide');
+          }, 200); // Match CSS transition duration
+        } else {
+          // Show dropdown with animation
+          dropdown.style.display = 'block';
+          // Force reflow to ensure display change is applied
+          dropdown.offsetHeight;
+          dropdown.classList.add('show');
+        }
       });
     } else {
       console.log('Menu toggle/content not found; skipping account dropdown listeners');
@@ -572,8 +591,16 @@ window.UIManager = Object.assign(__existingUI, {
 
     // Close dropdown when clicking elsewhere on the page
     window.addEventListener('click', (event) => {
-      if (this.elements.menuContent && !this.elements.menuContent.contains(event.target)){
-        this.elements.menuContent.style.display = 'none';
+      if (this.elements.menuContent && !this.elements.menuContent.contains(event.target) && this.elements.menuContent.classList.contains('show')){
+        const dropdown = this.elements.menuContent;
+        dropdown.classList.remove('show');
+        dropdown.classList.add('hide');
+        
+        // Remove from DOM after animation completes
+        setTimeout(() => {
+          dropdown.style.display = 'none';
+          dropdown.classList.remove('hide');
+        }, 200); // Match CSS transition duration
       }
     });
 
@@ -778,6 +805,40 @@ window.UIManager = Object.assign(__existingUI, {
       console.error('❌ Edit Profile button not found in DOM!');
     }
 
+    // Add settingsButton click handler for templates
+    if (this.elements.settingsButton) {
+      this.elements.settingsButton.addEventListener('click', () => {
+        // Redirect to web dashboard templates page
+        const templatesUrl = 'https://www.linkmail.dev/dashboard/templates';
+        
+        // Open in new tab
+        chrome.runtime.sendMessage({
+          action: 'openBioSetupPage',
+          url: templatesUrl
+        }, (response) => {
+          if (response && response.success) {
+            console.log('✅ Opened web dashboard templates page');
+            
+            // Set up a timer to refresh templates when user returns
+            const refreshInterval = setInterval(() => {
+              this.refreshUserData().then(() => {
+                this.populateTemplateDropdown();
+              });
+            }, 5000);
+
+            // Stop checking after 10 minutes (600000 ms)
+            setTimeout(() => {
+              clearInterval(refreshInterval);
+            }, 600000);
+          } else {
+            console.error('❌ Failed to open templates dashboard:', response);
+          }
+        });
+      });
+    } else {
+      console.error('❌ Settings button not found in DOM!');
+    }
+
     // GENERATE BUTTON UI
     if (this.elements.generateButton) this.elements.generateButton.addEventListener('click', async () => {
       // Check if authenticated
@@ -788,6 +849,13 @@ window.UIManager = Object.assign(__existingUI, {
 
       this.elements.generateButton.disabled = true;
       this.elements.generateButton.innerText = 'Generating...';
+      
+      // Hide the "Last sent on" tooltip during loading
+      const lastEmailStatus = this.container.querySelector('#lastEmailStatus');
+      if (lastEmailStatus) {
+        lastEmailStatus.style.display = 'none !important';
+        lastEmailStatus.classList.add('hidden');
+      }
       
       // Start loading animation
       const pointer = document.querySelector('.linkmail-pointer');
@@ -826,6 +894,24 @@ window.UIManager = Object.assign(__existingUI, {
       const emailResult = document.getElementById('emailResult');
       if (emailResult) {
         emailResult.addEventListener('input', function() {adjustHeight(this);});
+      }
+
+      // Hide no email found message when user types in recipient email
+      const recipientInput = document.getElementById('recipientEmailInput');
+      if (recipientInput) {
+        recipientInput.addEventListener('input', () => {
+          if (recipientInput.value.trim()) {
+            this.hideNoEmailFoundMessage();
+          }
+        });
+      }
+
+      // Add event listener for dismiss button
+      const dismissButton = document.getElementById('noEmailDismissButton');
+      if (dismissButton) {
+        dismissButton.addEventListener('click', () => {
+          this.hideNoEmailFoundMessage();
+        });
       }
 
       try {
@@ -910,7 +996,7 @@ window.UIManager = Object.assign(__existingUI, {
           } else {
             // No email found - show Apollo button if authenticated
             if (window.BackendAPI && window.BackendAPI.isAuthenticated && this.elements.findEmailApolloButton) {
-              this.elements.findEmailApolloButton.style.display = 'block';
+              this.elements.findEmailApolloButton.style.display = 'flex';
             }
           }
         }
@@ -965,6 +1051,9 @@ window.UIManager = Object.assign(__existingUI, {
 
 
         this.showView('#linkmail-editor');
+
+        // Reset findEmail button to default state when editor is shown
+        this.resetFindEmailButtonToDefault();
 
         // Set the editor title
         const editorTitle = document.getElementById('editor-title');
@@ -1032,6 +1121,13 @@ window.UIManager = Object.assign(__existingUI, {
         this.elements.generateButton.disabled = false;
         this.elements.generateButton.innerText = 'Generate';
         
+        // Show the "Last sent on" tooltip again after loading
+        const lastEmailStatus = this.container.querySelector('#lastEmailStatus');
+        if (lastEmailStatus && lastEmailStatus.textContent) {
+          lastEmailStatus.classList.remove('hidden');
+          lastEmailStatus.style.display = 'block';
+        }
+        
         // Stop loading animation
         const pointer = document.querySelector('.linkmail-pointer');
         if (pointer) {
@@ -1085,10 +1181,10 @@ window.UIManager = Object.assign(__existingUI, {
       // Disable button and show loading state
       this.elements.findEmailApolloButton.disabled = true;
       this.elements.findEmailApolloButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px; animation: spin 1s linear infinite;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px; animation: spin 1s linear infinite;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 12a9 9 0 11-6.219-8.56"/>
         </svg>
-        Searching with Apollo...
+        Searching...
       `;
 
       try {
@@ -1113,6 +1209,9 @@ window.UIManager = Object.assign(__existingUI, {
           // Hide Apollo button since we found an email
           this.elements.findEmailApolloButton.style.display = 'none';
 
+          // Hide any existing no email found message
+          this.hideNoEmailFoundMessage();
+
           // Show success message
           this.showTemporaryMessage('Email found with Apollo!', 'success');
 
@@ -1120,7 +1219,8 @@ window.UIManager = Object.assign(__existingUI, {
           await this.updateApolloUsageDisplay();
 
         } else {
-          this.showTemporaryMessage('No email found with Apollo. The person may not be in Apollo\'s database.', 'error');
+          // Show dismissable message instead of temporary message
+          this.showNoEmailFoundMessage();
         }
 
       } catch (error) {
@@ -1135,15 +1235,9 @@ window.UIManager = Object.assign(__existingUI, {
           this.showTemporaryMessage(error.message || 'Failed to find email with Apollo. Please try again.', 'error');
         }
       } finally {
-        // Reset button state
-        this.elements.findEmailApolloButton.disabled = false;
-        this.elements.findEmailApolloButton.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7v10c0 5.55 3.84 10 9 9s9-4.03 9-9V7l-8-5z"/>
-            <path d="M12 22s8-4 8-10V7l-8-5-8 5v5c0 6 8 10 8 10"/>
-          </svg>
-          Find Email with Apollo
-        `;
+        // Reset button state to default search icon
+        this.resetFindEmailButtonToDefault();
+        this.elements.findEmailApolloButton.style.display = `none`;
       }
     });
 
@@ -2129,61 +2223,89 @@ window.UIManager = Object.assign(__existingUI, {
 
   // People suggestions logic is in content/ui/people.js
 
-  // Show temporary message to user
+  // Show temporary message to user (currently disabled for debugging)
   showTemporaryMessage(message, type = 'info') {
+    // Temporarily disabled - uncomment for debugging
+    return;
+    
+    /* 
     // Create message element if it doesn't exist
     let messageEl = this.container.querySelector('#linkmail-temp-message');
     if (!messageEl) {
       messageEl = document.createElement('div');
       messageEl.id = 'linkmail-temp-message';
+      messageEl.className = 'linkmail-temp-message';
       messageEl.style.cssText = `
         position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
+        top: 16px;
+        left: 0;
+        right: 0;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 9pt;
         z-index: 1000;
-        max-width: 300px;
-        text-align: center;
-        transition: opacity 0.3s ease;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        background-color: white;
+        animation: lm-fadeIn 0.3s ease;
+        transition: all 0.2s ease;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       `;
       this.container.style.position = 'relative';
       this.container.appendChild(messageEl);
     }
 
-    // Set message content and style based on type
+    // Set message content and keep it clean and white
     messageEl.textContent = message;
-    if (type === 'success') {
-      messageEl.style.backgroundColor = '#d4edda';
-      messageEl.style.color = '#155724';
-      messageEl.style.border = '1px solid #c3e6cb';
-    } else if (type === 'error') {
-      messageEl.style.backgroundColor = '#f8d7da';
-      messageEl.style.color = '#721c24';
-      messageEl.style.border = '1px solid #f5c6cb';
-    } else {
-      messageEl.style.backgroundColor = '#d1ecf1';
-      messageEl.style.color = '#0c5460';
-      messageEl.style.border = '1px solid #bee5eb';
-    }
+    messageEl.style.color = 'var(--text-color)';
+    messageEl.style.borderColor = 'var(--border-color)';
+    messageEl.style.backgroundColor = 'white';
 
     messageEl.style.opacity = '1';
     messageEl.style.display = 'block';
 
-    // Hide after 3 seconds
+    // Hide after 3 seconds with smooth animation
     setTimeout(() => {
       if (messageEl) {
         messageEl.style.opacity = '0';
+        messageEl.style.transform = 'translateY(-8px)';
         setTimeout(() => {
           if (messageEl && messageEl.parentNode) {
             messageEl.parentNode.removeChild(messageEl);
           }
-        }, 300);
+        }, 200);
       }
     }, 3000);
+    */
+  },
+
+  // Show dismissable no email found message
+  showNoEmailFoundMessage() {
+    const messageEl = document.getElementById('noEmailFoundMessage');
+    if (messageEl) {
+      messageEl.style.display = 'block';
+    }
+  },
+
+  // Hide dismissable no email found message
+  hideNoEmailFoundMessage() {
+    const messageEl = document.getElementById('noEmailFoundMessage');
+    if (messageEl) {
+      messageEl.style.display = 'none';
+    }
+  },
+
+  // Reset findEmail button to default search icon state
+  resetFindEmailButtonToDefault() {
+    if (this.elements.findEmailApolloButton) {
+      this.elements.findEmailApolloButton.disabled = false;
+      this.elements.findEmailApolloButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+      `;
+    }
   }
 });
 
