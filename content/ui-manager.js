@@ -2175,11 +2175,17 @@ window.UIManager = Object.assign(__existingUI, {
       const attachmentItem = document.createElement('div');
       attachmentItem.className = 'email-attachment-item';
 
-      // Format file size
-      const sizeInKB = Math.round(attachment.size / 1024);
-      const sizeFormatted = sizeInKB >= 1024
-        ? (sizeInKB / 1024).toFixed(2) + ' MB'
-        : sizeInKB + ' KB';
+      // Format file size - handle cases where size might be 0, undefined, or invalid
+      let sizeFormatted = 'File attached';
+      if (attachment.size && !isNaN(attachment.size) && attachment.size > 0) {
+        const sizeInKB = Math.round(attachment.size / 1024);
+        sizeFormatted = sizeInKB >= 1024
+          ? (sizeInKB / 1024).toFixed(2) + ' MB'
+          : sizeInKB + ' KB';
+      }
+
+      // Ensure we have a valid attachment name
+      const attachmentName = attachment.name || 'Attachment';
 
       attachmentItem.innerHTML = `
         <div class="attachment-info">
@@ -2191,7 +2197,7 @@ window.UIManager = Object.assign(__existingUI, {
             <path d="M15 18v-6"/>
           </svg>
           <div>
-            <p class="attachment-name">${attachment.name}</p>
+            <p class="attachment-name">${attachmentName}</p>
             <p class="attachment-size">${sizeFormatted}</p>
           </div>
         </div>

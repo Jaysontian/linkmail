@@ -46,6 +46,28 @@ window.TemplateManager = (function() {
           const resp = await window.BackendAPI.getUserBio();
           const p = resp && resp.profile ? resp.profile : null;
           const fromDb = Array.isArray(p?.templates) ? p.templates.map(t => {
+            // Handle file attachment - support both old format (string URL) and new format (object with url, name, size)
+            let attachments = [];
+            if (t.file) {
+              if (typeof t.file === 'object' && t.file.url) {
+                // New format: {url, name, size}
+                attachments = [{
+                  url: t.file.url,
+                  name: t.file.name || 'Attachment',
+                  size: t.file.size || 0
+                }];
+              } else if (typeof t.file === 'string') {
+                // Old format: just URL string - extract filename from URL
+                const urlParts = t.file.split('/');
+                const fileNameFromUrl = urlParts[urlParts.length - 1] || 'Attachment';
+                attachments = [{
+                  url: t.file,
+                  name: fileNameFromUrl,
+                  size: 0 // Size unknown for old format
+                }];
+              }
+            }
+            
             const template = {
               name: t.title || '', 
               content: t.body || '',
@@ -53,7 +75,7 @@ window.TemplateManager = (function() {
               // Fall back to t.title only if subject is not set
               subjectLine: t.subject || t.title || 'Template Subject',
               icon: t.icon || '📝',
-              attachments: t.file ? [{ url: t.file }] : []
+              attachments: attachments
             };
             
             // Debug logging to help diagnose template loading issues
