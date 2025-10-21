@@ -17,47 +17,24 @@
 
     const selectedTemplateName = this.selectedTemplate.name || null;
 
-    const defaultTemplates = [
-      {
-        id: 'coffee-chat',
-        icon: '☕',
-        name: 'Coffee Chat Request',
-        description: 'A friendly intro to chat',
-        content: this.templates[0].content,
-        subjectLine: this.templates[0].subjectLine || 'Coffee Chat Request',
-        purpose: 'to send a coffee chat request',
-        attachments: []
-      },
-      {
-        id: 'job-application',
-        icon: '💼',
-        name: 'Inquire About Open Roles',
-        description: 'A professional email for recruiting',
-        content: this.templates[1].content,
-        subjectLine: this.templates[1].subjectLine || 'Wondering About Potential Opportunities at [Recipient Company Name]',
-        purpose: 'to send a job application',
-        attachments: []
-      }
-    ];
-    let allTemplates = [...defaultTemplates];
+    // Use only templates from database (includes default templates for all users)
+    let allTemplates = [];
 
     if (this.userData && this.userData.templates && Array.isArray(this.userData.templates)) {
-      const customTemplates = this.userData.templates
+      allTemplates = this.userData.templates
         .filter(template => template && template.name)
         .map((template, index) => ({
-          id: `custom-${index}`,
+          id: `template-${index}`,
           icon: template.icon || '📝',
           name: template.name,
-          description: template.description || 'Custom email template',
+          description: template.description || 'Email template',
           content: template.content,
-          // Use template.subjectLine if available, otherwise use template.name as subject
-          // Do NOT use placeholders like [Recipient Name] as fallback since they'll be replaced by AI
           subjectLine: template.subjectLine || template.name || 'Subject Line',
           purpose: `to send a ${template.name} email`,
           attachments: template.attachments || []
         }));
-      allTemplates = [...allTemplates, ...customTemplates];
     } else {
+      console.warn('[UIManager] No templates found in userData');
     }
 
     allTemplates.forEach(template => {

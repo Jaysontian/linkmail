@@ -40,25 +40,8 @@ window.UIManager = Object.assign(__existingUI, {
     this._selectedTemplate = value;
   },
 
-
-  templates: [
-    {
-      icon: '☕',
-      name: 'Coffee Chat Request',
-      description: 'Send a friendly request to chat with this person.',
-      purpose: 'to schedule a coffee chat to the recipient',
-      subjectLine: 'Coffee Chat Request',
-      content: 'Hi [Recipient First Name],\n\n[Mention something specific about recipient company or recent work that interests me].\n\nI\'d love to connect and learn more about your experience in [mention recipient field/industry]. Would you be open to a brief coffee chat?\n\nBest regards,\n[My Name]'
-    },
-    {
-      icon: '💼',
-      name: 'Inquire About Open Roles',
-      description: 'Craft a professional email to a recruiter or manager',
-      purpose: 'to inquire if there is internship or job',
-      subjectLine: 'Wondering About Potential Opportunities at [Recipient Company Name]',
-      content: 'Hi [Recipient First Name],\n\nI\'m [brief personal introduction including my background]. I\'m really impressed by [mention something specific about recipient company\'s work or mission].\n\n[Connect recipient company\'s work to my own experience or interests]. I\'d love to learn about potential opportunities at [Recipient Company Name].\n\nBest regards,\n[My Name]'
-    }
-  ],
+  // Templates are now loaded from the database via TemplateManager
+  // All users have default templates in the database (Coffee Chat Request & Inquire About Open Roles)
 
   async loadHTML() {
     const url = chrome.runtime.getURL('/content/linkedin-div.html');
@@ -1011,16 +994,21 @@ window.UIManager = Object.assign(__existingUI, {
           this.populateTemplateDropdown();
           useTemplate = this.selectedTemplate;
 
-          // If still empty, use default template
+          // If still empty, use first template from database
           if (!useTemplate.name || !useTemplate.content) {
-            useTemplate = {
-              name: 'Coffee Chat Request',
-              content: this.templates[0].content,
-              subjectLine: this.templates[0].subjectLine || 'Coffee Chat Request',
-              purpose: 'to send a coffee chat request',
-              attachments: []
-            };
-            this.selectedTemplate = useTemplate;
+            if (this.userData && this.userData.templates && this.userData.templates.length > 0) {
+              const firstTemplate = this.userData.templates[0];
+              useTemplate = {
+                name: firstTemplate.name,
+                content: firstTemplate.content,
+                subjectLine: firstTemplate.subjectLine || firstTemplate.name,
+                purpose: `to send a ${firstTemplate.name} email`,
+                attachments: firstTemplate.attachments || []
+              };
+              this.selectedTemplate = useTemplate;
+            } else {
+              console.error('[UIManager] No templates available - user should have default templates');
+            }
           }
         }
 
@@ -1763,50 +1751,24 @@ window.UIManager = Object.assign(__existingUI, {
 
     const selectedTemplateName = this.selectedTemplate.name || null;
 
-    const defaultTemplates = [
-      {
-        id: 'coffee-chat',
-        icon: '☕',
-        name: 'Coffee Chat Request',
-        description: 'A friendly intro to chat',
-        content: this.templates[0].content,
-        subjectLine: this.templates[0].subjectLine || 'Coffee Chat Request',
-        purpose: 'to send a coffee chat request',
-        attachments: [] // Add empty attachments array
-      },
-      {
-        id: 'job-application',
-        icon: '💼',
-        name: 'Inquire About Open Roles',
-        description: 'A professional email for recruiting',
-        content: this.templates[1].content,
-        subjectLine: this.templates[1].subjectLine || 'Wondering About Potential Opportunities at [Recipient Company Name]',
-        purpose: 'to send a job application',
-        attachments: [] // Add empty attachments array
-      }
-    ];
-
-    let allTemplates = [...defaultTemplates];
+    // Use only templates from database (includes default templates for all users)
+    let allTemplates = [];
 
     if (this.userData && this.userData.templates && Array.isArray(this.userData.templates)) {
-
-      const customTemplates = this.userData.templates
+      allTemplates = this.userData.templates
         .filter(template => template && template.name)
         .map((template, index) => ({
-          id: `custom-${index}`,
+          id: `template-${index}`,
           icon: template.icon || '📝',
           name: template.name,
-          description: template.description || 'Custom email template',
+          description: template.description || 'Email template',
           content: template.content,
-          // Use template.subjectLine if available, otherwise use template.name as subject
-          // Do NOT use placeholders like [Recipient Name] as fallback since they'll be replaced by AI
           subjectLine: template.subjectLine || template.name || 'Subject Line',
           purpose: `to send a ${template.name} email`,
-          attachments: template.attachments || [] // Include attachments
+          attachments: template.attachments || []
         }));
-
-      allTemplates = [...allTemplates, ...customTemplates];
     } else {
+      console.warn('[UIManager] No templates found in userData');
     }
 
 
