@@ -1069,9 +1069,16 @@ window.UIManager = Object.assign(__existingUI, {
             // This is a normal email, process it
             // Get the user's name with fallback to firstName + lastName
             const userName = this._getUserNameWithFallback();
+            const userFirstName = this.userData?.firstName || (userName ? userName.split(' ')[0] : '');
             
             if (userName && userName !== 'undefined' && userName.trim()) {
-              // Replace various name placeholders with the user's actual name
+              // Replace first name placeholders first (more specific)
+              if (userFirstName && userFirstName.trim()) {
+                emailContent = emailContent.replace(/\[My First Name\]/g, userFirstName);
+                emailContent = emailContent.replace(/\[Your First Name\]/g, userFirstName);
+              }
+              
+              // Replace full name placeholders
               emailContent = emailContent.replace(/\[My Name\]/g, userName);
               emailContent = emailContent.replace(/\[Your Name\]/g, userName);
 
@@ -1085,6 +1092,31 @@ window.UIManager = Object.assign(__existingUI, {
                   new RegExp(`(Best regards,\\s*\\n\\s*)(${recipientName})`, 'gi'),
                   `$1${userName}`
                 );
+              }
+              
+              // CRITICAL FIX: Check if template used [My First Name] in signature
+              // If so, replace full name with first name in signature area
+              if (useTemplate.content && useTemplate.content.includes('[My First Name]')) {
+                // Check if template has [My First Name] at the end (in signature)
+                const templateLines = useTemplate.content.split('\n');
+                const lastFewLines = templateLines.slice(-3).join('\n'); // Last 3 lines
+                
+                if (lastFewLines.includes('[My First Name]') && userFirstName && userFirstName.trim()) {
+                  // Template wants first name only in signature, but AI might have used full name
+                  // Replace full name with first name in signature area (last few lines)
+                  const signaturePatterns = [
+                    new RegExp(`(Best regards,\\s*\\n\\s*)${userName}`, 'gi'),
+                    new RegExp(`(Best,\\s*\\n\\s*)${userName}`, 'gi'),
+                    new RegExp(`(Thanks,\\s*\\n\\s*)${userName}`, 'gi'),
+                    new RegExp(`(Sincerely,\\s*\\n\\s*)${userName}`, 'gi'),
+                    new RegExp(`(Warm regards,\\s*\\n\\s*)${userName}`, 'gi'),
+                    new RegExp(`(Cheers,\\s*\\n\\s*)${userName}`, 'gi')
+                  ];
+                  
+                  signaturePatterns.forEach(pattern => {
+                    emailContent = emailContent.replace(pattern, `$1${userFirstName}`);
+                  });
+                }
               }
             }
 

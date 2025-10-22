@@ -205,6 +205,26 @@ Format: Subject$$$Body (no extra explanations)
   },
 
   /**
+   * Get user's first name only
+   * @param {Object} userData - User data object
+   * @returns {string} User's first name
+   */
+  _getUserFirstName(userData) {
+    // Try direct firstName field first
+    if (userData?.firstName && typeof userData.firstName === 'string' && userData.firstName.trim()) {
+      return userData.firstName.trim();
+    }
+    
+    // Extract first name from full name
+    const fullName = this._getUserName(userData);
+    if (fullName && fullName !== 'Not specified') {
+      return fullName.split(' ')[0];
+    }
+    
+    return 'Not specified';
+  },
+
+  /**
    * Build the user prompt with profile and template data
    */
   _buildUserPrompt(profileData, userData, templateData) {
@@ -238,6 +258,7 @@ Experience: ${profileData.experience && profileData.experience.length > 0 ? prof
   ==== SENDER INFORMATION (THIS IS WHO IS SENDING THE EMAIL) ====
 
   SENDER'S FULL NAME: ${this._getUserName(userData)}
+  SENDER'S FIRST NAME: ${this._getUserFirstName(userData)}
   My College: ${userData?.college || 'Not specified'}
   My Graduation Year: ${userData?.graduationYear || 'Not specified'}
   My Experiences: ${userExperiencesText}
@@ -246,19 +267,20 @@ Experience: ${profileData.experience && profileData.experience.length > 0 ? prof
 
 1. Replace [Recipient Name] with the recipient's full name: ${profileData.name}
 2. Replace [Recipient First Name] with the recipient's first name: ${firstName}
-3. Replace [My Name], [Your Name], or any name placeholder with the SENDER'S FULL NAME: ${this._getUserName(userData)}
-4. For instruction placeholders (like "[talk about...]"), write natural content following the instruction
-5. Use the recipient's company information, experience, and background to personalize the content
-6. Connect the recipient's work to your own experiences when relevant and instructed
-7. Make the email sound professional but friendly, appropriate for networking
-8. Keep all text outside brackets exactly the same
-9. CRITICAL: The email signature MUST end with the sender's actual name (${this._getUserName(userData)}), NOT with a placeholder
+3. Replace [My Name], [Your Name] with the SENDER'S FULL NAME: ${this._getUserName(userData)}
+4. Replace [My First Name] with ONLY the SENDER'S FIRST NAME: ${this._getUserFirstName(userData)}
+5. For instruction placeholders (like "[talk about...]"), write natural content following the instruction
+6. Use the recipient's company information, experience, and background to personalize the content
+7. Connect the recipient's work to your own experiences when relevant and instructed
+8. Make the email sound professional but friendly, appropriate for networking
+9. Keep all text outside brackets exactly the same
+10. CRITICAL: Respect the placeholder in the signature - if it says [My First Name], use only the first name (${this._getUserFirstName(userData)}). If it says [My Name], use the full name (${this._getUserName(userData)})
 
 REQUIRED OUTPUT FORMAT: 
 You MUST respond with this exact format:
 [Subject Line]$$$[Email Body]
 
-Example (if sender's name is "James Miller"):
+Example 1 (if sender's name is "James Miller" and template says [My Name] in signature):
 Coffee Chat Request$$$Hi John,
 
 I'm really impressed by how Microsoft is advancing AI research and its practical applications in cloud computing.
@@ -268,7 +290,17 @@ I'd love to connect and learn more about your experience in the tech industry. W
 Best regards,
 James Miller
 
-Remember: Use $$$ as the delimiter between subject and body. The email MUST end with the sender's actual name (${this._getUserName(userData)}), NOT a placeholder.
+Example 2 (if sender's name is "James Miller" and template says [My First Name] in signature):
+Coffee Chat Request$$$Hi John,
+
+I'm James. I'm really impressed by how Microsoft is advancing AI research and its practical applications in cloud computing.
+
+I'd love to connect and learn more about your experience in the tech industry. Would you be open to a brief coffee chat?
+
+Best regards,
+James
+
+Remember: Use $$$ as the delimiter between subject and body. Pay close attention to whether the template uses [My Name] (full name) or [My First Name] (first name only) in the signature.
   `;
   },
 
@@ -421,14 +453,15 @@ Remember: Use $$$ as the delimiter between subject and body. The email MUST end 
    */
   _ensureNameReplacement(parsedResponse, userData) {
     const userName = this._getUserName(userData);
+    const userFirstName = this._getUserFirstName(userData);
     
     // If we don't have a valid user name, return as is
     if (!userName || userName === 'Not specified') {
       return parsedResponse;
     }
     
-    // List of common name placeholder patterns
-    const namePlaceholders = [
+    // List of common FULL name placeholder patterns
+    const fullNamePlaceholders = [
       /\[My Name\]/gi,
       /\[Your Name\]/gi,
       /\[Name\]/gi,
@@ -438,15 +471,39 @@ Remember: Use $$$ as the delimiter between subject and body. The email MUST end 
       /\[sender's name\]/gi
     ];
     
+    // List of FIRST name placeholder patterns
+    const firstNamePlaceholders = [
+      /\[My First Name\]/gi,
+      /\[Your First Name\]/gi,
+      /\[my first name\]/g,
+      /\[your first name\]/g
+    ];
+    
     // Replace placeholders in the email body
     let cleanedEmail = parsedResponse.email;
-    namePlaceholders.forEach(placeholder => {
+    
+    // First, replace first name placeholders (more specific)
+    if (userFirstName && userFirstName !== 'Not specified') {
+      firstNamePlaceholders.forEach(placeholder => {
+        cleanedEmail = cleanedEmail.replace(placeholder, userFirstName);
+      });
+    }
+    
+    // Then replace full name placeholders
+    fullNamePlaceholders.forEach(placeholder => {
       cleanedEmail = cleanedEmail.replace(placeholder, userName);
     });
     
     // Also replace in subject (less common but possible)
     let cleanedSubject = parsedResponse.subject;
-    namePlaceholders.forEach(placeholder => {
+    
+    if (userFirstName && userFirstName !== 'Not specified') {
+      firstNamePlaceholders.forEach(placeholder => {
+        cleanedSubject = cleanedSubject.replace(placeholder, userFirstName);
+      });
+    }
+    
+    fullNamePlaceholders.forEach(placeholder => {
       cleanedSubject = cleanedSubject.replace(placeholder, userName);
     });
     
