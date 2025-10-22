@@ -819,6 +819,65 @@ window.BackendAPI = {
   },
 
   /**
+   * Search contacts by category only (returns random results)
+   * @param {string} category - Category to search for
+   * @param {number} limit - Number of results to return (default 3, max 10)
+   * @returns {Promise<{ results: Array }>} contacts list
+   */
+  async searchContactsByCategory(category, limit = 3) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!category || typeof category !== 'string') {
+      throw new Error('Category is required');
+    }
+
+    // Validate limit
+    const validLimit = Math.min(Math.max(parseInt(limit) || 3, 1), 10);
+
+    try {
+      const base = this.apiBaseURL || this.baseURL;
+      const params = new URLSearchParams({ 
+        category: category.trim(), 
+        limit: validLimit.toString() 
+      });
+      const url = `${base}/api/contacts/search-by-category?${params.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.userToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 401) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      const results = Array.isArray(json.results) ? json.results : [];
+      return { results };
+    } catch (error) {
+      console.error('Failed to search contacts by category:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get best contact email by LinkedIn profile URL
    * @param {string} linkedinUrl - Raw LinkedIn profile URL (window.location.href)
    * @returns {Promise<Object>} EmailByLinkedInResponse

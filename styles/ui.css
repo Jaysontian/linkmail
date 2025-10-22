@@ -56,7 +56,14 @@
 
 .linkmail textarea, .lm-textarea {
     min-height: 80px;
-    resize: vertical;
+    resize: none !important;
+    overflow: hidden !important;
+}
+
+/* Specific rule for email textarea */
+#emailResult {
+    resize: none !important;
+    overflow: hidden !important;
 }
 
 /* ==========================================================================

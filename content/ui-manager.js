@@ -384,6 +384,9 @@ window.UIManager = Object.assign(__existingUI, {
         return;
       }
 
+      // Add fade-in class for smooth animation (using CSS class, not inline styles)
+      injectedDiv.classList.add('fade-in');
+
       this.container = injectedDiv; // Store the reference to the container
 
 
@@ -420,6 +423,11 @@ window.UIManager = Object.assign(__existingUI, {
         // Double-check right before injection
         if (!document.querySelector('.linkmail-container')) {
           asideElement.prepend(injectedDiv);
+          
+          // Trigger fade-in animation after DOM insertion
+          requestAnimationFrame(() => {
+            injectedDiv.classList.add('visible');
+          });
         } else {
           console.log('LinkMail UI already present at inject time; aborting duplicate injection');
           this._isCreatingUI = false;
@@ -869,14 +877,32 @@ window.UIManager = Object.assign(__existingUI, {
       }
 
       function adjustHeight(element) {
+        // Reset height to auto to get the natural height
         element.style.height = 'auto';
+        // Set height to scrollHeight, which includes content + padding
         element.style.height = element.scrollHeight + 'px';
       }
 
       // Make textarea autoresizable
       const emailResult = document.getElementById('emailResult');
       if (emailResult) {
+        // Initialize height on load
+        adjustHeight(emailResult);
+        
+        // Add event listeners for various input events
         emailResult.addEventListener('input', function() {adjustHeight(this);});
+        emailResult.addEventListener('paste', function() {adjustHeight(this);});
+        emailResult.addEventListener('keyup', function() {adjustHeight(this);});
+        
+        // Also adjust height when content is set programmatically
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' || mutation.type === 'characterData') {
+              adjustHeight(emailResult);
+            }
+          });
+        });
+        observer.observe(emailResult, { childList: true, characterData: true, subtree: true });
       }
 
       // Hide no email found message when user types in recipient email

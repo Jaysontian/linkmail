@@ -210,6 +210,10 @@
         transition: transform 0.3s ease;
     }
 
+    .linkmail-logo:hover .linkmail-pointer {
+        transform: scale(1.1);
+    }
+
     /* Loading state */
     .linkmail-pointer.loading {
         animation: loading 2s ease-in-out infinite;

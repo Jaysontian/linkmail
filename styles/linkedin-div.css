@@ -9,6 +9,8 @@
     padding:12px 12px;
     margin-bottom:16px;
     border-radius:8px;
+    position: relative;
+    z-index: 100;
 }
 
 #googleSignInButton {
@@ -281,7 +283,7 @@
     background-color: #ffffff;
     min-width: 180px;
     box-shadow: 0px 4px 10px 0px rgba(0,0,0,0.2);
-    z-index: 1;
+    z-index: 500;
     border-radius: 10px;
     border: 1px solid rgb(211, 211, 211);
     opacity: 0;
@@ -450,4 +452,123 @@
 .no-email-dismiss svg {
     width: 16px;
     height: 16px;
+}
+
+/* Category buttons for people search */
+.category-btn {
+    background: #f3f3f3;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #5b5b5b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.category-btn:hover {
+    background: #e9ecef;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.category-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.category-btn.active:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* People search results styles */
+.people-search-empty {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    padding: 20px;
+}
+
+.people-search-loading {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: #666;
+}
+
+.people-search-error {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: #d32f2f;
+}
+
+.people-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: white;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.people-result-row:hover {
+    background: var(--bg-light-hover);
+}
+
+.people-result-row.no-link {
+    cursor: default;
+}
+
+.people-result-row.no-link:hover {
+    background: white;
+    transform: none;
+    box-shadow: none;
+}
+
+.people-result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.people-result-name {
+    font-weight: 600;
+    font-size: 10pt;
+    color: var(--text-color);
+}
+
+.people-result-details {
+    font-size: 9pt;
+    color: var(--text-light);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.8em; /* Fallback for 2 lines */
+}
+
+.people-result-arrow {
+    color: rgba(128, 128, 128, 0.5); /* gray with opacity */
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: color 0.14s;
+}
+
+.people-result-row:hover .people-result-arrow {
+    color: var(--primary-color);
 }

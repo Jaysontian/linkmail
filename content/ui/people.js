@@ -86,70 +86,42 @@
 
   // Note: Dropdown-related functions removed since we now use text inputs for real-time search
 
-  // Attach real-time search behavior for people search
+  // Attach category-based search behavior for people search
   window.UIManager.attachPeopleSearchHandlers = function attachPeopleSearchHandlers() {
     try {
-      const jobTitleInput = this.container?.querySelector('#jobTitleFilter');
-      const companyInput = this.container?.querySelector('#companyFilter');
+      const categoryButtons = this.container?.querySelectorAll('.category-btn');
       const resultsContainer = this.container?.querySelector('#people-search-results');
-      if (!jobTitleInput || !companyInput || !resultsContainer) return;
-
-      // Initialize autocomplete for job title and company fields
-      try {
-        if (window.UIManager.initAutocomplete) {
-          // Initialize autocomplete for job title field (uses predefined categories)
-          window.UIManager.initAutocomplete(jobTitleInput, 'jobTitle', {
-            minLength: 1,
-            maxSuggestions: 12, // Show all 12 predefined job titles if they match
-            debounceMs: 200 // Faster response for predefined list
-          });
-
-          // Initialize autocomplete for company field (uses API)
-          window.UIManager.initAutocomplete(companyInput, 'company', {
-            minLength: 1,
-            maxSuggestions: 10,
-            debounceMs: 300
-          });
-        }
-      } catch (autocompleteError) {
-        console.error('Failed to initialize autocomplete:', autocompleteError);
-      }
+      if (!categoryButtons || categoryButtons.length === 0 || !resultsContainer) return;
 
       // Helper to render results
       const renderResults = (results) => {
         resultsContainer.innerHTML = '';
         if (!Array.isArray(results) || results.length === 0) {
           const empty = document.createElement('div');
-          empty.style.cssText = 'font-size: 11px; color: #666;';
-          empty.textContent = 'No results found. Try entering both a job title and company.';
+          empty.className = 'people-search-empty';
+          empty.textContent = 'No results found for this category.';
           resultsContainer.appendChild(empty);
           return;
         }
         results.slice(0, 3).forEach((person) => {
           const row = document.createElement('div');
-          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; border:1px solid #e1e5e9; border-radius:6px; padding:8px; background:white; cursor:' + (person.linkedinUrl ? 'pointer' : 'default') + '; transition: background-color 0.2s;';
+          row.className = person.linkedinUrl ? 'people-result-row' : 'people-result-row no-link';
           
-          // Add hover effect
-          row.addEventListener('mouseenter', () => {
-            if (person.linkedinUrl) {
-              row.style.backgroundColor = '#f8f9fa';
-            }
-          });
-          row.addEventListener('mouseleave', () => {
-            row.style.backgroundColor = 'white';
-          });
-
           const name = `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Unknown';
           const title = person.jobTitle || '';
           const company = person.company || '';
+          
           const left = document.createElement('div');
-          left.style.cssText = 'display:flex; flex-direction:column; gap:2px;';
+          left.className = 'people-result-info';
+          
           const nameEl = document.createElement('div');
-          nameEl.style.cssText = 'font-weight:600; font-size: 12px; color:#333;';
+          nameEl.className = 'people-result-name';
           nameEl.textContent = name;
+          
           const infoEl = document.createElement('div');
-          infoEl.style.cssText = 'font-size: 11px; color:#666;';
+          infoEl.className = 'people-result-details';
           infoEl.textContent = [title, company].filter(Boolean).join(' at ');
+          
           left.appendChild(nameEl);
           left.appendChild(infoEl);
           row.appendChild(left);
@@ -157,7 +129,7 @@
           // Add arrow indicator for clickable items
           if (person.linkedinUrl) {
             const arrow = document.createElement('div');
-            arrow.style.cssText = 'color: #0066cc; font-size: 16px; flex-shrink: 0;';
+            arrow.className = 'people-result-arrow';
             arrow.textContent = '→';
             row.appendChild(arrow);
             
@@ -170,71 +142,53 @@
         });
       };
 
-      // Debounce search function
-      let searchTimeout = null;
-      let lastKey = '';
-      
-      const doSearch = async () => {
-        if (!window.BackendAPI || !BackendAPI.isAuthenticated) {
-          renderResults([]);
-          return;
-        }
-        
-        const jobTitle = jobTitleInput.value.trim();
-        const company = companyInput.value.trim();
-        
-        // Clear results if either field is empty
-        if (!jobTitle || !company) {
-          resultsContainer.innerHTML = '';
-          return;
-        }
-        
-        const key = `${jobTitle}|||${company}`;
-        if (key === lastKey) return;
-        lastKey = key;
-
-        // Show loading state
-        resultsContainer.innerHTML = '<div style="font-size:11px; color:#666;">Searching...</div>';
-        
+      // Search function for category
+      const searchByCategory = async (category) => {
         try {
-          const { results } = await BackendAPI.searchContacts(jobTitle, company);
-          renderResults(results);
-        } catch (error) {
-          console.error('People search failed:', error);
-          const err = document.createElement('div');
-          err.style.cssText = 'font-size: 11px; color: #e74c3c;';
-          err.textContent = error?.message || 'Search failed';
+          // Show loading state
+          const loadingDiv = document.createElement('div');
+          loadingDiv.className = 'people-search-loading';
+          loadingDiv.textContent = 'Finding people...';
           resultsContainer.innerHTML = '';
-          resultsContainer.appendChild(err);
-        }
-      };
-
-      // Add real-time search on input change with debouncing
-      const handleInput = () => {
-        if (searchTimeout) {
-          clearTimeout(searchTimeout);
-        }
-        searchTimeout = setTimeout(doSearch, 500); // 500ms debounce
-      };
-
-      jobTitleInput.addEventListener('input', handleInput);
-      companyInput.addEventListener('input', handleInput);
-
-      // Also trigger search on Enter key
-      const handleEnter = (e) => {
-        if (e.key === 'Enter') {
-          if (searchTimeout) {
-            clearTimeout(searchTimeout);
+          resultsContainer.appendChild(loadingDiv);
+          
+          // Handle Founder/Co-Founder combination
+          let searchCategory = category;
+          if (category === 'Founder') {
+            // Randomly pick between Founder and Co-Founder
+            searchCategory = Math.random() < 0.5 ? 'Founder' : 'Co-Founder';
           }
-          doSearch();
+          
+          const searchResults = await window.BackendAPI.searchContactsByCategory(searchCategory, 3);
+          renderResults(searchResults.results || []);
+        } catch (error) {
+          console.error('Category search error:', error);
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'people-search-error';
+          errorDiv.textContent = 'Search failed. Please try again.';
+          resultsContainer.innerHTML = '';
+          resultsContainer.appendChild(errorDiv);
         }
       };
 
-      jobTitleInput.addEventListener('keydown', handleEnter);
-      companyInput.addEventListener('keydown', handleEnter);
+      // Attach click handlers to category buttons
+      categoryButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const category = button.dataset.category;
+          if (category) {
+            // Remove active state from all buttons
+            categoryButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active state to clicked button
+            button.classList.add('active');
+            // Perform search
+            await searchByCategory(category);
+          }
+        });
+      });
 
-    } catch (e) {
-      console.error('Failed to attach people search handlers:', e);
+    } catch (error) {
+      console.error('Error attaching category search handlers:', error);
     }
   };
 

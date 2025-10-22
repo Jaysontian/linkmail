@@ -5,6 +5,23 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Fade-in animation for initial container injection */
+.lm-fade-in {
+    animation: lm-fadeIn 0.5s ease-out;
+}
+
+/* Smooth fade-in for container injection */
+.linkmail-container.fade-in {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.linkmail-container.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 @keyframes slideIn {
     from { transform: translateY(-50px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
