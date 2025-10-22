@@ -460,9 +460,9 @@
     border: 1px solid #e1e5e9;
     border-radius: 8px;
     padding: 4px 8px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 400;
-    color: #5b5b5b;
+    color: #787878;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
