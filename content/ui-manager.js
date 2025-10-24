@@ -55,7 +55,7 @@ window.UIManager = Object.assign(__existingUI, {
     const nameElement = document.getElementById('profileName');
 
     // Check page type - treat own-profile same as feed page
-    const pageType = this.getSafePageType();
+    const pageType = window.UIManager.getSafePageType();
     const shouldShowEmailInterface = pageType === 'other-profile';
 
     if (shouldShowEmailInterface) {
@@ -355,6 +355,14 @@ window.UIManager = Object.assign(__existingUI, {
         return;
       }
 
+      // Ensure getSafePageType is available
+      if (typeof window.UIManager.getSafePageType !== 'function') {
+        console.error('[UIManager] getSafePageType not available, using fallback');
+        window.UIManager.getSafePageType = function() {
+          return window.currentPageType || 'other-profile';
+        };
+      }
+
       // Concurrency guard for UI creation
       if (this._isCreatingUI) {
         return;
@@ -394,7 +402,7 @@ window.UIManager = Object.assign(__existingUI, {
       const nameElement = injectedDiv.querySelector('#title');
       if (nameElement) {
                 // Check page type - treat own-profile same as feed page
-        const pageType = this.getSafePageType();
+        const pageType = window.UIManager.getSafePageType();
         const shouldUseManualEmail = pageType === 'feed' || pageType === 'own-profile';
 
         if (shouldUseManualEmail) {
@@ -1352,7 +1360,7 @@ window.UIManager = Object.assign(__existingUI, {
         // Extract contact information from current profile if available
         let contactInfo = null;
         try {
-          const pageType = this.getSafePageType();
+          const pageType = window.UIManager.getSafePageType();
           if (pageType === 'other-profile' && window.ProfileScraper) {
             const profileData = await window.ProfileScraper.scrapeBasicProfileData();
             
@@ -1709,7 +1717,7 @@ window.UIManager = Object.assign(__existingUI, {
           this.userData = { ...this.userData, ...storedUserData };
 
           // Check page type - treat own-profile same as feed page
-          const pageType = this.getSafePageType();
+          const pageType = window.UIManager.getSafePageType();
           const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
 
           if (shouldShowPeopleSuggestions) {
@@ -1733,7 +1741,7 @@ window.UIManager = Object.assign(__existingUI, {
           }
         } else {
           // No profile setup flow: still show authenticated UI without stored profile
-          const pageType = this.getSafePageType();
+          const pageType = window.UIManager.getSafePageType();
           const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
           if (shouldShowPeopleSuggestions) {
             if (peopleSuggestionsView) {
@@ -1765,7 +1773,7 @@ window.UIManager = Object.assign(__existingUI, {
     // Update the title based on page type
     const nameElement = this.container.querySelector('#title');
     if (nameElement) {
-      const pageType = this.getSafePageType();
+      const pageType = window.UIManager.getSafePageType();
       const shouldShowGenericTitle = pageType === 'feed' || pageType === 'own-profile';
 
       if (shouldShowGenericTitle) {

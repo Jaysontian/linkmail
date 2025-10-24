@@ -29,7 +29,7 @@
 
       const nameElement = injectedDiv.querySelector('#title');
       if (nameElement) {
-        const pageType = this.getSafePageType();
+        const pageType = window.UIManager.getSafePageType();
         const shouldUseManualEmail = pageType === 'feed' || pageType === 'own-profile';
         if (shouldUseManualEmail) nameElement.textContent = 'Draft personalized emails with AI';
         else {

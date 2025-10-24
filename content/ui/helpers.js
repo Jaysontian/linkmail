@@ -34,6 +34,11 @@
     }
   };
 
+  // Ensure the function is always available on UIManager
+  if (!window.UIManager.getSafePageType) {
+    console.error('[UIManager] getSafePageType function not properly attached');
+  }
+
   // Update cached own-profile id
   window.UIManager.updateOwnProfileIdFromUserData = window.UIManager.updateOwnProfileIdFromUserData || function updateOwnProfileIdFromUserData(){
     try {

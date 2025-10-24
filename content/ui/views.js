@@ -55,7 +55,7 @@
     
     try {
 
-      const pageType = this.getSafePageType();
+      const pageType = window.UIManager.getSafePageType();
       const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
 
       // Auto-detect if we should preserve the current view
@@ -140,7 +140,7 @@
         if (userExists) {
           const storedUserData = await this.getUserFromStorage(this.userData.email);
           this.userData = { ...this.userData, ...storedUserData };
-          const pageType = this.getSafePageType();
+          const pageType = window.UIManager.getSafePageType();
           const shouldShowPeopleSuggestions = pageType === 'feed' || pageType === 'own-profile';
           if (shouldShowPeopleSuggestions) {
             if (peopleSuggestionsView) { peopleSuggestionsView.style.display = 'block'; this.loadPeopleSuggestions(); }
@@ -167,7 +167,7 @@
 
     const nameElement = this.container.querySelector('#title');
     if (nameElement) {
-      const pageType = this.getSafePageType();
+      const pageType = window.UIManager.getSafePageType();
       const shouldShowGenericTitle = pageType === 'feed' || pageType === 'own-profile';
       if (shouldShowGenericTitle) {
         nameElement.textContent = 'Draft personalized emails with AI';
