@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "LinkMail",
-  "version": "1.1",
+  "name": "Linkmail",
+  "version": "1.7",
   "description": "Email Client for LinkedIn",
   "icons": {
     "16": "assets/logo.png",
@@ -32,7 +32,6 @@
     "https://linkmail-sending.vercel.app/*",
     "*://*.linkedin.com/*"
   ],
-  "key": "ahoknlaefjlpnadehdjimbhikbilcick",
   "background": {
     "service_worker": "background.js"
   },
@@ -51,21 +50,22 @@
       "send/email-sender.js",
       "templates/template-manager.js",
       "history/email-history.js",
+      "content/gmail-manager.js",
+      "content/utils.js",
+      "content/email-finder.js",
+      "content/profile-scraper.js",
+      "content/url-observer.js",
       "content/ui/helpers.js",
       "content/ui/auth.js",
-      "content/ui/autocomplete.js",
       "content/ui/similar.js",
       "content/ui/people.js",
       "content/ui/templates.js",
       "content/ui/history.js",
       "content/ui/messages.js",
       "content/ui/views.js",
+      "content/ui/events.js",
+      "content/ui/autocomplete.js",
       "content/ui/bootstrap.js",
-      "content/gmail-manager.js",
-      "content/utils.js",
-      "content/email-finder.js",
-      "content/profile-scraper.js",
-      "content/url-observer.js",
       "content/ui-manager.js",
       "content/content.js"
     ],

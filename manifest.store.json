@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "LinkMail",
-  "version": "1.3",
+  "name": "Linkmail",
+  "version": "1.7",
   "description": "Email Client for LinkedIn",
   "icons": {
     "16": "assets/logo.png",
@@ -55,6 +55,17 @@
       "content/email-finder.js",
       "content/profile-scraper.js",
       "content/url-observer.js",
+      "content/ui/helpers.js",
+      "content/ui/auth.js",
+      "content/ui/similar.js",
+      "content/ui/people.js",
+      "content/ui/templates.js",
+      "content/ui/history.js",
+      "content/ui/messages.js",
+      "content/ui/views.js",
+      "content/ui/events.js",
+      "content/ui/autocomplete.js",
+      "content/ui/bootstrap.js",
       "content/ui-manager.js",
       "content/content.js"
     ],
