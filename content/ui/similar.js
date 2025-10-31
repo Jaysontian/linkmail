@@ -221,27 +221,26 @@
     const firstName = person.firstName || '';
     const lastName = person.lastName || '';
     const name = `${firstName} ${lastName}`.trim() || 'Unknown';
-    const initials = name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
     
     const jobTitle = person.jobTitle || 'No title available';
     const company = person.company || '';
     const displayTitle = company ? `${jobTitle} at ${company}` : jobTitle;
     
     // Determine similarity reason based on matchType from backend
-    let reasonText = '🔍 Similar profile';
+    let reasonText = 'Similar profile';
     if (person.matchType) {
       switch (person.matchType) {
         case 'category_and_company':
-          reasonText = '🎯 Same category & company';
+          reasonText = 'Same Category & Company';
           break;
         case 'company_only':
-          reasonText = '🏢 Same company';
+          reasonText = 'Same Company';
           break;
         case 'category_only':
-          reasonText = '💼 Same category';
+          reasonText = 'Same Category';
           break;
         default:
-          reasonText = '🔍 Similar profile';
+          reasonText = 'Similar Profile';
       }
     } else {
       // Fallback to old logic if no matchType available
@@ -251,19 +250,16 @@
                             searchCompany.toLowerCase().includes(company.toLowerCase());
       
       if (isJobTitleMatch && isCompanyMatch) {
-        reasonText = '🎯 Same company & role';
+        reasonText = 'Same Company & Role';
       } else if (isCompanyMatch) {
-        reasonText = '🏢 Same company';
+        reasonText = 'Same Company';
       } else if (isJobTitleMatch) {
-        reasonText = '💼 Same role';
+        reasonText = 'Same Role';
       }
     }
 
     card.innerHTML = `
       <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 36px; height: 36px; border-radius: 50%; background: #0066cc; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
-          ${initials}
-        </div>
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             ${name}
@@ -275,7 +271,7 @@
             ${reasonText}
           </div>
         </div>
-        <div style="color: #0066cc; font-size: 14px; flex-shrink: 0;">
+        <div style="color: #0066cc; font-size: 14px; flex-shrink: 0; margin-right:4px;">
           →
         </div>
       </div>

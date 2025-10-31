@@ -93,9 +93,9 @@
     background-color: rgb(25, 25, 25);
     color: white;
     border: none;
-    border-radius: 10px;
-    padding: 8px 16px;
-    font-size: 11pt;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 10pt;
     font-weight: 550;
     cursor: pointer;
     transition: var(--transition);

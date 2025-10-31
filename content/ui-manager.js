@@ -859,7 +859,7 @@ window.UIManager = Object.assign(__existingUI, {
       // Start loading animation
       const pointer = document.querySelector('.linkmail-pointer');
       if (pointer) {
-        pointer.classList.add('loading');
+        pointer.classList.add('lm-loading');
       }
 
       // Shrink container height
@@ -1185,7 +1185,7 @@ window.UIManager = Object.assign(__existingUI, {
         // Stop loading animation
         const pointer = document.querySelector('.linkmail-pointer');
         if (pointer) {
-          pointer.classList.remove('loading');
+          pointer.classList.remove('lm-loading');
         }
 
         // Restore container height
@@ -1322,7 +1322,7 @@ window.UIManager = Object.assign(__existingUI, {
         const pointer = document.querySelector('.linkmail-pointer');
         if (pointer) {
           pointer.classList.remove('sending'); // Remove any existing sending state
-          pointer.classList.add('loading');
+          pointer.classList.add('lm-loading');
         }
 
         // Shrink container height
@@ -1333,12 +1333,14 @@ window.UIManager = Object.assign(__existingUI, {
 
         // Hide form elements with fade out animation
         const recipientInput = document.getElementById('recipientEmailInput');
+        const emailIcon = document.querySelector('.email-input-icon');
         const emailSubject = document.getElementById('emailSubject');
         const emailResult = document.getElementById('emailResult');
         const copyButton = document.getElementById('copyButton');
         const emailAttachments = document.getElementById('emailAttachments');
 
         if (recipientInput) recipientInput.classList.add('fade-out-up');
+        if (emailIcon) emailIcon.classList.add('fade-out-up');
         if (emailSubject) emailSubject.classList.add('fade-out-up');
         if (emailResult) emailResult.classList.add('fade-out-up');
         if (copyButton) copyButton.classList.add('fade-out-up');
@@ -1436,7 +1438,7 @@ window.UIManager = Object.assign(__existingUI, {
         // Trigger sending animation before showing success
         const successPointer = document.querySelector('.linkmail-pointer');
         if (successPointer) {
-          successPointer.classList.remove('loading');
+          successPointer.classList.remove('lm-loading');
           successPointer.classList.add('sending');
           
           // Reset pointer after animation completes (1.2s duration)
@@ -1475,12 +1477,14 @@ window.UIManager = Object.assign(__existingUI, {
 
         // Restore form elements
         const recipientInput = document.getElementById('recipientEmailInput');
+        const emailIcon = document.querySelector('.email-input-icon');
         const emailSubject = document.getElementById('emailSubject');
         const emailResult = document.getElementById('emailResult');
         const copyButton = document.getElementById('copyButton');
         const emailAttachments = document.getElementById('emailAttachments');
 
         if (recipientInput) recipientInput.classList.remove('fade-out-up');
+        if (emailIcon) emailIcon.classList.remove('fade-out-up');
         if (emailSubject) emailSubject.classList.remove('fade-out-up');
         if (emailResult) emailResult.classList.remove('fade-out-up');
         if (copyButton) copyButton.classList.remove('fade-out-up');
