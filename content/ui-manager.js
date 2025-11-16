@@ -560,37 +560,10 @@ window.UIManager = Object.assign(__existingUI, {
       return;
     }
 
-    // Toggle dropdown when three-dots button is clicked (guard if missing)
-    if (this.elements.menuToggle && this.elements.menuContent) {
-      this.elements.menuToggle.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const dropdown = this.elements.menuContent;
-        
-        if (dropdown.classList.contains('show')) {
-          // Hide dropdown with animation
-          dropdown.classList.remove('show');
-          dropdown.classList.add('hide');
-          
-          // Remove from DOM after animation completes
-          setTimeout(() => {
-            dropdown.style.display = 'none';
-            dropdown.classList.remove('hide');
-          }, 200); // Match CSS transition duration
-        } else {
-          // Show dropdown with animation
-          dropdown.style.display = 'block';
-          // Force reflow to ensure display change is applied
-          dropdown.offsetHeight;
-          dropdown.classList.add('show');
-        }
-      });
-    } else {
-      console.log('Menu toggle/content not found; skipping account dropdown listeners');
-    }
-
-    // Close dropdown when clicking elsewhere on the page
+    // Close dropdown when clicking elsewhere on the page (for sign-out menu)
     window.addEventListener('click', (event) => {
-      if (this.elements.menuContent && !this.elements.menuContent.contains(event.target) && this.elements.menuContent.classList.contains('show')){
+      if (this.elements.menuContent && !this.elements.menuContent.contains(event.target) && 
+          !this.elements.profileButton?.contains(event.target) && this.elements.menuContent.classList.contains('show')){
         const dropdown = this.elements.menuContent;
         dropdown.classList.remove('show');
         dropdown.classList.add('hide');
@@ -768,75 +741,6 @@ window.UIManager = Object.assign(__existingUI, {
         this.showTemporaryMessage('Error signing out', 'error');
       }
     });
-
-    // Add this improvement to the editProfileButton click handler
-    // Find this in setupEventListeners
-    if (this.elements.editProfileButton) {
-      this.elements.editProfileButton.addEventListener('click', () => {
-        // Redirect to web dashboard profile page
-        const profileUrl = 'https://www.linkmail.dev/dashboard/profile';
-        
-        // Open in new tab
-        chrome.runtime.sendMessage({
-          action: 'openBioSetupPage',
-          url: profileUrl
-        }, (response) => {
-          if (response && response.success) {
-            console.log('✅ Opened web dashboard profile page');
-            
-            // Set up a timer to refresh templates when user returns
-            const refreshInterval = setInterval(() => {
-              this.refreshUserData().then(() => {
-                this.populateTemplateDropdown();
-              });
-            }, 5000);
-
-            // Stop checking after 10 minutes (600000 ms)
-            setTimeout(() => {
-              clearInterval(refreshInterval);
-            }, 600000);
-          } else {
-            console.error('❌ Failed to open dashboard:', response);
-          }
-        });
-      });
-    } else {
-      console.error('❌ Edit Profile button not found in DOM!');
-    }
-
-    // Add settingsButton click handler for templates
-    if (this.elements.settingsButton) {
-      this.elements.settingsButton.addEventListener('click', () => {
-        // Redirect to web dashboard templates page
-        const templatesUrl = 'https://www.linkmail.dev/dashboard/templates';
-        
-        // Open in new tab
-        chrome.runtime.sendMessage({
-          action: 'openBioSetupPage',
-          url: templatesUrl
-        }, (response) => {
-          if (response && response.success) {
-            console.log('✅ Opened web dashboard templates page');
-            
-            // Set up a timer to refresh templates when user returns
-            const refreshInterval = setInterval(() => {
-              this.refreshUserData().then(() => {
-                this.populateTemplateDropdown();
-              });
-            }, 5000);
-
-            // Stop checking after 10 minutes (600000 ms)
-            setTimeout(() => {
-              clearInterval(refreshInterval);
-            }, 600000);
-          } else {
-            console.error('❌ Failed to open templates dashboard:', response);
-          }
-        });
-      });
-    } else {
-      console.error('❌ Settings button not found in DOM!');
-    }
 
     // GENERATE BUTTON UI
     if (this.elements.generateButton) this.elements.generateButton.addEventListener('click', async () => {
@@ -1211,14 +1115,34 @@ window.UIManager = Object.assign(__existingUI, {
       }
     });
 
-    // COPY BUTTON
-    if (this.elements.copyButton) this.elements.copyButton.addEventListener('click', () => {
-      this.elements.emailResult.select();
-      document.execCommand('copy');
-      this.elements.copyButton.textContent = 'Copied!';
-      setTimeout(() => {
-        this.elements.copyButton.textContent = 'Copy';
-      }, 2000);
+    // TEMPLATES BUTTON - Opens templates page
+    if (this.elements.templatesButton) this.elements.templatesButton.addEventListener('click', () => {
+      // Open templates page in new tab
+      chrome.runtime.sendMessage({
+        action: 'openBioSetupPage',
+        url: 'https://www.linkmail.dev/dashboard/templates'
+      }, (response) => {
+        if (response && response.success) {
+          console.log('✅ Opened templates page');
+        } else {
+          console.error('❌ Failed to open templates page:', response);
+        }
+      });
+    });
+
+    // PROFILE BUTTON - Opens profile page  
+    if (this.elements.profileButton) this.elements.profileButton.addEventListener('click', () => {
+      // Open profile page in new tab
+      chrome.runtime.sendMessage({
+        action: 'openBioSetupPage',
+        url: 'https://www.linkmail.dev/dashboard/profile'
+      }, (response) => {
+        if (response && response.success) {
+          console.log('✅ Opened profile page');
+        } else {
+          console.error('❌ Failed to open profile page:', response);
+        }
+      });
     });
 
     // Removed Find Email button and its manual scraping flow
@@ -1336,14 +1260,14 @@ window.UIManager = Object.assign(__existingUI, {
         const emailIcon = document.querySelector('.email-input-icon');
         const emailSubject = document.getElementById('emailSubject');
         const emailResult = document.getElementById('emailResult');
-        const copyButton = document.getElementById('copyButton');
+        const templatesButton = document.getElementById('templatesButton');
         const emailAttachments = document.getElementById('emailAttachments');
 
         if (recipientInput) recipientInput.classList.add('fade-out-up');
         if (emailIcon) emailIcon.classList.add('fade-out-up');
         if (emailSubject) emailSubject.classList.add('fade-out-up');
         if (emailResult) emailResult.classList.add('fade-out-up');
-        if (copyButton) copyButton.classList.add('fade-out-up');
+        if (templatesButton) templatesButton.classList.add('fade-out-up');
         if (emailAttachments) emailAttachments.classList.add('fade-out-up');
         if (this.elements.sendGmailButton) {
           this.elements.sendGmailButton.classList.add('fade-out-up');
@@ -1480,14 +1404,14 @@ window.UIManager = Object.assign(__existingUI, {
         const emailIcon = document.querySelector('.email-input-icon');
         const emailSubject = document.getElementById('emailSubject');
         const emailResult = document.getElementById('emailResult');
-        const copyButton = document.getElementById('copyButton');
+        const templatesButton = document.getElementById('templatesButton');
         const emailAttachments = document.getElementById('emailAttachments');
 
         if (recipientInput) recipientInput.classList.remove('fade-out-up');
         if (emailIcon) emailIcon.classList.remove('fade-out-up');
         if (emailSubject) emailSubject.classList.remove('fade-out-up');
         if (emailResult) emailResult.classList.remove('fade-out-up');
-        if (copyButton) copyButton.classList.remove('fade-out-up');
+        if (templatesButton) templatesButton.classList.remove('fade-out-up');
         if (emailAttachments) emailAttachments.classList.remove('fade-out-up');
         if (this.elements.sendGmailButton) {
           this.elements.sendGmailButton.classList.remove('fade-out-up');
