@@ -21,7 +21,11 @@ async function enrichPersonWithApollo() {
 // Apollo API key test removed
 async function testApolloAPIKey() { return false; }
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
+  // Open the installation success page when the extension is first installed
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('install-success.html') });
+  }
 });
 
 chrome.runtime.onStartup.addListener(() => {
@@ -98,6 +102,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Similar people search removed
   else if (request.action === 'findSimilarPeople') {
     sendResponse({ success: false, error: 'Similar people search disabled' });
+    return true;
+  }
+
+  // Handle close tab request
+  else if (request.action === 'closeCurrentTab') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        chrome.tabs.remove(tabs[0].id);
+      }
+    });
+    sendResponse({ success: true });
     return true;
   }
 });
