@@ -13,23 +13,22 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0B66C2;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
         }
 
         .container {
             background: white;
-            border-radius: 20px;
-            padding: 60px 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.5s ease-out;
+            border-radius: 24px;
+            max-width: 1200px;
+            width: 95%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.6s ease-out;
+            overflow: hidden;
         }
 
         @keyframes slideIn {
@@ -43,10 +42,16 @@
             }
         }
 
+        .header {
+            text-align: center;
+            padding: 50px 40px 40px;
+            background: linear-gradient(to bottom, #f8f9fa 0%, white 100%);
+        }
+
         .checkmark {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 30px;
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 25px;
             background: #4CAF50;
             border-radius: 50%;
             display: flex;
@@ -68,8 +73,8 @@
         }
 
         .checkmark svg {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             stroke: white;
             stroke-width: 3;
             stroke-linecap: round;
@@ -87,72 +92,209 @@
         }
 
         h1 {
-            font-size: 32px;
-            color: #333;
-            margin-bottom: 15px;
+            font-size: 42px;
+            color: #1a1a1a;
+            margin-bottom: 12px;
             font-weight: 700;
         }
 
         h2 {
-            font-size: 24px;
-            color: #555;
-            margin-bottom: 30px;
-            font-weight: 500;
+            font-size: 20px;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .content {
+            display: flex;
+            align-items: center;
+            padding: 60px;
+            gap: 80px;
+        }
+
+        .left-column {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.6s ease-out 0.4s both;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .right-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.6s ease-out 0.6s both;
+        }
+
+        h3 {
+            font-size: 32px;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-weight: 700;
+            line-height: 1.3;
         }
 
         p {
-            font-size: 18px;
+            font-size: 17px;
             color: #666;
-            line-height: 1.6;
-        }
-
-        a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s ease;
-        }
-
-        a:hover {
-            color: #764ba2;
-            text-decoration: underline;
+            line-height: 1.7;
+            margin-bottom: 32px;
         }
 
         .cta {
-            margin-top: 40px;
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px 32px;
+            background: #1a1a1a;
             color: white;
             border: none;
             border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
             text-decoration: none;
-            display: inline-block;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+            width: fit-content;
         }
 
         .cta:hover {
+            background: #2a2a2a;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
             text-decoration: none;
             color: white;
+        }
+
+        .cta img {
+            width: 20px;
+            height: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                flex-direction: column;
+                padding: 40px;
+                gap: 50px;
+            }
+
+            .right-column {
+                text-align: center;
+                align-items: center;
+            }
+
+            h3 {
+                font-size: 28px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .container {
+                width: 100%;
+                border-radius: 16px;
+            }
+
+            .header {
+                padding: 40px 30px 30px;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            .content {
+                padding: 30px 25px;
+                gap: 40px;
+            }
+
+            h3 {
+                font-size: 24px;
+            }
+
+            p {
+                font-size: 16px;
+            }
+
+            .cta {
+                padding: 14px 28px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="checkmark">
-            <svg viewBox="0 0 52 52">
-                <path d="M14 27l8 8 16-16"/>
-            </svg>
+        <!-- Success Header -->
+        <div class="header">
+            <div class="checkmark">
+                <svg viewBox="0 0 52 52">
+                    <path d="M14 27l8 8 16-16"/>
+                </svg>
+            </div>
+            <h1>Installation Successful</h1>
+            <h2>Your LinkedIn is Now Supercharged!</h2>
         </div>
-        <h1>Installation Successful</h1>
-        <h2>Your LinkedIn is Now Supercharged!</h2>
-        <p>Test by Sending an Email to <a href="https://www.linkedin.com/in/ishaangpta/" target="_blank">Ishaan</a></p>
-        <a href="https://www.linkedin.com/in/ishaangpta/" target="_blank" class="cta">Try it Now on LinkedIn</a>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Left Column: Video -->
+            <div class="left-column">
+                <div class="video-container">
+                    <video id="demoVideo" autoplay loop muted playsinline>
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+
+            <!-- Right Column: Text & CTA -->
+            <div class="right-column">
+                <h3>Send Your First Linkmail</h3>
+                <p>Now it's your turn! Send a real outreach email to Ishaan in under 10 seconds. Just click below to try the full AI workflow on a real LinkedIn profile.</p>
+                
+                <a href="https://www.linkedin.com/in/ishaangpta/" target="_blank" class="cta">
+                    <img id="linkedinIcon" alt="LinkedIn">
+                    Send Ishaan a Message
+                </a>
+            </div>
+        </div>
     </div>
+
+    <script src="install-success.js"></script>
 </body>
 </html>
 
