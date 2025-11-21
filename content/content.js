@@ -136,9 +136,14 @@
       // Wait a bit more to ensure LinkedIn's dynamic content is loaded
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // If page changed, clear the cached email
+      // If page changed, clear the cached email and hide any error messages
       if (isNewPage && window.EmailFinder) {
         window.EmailFinder.clearCachedEmail();
+      }
+      
+      // Hide the "Can't Find Email" popup when navigating to a new page
+      if (isNewPage && window.UIManager) {
+        window.UIManager.hideNoEmailFoundMessage();
       }
 
       // If UI exists but page changed, reset UI
