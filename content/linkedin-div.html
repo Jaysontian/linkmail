@@ -104,7 +104,30 @@
                     <svg xmlns="http://www.w3.org/2000/svg" style="margin-right:8px; color:gray;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Templates
                 </button>
-                <button id="sendGmailButton" class="lm-btn linkmail-send-button" style="margin:0px 0px;">Send Email</button>
+                <div class="send-buttons-container">
+                    <button id="scheduleSendButton" class="lm-btn-schedule" title="Schedule send">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </button>
+                    <button id="sendGmailButton" class="lm-btn linkmail-send-button" style="margin:0px 0px;">Send Email</button>
+                </div>
+            </div>
+
+            <!-- Schedule Send Popup -->
+            <div id="scheduleSendPopup" class="schedule-popup" style="display:none;">
+                <div class="schedule-popup-header">
+                    <h3>Schedule Send</h3>
+                    <button id="closeSchedulePopup" class="schedule-popup-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div class="schedule-popup-content">
+                    <div class="schedule-input-group">
+                        <label for="scheduleDateInput">Send on</label>
+                        <input type="date" id="scheduleDateInput" class="lm-input schedule-input">
+                    </div>
+                    <p id="schedulePreview" class="schedule-preview"></p>
+                </div>
+                <button id="confirmScheduleButton" class="lm-btn schedule-confirm-btn">Schedule Send</button>
             </div>
 
         </div>
@@ -127,6 +150,16 @@
         </div>
         
         <a class="lm-btn-black" href="https://mail.google.com/mail/u/0/#sent" target="_blank" style="width:fit-content; color: white !important; text-decoration: none !important;">Check in Gmail</a>
+    </div>
+
+    <div id="linkmail-scheduled-success" style="display:none;">
+        <div class="scheduled-success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h2 class="linkmail-header">Email scheduled successfully!</h2>
+        <p id="scheduledTimeDisplay" class="scheduled-time-text"></p>
+        <br>
+        <button id="backToEditorButton" class="lm-btn-black" style="width:fit-content;">Done</button>
     </div>
 
     <!-- People Suggestions View for Feed Page -->

@@ -67,6 +67,7 @@
       "content/ui/autocomplete.js",
       "content/ui/bootstrap.js",
       "content/ui-manager.js",
+      "content/jobs-referral.js",
       "content/content.js"
     ],
     "run_at": "document_start"

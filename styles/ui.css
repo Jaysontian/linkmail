@@ -322,3 +322,397 @@
         transform: rotate(360deg);
     }
 }
+
+/* ==========================================================================
+   Schedule Send Styles
+   ========================================================================== */
+.send-buttons-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.lm-btn-schedule {
+    background-color: var(--bg-light-hover);
+    color: #666;
+    border: none;
+    border-radius: var(--button-radius);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lm-btn-schedule:hover {
+    background-color: #e0e0e0;
+    color: var(--primary-color);
+}
+
+.lm-btn-schedule svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Schedule Popup */
+.schedule-popup {
+    position: absolute;
+    bottom: 50px;
+    right: 0;
+    left: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    z-index: 1000;
+    animation: schedulePopupIn 0.2s ease-out;
+}
+
+@keyframes schedulePopupIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.schedule-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.schedule-popup-header h3 {
+    margin: 0;
+    font-size: 13pt;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.schedule-popup-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.schedule-popup-close:hover {
+    background: var(--bg-light);
+    color: var(--text-color);
+}
+
+.schedule-popup-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.schedule-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.schedule-input-group label {
+    font-size: 10pt;
+    font-weight: 500;
+    color: var(--text-light);
+    margin: 0;
+}
+
+.schedule-input {
+    padding: 8px 12px !important;
+    font-size: 10pt !important;
+}
+
+.schedule-preview {
+    font-size: 9pt;
+    color: var(--primary-color);
+    margin: 0;
+    padding: 8px 12px;
+    background: rgba(11, 102, 194, 0.08);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.schedule-confirm-btn {
+    width: 100%;
+}
+
+/* Scheduled Success View */
+.scheduled-success-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.scheduled-success-icon svg {
+    color: var(--primary-color);
+    animation: successPulse 2s ease-in-out infinite;
+}
+
+@keyframes successPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}
+
+.scheduled-time-text {
+    text-align: center;
+    font-size: 10pt;
+    color: var(--text-light);
+    margin: 0 0 8px 0;
+}
+
+/* ==========================================================================
+   Jobs Page Referral Button & Popup
+   ========================================================================== */
+
+/* Get Referred Button - matches LinkedIn Apply button style */
+.linkmail-referral-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    margin-left: 8px;
+    background-color: #0a66c2;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.linkmail-referral-btn:hover {
+    background-color: #004182;
+    box-shadow: none;
+    transform: none;
+}
+
+.linkmail-referral-btn:active {
+    transform: none;
+    box-shadow: none;
+}
+
+.linkmail-referral-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.linkmail-referral-btn span {
+    line-height: 1;
+}
+
+/* Referral Popup */
+.linkmail-referral-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(0, 0, 0, 0.15);
+    width: 400px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 100px);
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.linkmail-referral-popup.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.linkmail-referral-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.linkmail-referral-popup-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.3;
+}
+
+.linkmail-referral-popup-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.linkmail-referral-popup-close:hover {
+    background: #f5f5f5;
+    color: #1a1a1a;
+}
+
+.linkmail-referral-popup-subtitle {
+    padding: 12px 24px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    background: white;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.linkmail-referral-contacts-list {
+    padding: 12px;
+    overflow-y: auto;
+    max-height: 350px;
+    flex: 1;
+}
+
+/* Individual Contact Card */
+.linkmail-referral-contact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease;
+    margin-bottom: 4px;
+}
+
+.linkmail-referral-contact:hover {
+    background: #f5f8fa;
+}
+
+.linkmail-referral-contact:last-child {
+    margin-bottom: 0;
+}
+
+.linkmail-referral-contact-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0b66c2 0%, #004182 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 600;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.linkmail-referral-contact-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.linkmail-referral-contact-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.linkmail-referral-contact-title {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.linkmail-referral-contact-arrow {
+    color: #999;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.linkmail-referral-contact:hover .linkmail-referral-contact-arrow {
+    color: #0b66c2;
+    transform: translate(2px, -2px);
+}
+
+.linkmail-referral-popup-footer {
+    padding: 14px 24px;
+    border-top: 1px solid #f0f0f0;
+    background: white;
+    display: flex;
+    justify-content: center;
+}
+
+.linkmail-referral-logo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #888;
+}
+
+.linkmail-referral-logo img {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+/* No backdrop - clean white popup */
+
+/* Scrollbar styling for contacts list */
+.linkmail-referral-contacts-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.linkmail-referral-contacts-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.linkmail-referral-contacts-list::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.linkmail-referral-contacts-list::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}

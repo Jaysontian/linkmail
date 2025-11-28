@@ -11,6 +11,7 @@
     '#linkmail-splash',
     '#linkmail-editor',
     '#linkmail-success',
+    '#linkmail-scheduled-success',
     '#linkmail-people-suggestions'
   ];
 
@@ -70,7 +71,17 @@
       findEmailApolloButton: container.querySelector('#findEmailApolloButton'),
       apolloUsageCounter: container.querySelector('#apolloUsageCounter'),
       apolloLimitMessage: container.querySelector('#apolloLimitMessage'),
-      retryPeopleSearchButton: container.querySelector('#retry-people-search')
+      retryPeopleSearchButton: container.querySelector('#retry-people-search'),
+      // Schedule send elements
+      scheduleSendButton: container.querySelector('#scheduleSendButton'),
+      scheduleSendPopup: container.querySelector('#scheduleSendPopup'),
+      closeSchedulePopup: container.querySelector('#closeSchedulePopup'),
+      scheduleDateInput: container.querySelector('#scheduleDateInput'),
+      schedulePreview: container.querySelector('#schedulePreview'),
+      confirmScheduleButton: container.querySelector('#confirmScheduleButton'),
+      scheduledSuccessView: container.querySelector('#linkmail-scheduled-success'),
+      scheduledTimeDisplay: container.querySelector('#scheduledTimeDisplay'),
+      backToEditorButton: container.querySelector('#backToEditorButton')
     };
   };
 

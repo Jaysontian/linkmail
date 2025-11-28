@@ -72,7 +72,8 @@
 
       const editorViewAtInit = injectedDiv.querySelector('#linkmail-editor');
       const successViewAtInit = injectedDiv.querySelector('#linkmail-success');
-      [this.elements.signInView, this.elements.splashView, this.elements.peopleSuggestionsView, editorViewAtInit, successViewAtInit]
+      const scheduledSuccessViewAtInit = injectedDiv.querySelector('#linkmail-scheduled-success');
+      [this.elements.signInView, this.elements.splashView, this.elements.peopleSuggestionsView, editorViewAtInit, successViewAtInit, scheduledSuccessViewAtInit]
         .forEach(view => { if (view) view.style.display = 'none'; });
 
       const initialPageType = window.currentPageType || 'other-profile';

@@ -334,6 +334,107 @@ window.BackendAPI = {
   },
 
   /**
+   * Schedule email to be sent at a later time via backend API
+   * @param {string} to - Recipient email
+   * @param {string} subject - Email subject
+   * @param {string} body - Email body
+   * @param {string} scheduledAt - ISO 8601 datetime string for when to send
+   * @param {Array} attachments - Email attachments
+   * @param {Object} contactInfo - Optional contact information
+   * @returns {Promise<Object>} Schedule result
+   */
+  async scheduleEmail(to, subject, body, scheduledAt, attachments = [], contactInfo = null) {
+    // Validate authentication first
+    const isAuthValid = await this.validateAuth();
+    if (!isAuthValid) {
+      throw new Error('User not authenticated. Please sign in first.');
+    }
+
+    // Validate required parameters
+    if (!to || !subject || !body || !scheduledAt) {
+      throw new Error('Missing required email parameters (to, subject, body, scheduledAt)');
+    }
+
+    const emailData = {
+      to: to.trim(),
+      subject: subject.trim(),
+      body: body.trim(),
+      scheduledAt: scheduledAt,
+      attachments: attachments || []
+    };
+
+    // Add contact information if provided
+    if (contactInfo && typeof contactInfo === 'object') {
+      emailData.contactInfo = contactInfo;
+    }
+
+    console.log('[BackendAPI] Scheduling email:', {
+      to: emailData.to,
+      subject: emailData.subject,
+      bodyLength: emailData.body.length,
+      scheduledAt: emailData.scheduledAt,
+      attachmentsCount: emailData.attachments.length,
+      hasToken: !!this.userToken,
+      baseURL: this.baseURL
+    });
+
+    try {
+      const url = `${this.baseURL}/api/email/schedule`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.userToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(emailData),
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+
+      if (response.status === 401) {
+        console.error('[BackendAPI] Authentication failed - token expired');
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('[BackendAPI] Server error:', errorData);
+        } catch (parseError) {
+          console.error('[BackendAPI] Failed to parse error response:', parseError);
+          const errorText = await response.text();
+          console.error('[BackendAPI] Error response text:', errorText);
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result;
+
+    } catch (error) {
+      console.error('[BackendAPI] Email scheduling error:', error);
+      
+      if (error.name === 'AbortError') {
+        throw new Error('Email scheduling timed out. Please check your connection and try again.');
+      }
+      
+      if (error.message.includes('Authentication expired')) {
+        throw error;
+      }
+      
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to email service. Please check your internet connection and try again.');
+      }
+      
+      throw new Error(`Email scheduling failed: ${error.message}`);
+    }
+  },
+
+  /**
    * Get user's email history from backend
    * @returns {Promise<Array>} Email history
    */
@@ -1433,6 +1534,78 @@ window.BackendAPI = {
     } catch (error) {
       console.error('Fallback autocomplete failed:', error);
       return { suggestions: [] };
+    }
+  },
+
+  /**
+   * Search contacts by company name (for "Get Referred" feature on Jobs pages)
+   * @param {string} company - Company name to search for
+   * @param {number} limit - Number of results to return (default 10, max 50)
+   * @returns {Promise<{ results: Array, company: string, totalFound: number }>} contacts list
+   */
+  async searchContactsByCompany(company, limit = 10) {
+    if (!this.isAuthenticated || !this.userToken) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!company || typeof company !== 'string') {
+      throw new Error('Company name is required');
+    }
+
+    // Validate limit
+    const validLimit = Math.min(Math.max(parseInt(limit) || 10, 1), 50);
+
+    try {
+      const base = this.apiBaseURL || this.baseURL;
+      const params = new URLSearchParams({ 
+        company: company.trim(), 
+        limit: validLimit.toString() 
+      });
+      const url = `${base}/api/contacts/search-by-company?${params.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.userToken}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(15000) // 15 second timeout
+      });
+
+      if (response.status === 401) {
+        await this.clearAuth();
+        throw new Error('Authentication expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        let errText = '';
+        try {
+          const e = await response.json();
+          errText = e.message || e.error || JSON.stringify(e);
+        } catch (_) {
+          errText = await response.text().catch(() => 'Unknown error');
+        }
+        throw new Error(errText || `HTTP ${response.status}`);
+      }
+
+      const json = await response.json();
+      const results = Array.isArray(json.results) ? json.results : [];
+      return { 
+        results,
+        company: json.company || company,
+        totalFound: json.totalFound || results.length
+      };
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout: Unable to search contacts. Please check your connection.');
+      }
+      
+      if (error.message.includes('Authentication expired')) {
+        throw error;
+      }
+      
+      console.error('Failed to search contacts by company:', error);
+      throw error;
     }
   },
 

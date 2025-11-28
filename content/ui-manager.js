@@ -464,7 +464,8 @@ window.UIManager = Object.assign(__existingUI, {
       // Prevent flicker: hide all views immediately after injection
       const editorViewAtInit = injectedDiv.querySelector('#linkmail-editor');
       const successViewAtInit = injectedDiv.querySelector('#linkmail-success');
-      [this.elements.signInView, this.elements.splashView, this.elements.peopleSuggestionsView, editorViewAtInit, successViewAtInit]
+      const scheduledSuccessViewAtInit = injectedDiv.querySelector('#linkmail-scheduled-success');
+      [this.elements.signInView, this.elements.splashView, this.elements.peopleSuggestionsView, editorViewAtInit, successViewAtInit, scheduledSuccessViewAtInit]
         .forEach(view => { if (view) view.style.display = 'none'; });
 
       // If we're on feed or own-profile, pre-show the people suggestions view with a loading state
@@ -1430,6 +1431,254 @@ window.UIManager = Object.assign(__existingUI, {
       this.elements.retryPeopleSearchButton.addEventListener('click', () => {
         this.loadPeopleSuggestions();
       });
+    }
+
+    // Schedule Send Button - Show popup
+    if (this.elements.scheduleSendButton) {
+      this.elements.scheduleSendButton.addEventListener('click', () => {
+        // Check if authenticated
+        if (!this.isAuthenticated) {
+          this.showSignInUI();
+          return;
+        }
+
+        // Validate email fields before showing popup
+        const email = document.getElementById('recipientEmailInput')?.value;
+        const subject = document.getElementById('emailSubject')?.value;
+        const emailContent = this.elements.emailResult?.value;
+
+        if (!email || !subject || !emailContent) {
+          this.showTemporaryMessage('Please fill in all fields', 'error');
+          return;
+        }
+
+        // Set default date to tomorrow (since today's 9 AM may have passed)
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Format tomorrow's date in local timezone (YYYY-MM-DD)
+        const year = tomorrow.getFullYear();
+        const month = (tomorrow.getMonth() + 1).toString().padStart(2, '0');
+        const day = tomorrow.getDate().toString().padStart(2, '0');
+        const tomorrowStr = `${year}-${month}-${day}`;
+        
+        // Calculate minimum date (tomorrow if 9 AM PST today has passed, otherwise today)
+        const todayYear = now.getFullYear();
+        const todayMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+        const todayDay = now.getDate().toString().padStart(2, '0');
+        const todayStr = `${todayYear}-${todayMonth}-${todayDay}`;
+        
+        // 9 AM PST = 17:00 UTC. Check if it's already past 9 AM PST today
+        const today9amPST = new Date(`${todayStr}T17:00:00Z`);
+        const minDate = now >= today9amPST ? tomorrowStr : todayStr;
+        
+        if (this.elements.scheduleDateInput) {
+          this.elements.scheduleDateInput.value = tomorrowStr;
+          this.elements.scheduleDateInput.min = minDate;
+        }
+
+        // Update preview
+        this._updateSchedulePreview();
+
+        // Show the popup
+        if (this.elements.scheduleSendPopup) {
+          this.elements.scheduleSendPopup.style.display = 'block';
+        }
+      });
+    }
+
+    // Close Schedule Popup
+    if (this.elements.closeSchedulePopup) {
+      this.elements.closeSchedulePopup.addEventListener('click', () => {
+        if (this.elements.scheduleSendPopup) {
+          this.elements.scheduleSendPopup.style.display = 'none';
+        }
+      });
+    }
+
+    // Schedule date change - update preview
+    if (this.elements.scheduleDateInput) {
+      this.elements.scheduleDateInput.addEventListener('change', () => {
+        this._updateSchedulePreview();
+      });
+    }
+
+    // Confirm Schedule Send
+    if (this.elements.confirmScheduleButton) {
+      this.elements.confirmScheduleButton.addEventListener('click', async () => {
+        // Check if authenticated
+        if (!this.isAuthenticated) {
+          this.showSignInUI();
+          return;
+        }
+
+        const email = document.getElementById('recipientEmailInput')?.value;
+        const subject = document.getElementById('emailSubject')?.value;
+        const emailContent = this.elements.emailResult?.value;
+
+        if (!email || !subject || !emailContent) {
+          this.showTemporaryMessage('Please fill in all fields', 'error');
+          return;
+        }
+
+        const scheduledDate = this.elements.scheduleDateInput?.value;
+
+        if (!scheduledDate) {
+          this.showTemporaryMessage('Please select a date', 'error');
+          return;
+        }
+
+        // Create the scheduled datetime at 9 AM PST (17:00 UTC)
+        const scheduledAt = new Date(`${scheduledDate}T17:00:00Z`);
+        const now = new Date();
+        
+        // Validate it's in the future
+        if (scheduledAt <= now) {
+          this.showTemporaryMessage('Please select a future date', 'error');
+          return;
+        }
+
+        try {
+          // Disable button and update text
+          this.elements.confirmScheduleButton.disabled = true;
+          this.elements.confirmScheduleButton.textContent = 'Scheduling...';
+
+          // Get any attachments from the selected template
+          const attachments = this.selectedTemplate?.attachments || [];
+
+          // Extract contact information from current profile if available
+          let contactInfo = null;
+          try {
+            const pageType = window.UIManager.getSafePageType();
+            if (pageType === 'other-profile' && window.ProfileScraper) {
+              const profileData = await window.ProfileScraper.scrapeBasicProfileData();
+              
+              let jobTitle = profileData?.headline || null;
+              if (jobTitle && profileData?.company) {
+                const atIndex = jobTitle.toLowerCase().indexOf(' at ');
+                if (atIndex > 0) {
+                  jobTitle = jobTitle.substring(0, atIndex).trim();
+                }
+              }
+              
+              let profilePictureUrl = null;
+              try {
+                profilePictureUrl = window.ProfileScraper.extractProfilePictureUrl();
+              } catch (imgError) {
+                console.warn('Failed to extract profile picture URL:', imgError);
+              }
+              
+              contactInfo = {
+                firstName: profileData?.firstName || null,
+                lastName: profileData?.lastName || null,
+                jobTitle: jobTitle,
+                company: profileData?.company || null,
+                linkedinUrl: window.location.href,
+                profilePictureUrl: profilePictureUrl
+              };
+            }
+          } catch (error) {
+            console.warn('Failed to extract contact information:', error);
+          }
+
+          // Schedule email via backend
+          await window.BackendAPI.scheduleEmail(email, subject, emailContent, scheduledAt.toISOString(), attachments, contactInfo);
+
+          // Hide the popup
+          if (this.elements.scheduleSendPopup) {
+            this.elements.scheduleSendPopup.style.display = 'none';
+          }
+
+          // Clear the form
+          this.elements.emailResult.value = '';
+          this.elements.emailSubject.value = '';
+          document.getElementById('recipientEmailInput').value = '';
+
+          // Format the scheduled time for display
+          const formattedDateTime = scheduledAt.toLocaleString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          // Update the scheduled time display
+          if (this.elements.scheduledTimeDisplay) {
+            this.elements.scheduledTimeDisplay.textContent = `Scheduled for ${formattedDateTime}`;
+          }
+
+          // Hide all views and show scheduled success view
+          this._hideAllViews();
+          
+          const scheduledSuccessView = this.container.querySelector('#linkmail-scheduled-success');
+          if (scheduledSuccessView) {
+            scheduledSuccessView.style.display = 'block';
+          }
+
+        } catch (error) {
+          console.error('Failed to schedule email:', error);
+          this.showTemporaryMessage('Failed to schedule email. Please try again.', 'error');
+        } finally {
+          // Re-enable button
+          if (this.elements.confirmScheduleButton) {
+            this.elements.confirmScheduleButton.disabled = false;
+            this.elements.confirmScheduleButton.textContent = 'Schedule Send';
+          }
+        }
+      });
+    }
+
+    // Back to Editor Button (from scheduled success view)
+    if (this.elements.backToEditorButton) {
+      this.elements.backToEditorButton.addEventListener('click', () => {
+        // Reset to splash view
+        this.resetUI();
+      });
+    }
+
+    // Close popup when clicking outside
+    document.addEventListener('click', (event) => {
+      if (this.elements.scheduleSendPopup && 
+          this.elements.scheduleSendPopup.style.display === 'block' &&
+          !this.elements.scheduleSendPopup.contains(event.target) &&
+          !this.elements.scheduleSendButton?.contains(event.target)) {
+        this.elements.scheduleSendPopup.style.display = 'none';
+      }
+    });
+  },
+
+  // Update schedule preview text
+  _updateSchedulePreview() {
+    const dateValue = this.elements.scheduleDateInput?.value;
+
+    if (dateValue && this.elements.schedulePreview) {
+      // 9 AM PST = 17:00 UTC
+      const scheduledDate = new Date(`${dateValue}T17:00:00Z`);
+      const now = new Date();
+      
+      // Check if the scheduled time is in the past
+      if (scheduledDate <= now) {
+        this.elements.schedulePreview.textContent = '⚠️ Please select a future date';
+        this.elements.schedulePreview.style.display = 'block';
+        this.elements.schedulePreview.style.color = '#e74c3c';
+        this.elements.schedulePreview.style.background = 'rgba(231, 76, 60, 0.08)';
+      } else {
+        const formattedDate = scheduledDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        });
+        this.elements.schedulePreview.textContent = `Your email will be sent on ${formattedDate} at 9:00 AM PST`;
+        this.elements.schedulePreview.style.display = 'block';
+        this.elements.schedulePreview.style.color = 'var(--primary-color)';
+        this.elements.schedulePreview.style.background = 'rgba(11, 102, 194, 0.08)';
+      }
+    } else if (this.elements.schedulePreview) {
+      this.elements.schedulePreview.style.display = 'none';
     }
   },
 

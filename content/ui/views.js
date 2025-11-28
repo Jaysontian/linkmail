@@ -61,7 +61,7 @@
       // Auto-detect if we should preserve the current view
       if (!preserveCurrentView) {
         const currentView = this.getCurrentView();
-        const shouldAutoPreserve = currentView === 'editor' || currentView === 'success';
+        const shouldAutoPreserve = currentView === 'editor' || currentView === 'success' || currentView === 'scheduled-success';
         
         if (shouldAutoPreserve) {
           preserveCurrentView = true;
@@ -239,6 +239,7 @@
     const views = [
       { selector: '#linkmail-editor', name: 'editor', expectedDisplay: 'block' },
       { selector: '#linkmail-success', name: 'success', expectedDisplay: 'block' },
+      { selector: '#linkmail-scheduled-success', name: 'scheduled-success', expectedDisplay: 'block' },
       { selector: '#linkmail-splash', name: 'splash', expectedDisplay: 'flex' },
       { selector: '#linkmail-signin', name: 'signin', expectedDisplay: 'flex' },
       { selector: '#linkmail-people-suggestions', name: 'people-suggestions', expectedDisplay: 'block' }
