@@ -355,6 +355,30 @@
     height: 16px;
 }
 
+/* Smaller schedule button for editor view */
+.lm-btn-schedule-small {
+    background-color: var(--bg-light-hover);
+    color: #888;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lm-btn-schedule-small:hover {
+    background-color: #e0e0e0;
+    color: var(--primary-color);
+}
+
+.lm-btn-schedule-small svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* Schedule Popup */
 .schedule-popup {
     position: absolute;
@@ -418,6 +442,15 @@
     flex-direction: column;
     gap: 12px;
     margin-bottom: 16px;
+}
+
+.schedule-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.schedule-input-row .schedule-input-group {
+    flex: 1;
 }
 
 .schedule-input-group {
@@ -527,6 +560,31 @@
 
 .linkmail-referral-btn span {
     line-height: 1;
+}
+
+/* Loading state for Get Referred button */
+.linkmail-referral-btn-loading {
+    background-color: #6b9fd3;
+    cursor: default;
+    opacity: 0.9;
+}
+
+.linkmail-referral-btn-loading:hover {
+    background-color: #6b9fd3;
+}
+
+/* Spinning animation for loading icon */
+@keyframes linkmail-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.linkmail-spin {
+    animation: linkmail-spin 1s linear infinite;
 }
 
 /* Referral Popup */

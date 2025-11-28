@@ -1452,30 +1452,27 @@ window.UIManager = Object.assign(__existingUI, {
           return;
         }
 
-        // Set default date to tomorrow (since today's 9 AM may have passed)
+        // Set default date to today and time to 1 hour from now (rounded to nearest 15 min)
         const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const defaultTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
         
-        // Format tomorrow's date in local timezone (YYYY-MM-DD)
-        const year = tomorrow.getFullYear();
-        const month = (tomorrow.getMonth() + 1).toString().padStart(2, '0');
-        const day = tomorrow.getDate().toString().padStart(2, '0');
-        const tomorrowStr = `${year}-${month}-${day}`;
-        
-        // Calculate minimum date (tomorrow if 9 AM PST today has passed, otherwise today)
-        const todayYear = now.getFullYear();
-        const todayMonth = (now.getMonth() + 1).toString().padStart(2, '0');
-        const todayDay = now.getDate().toString().padStart(2, '0');
-        const todayStr = `${todayYear}-${todayMonth}-${todayDay}`;
-        
-        // 9 AM PST = 17:00 UTC. Check if it's already past 9 AM PST today
-        const today9amPST = new Date(`${todayStr}T17:00:00Z`);
-        const minDate = now >= today9amPST ? tomorrowStr : todayStr;
+        // Format today's date in local timezone (YYYY-MM-DD)
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
         
         if (this.elements.scheduleDateInput) {
-          this.elements.scheduleDateInput.value = tomorrowStr;
-          this.elements.scheduleDateInput.min = minDate;
+          this.elements.scheduleDateInput.value = todayStr;
+          this.elements.scheduleDateInput.min = todayStr;
+        }
+        
+        if (this.elements.scheduleTimeInput) {
+          // Round to nearest 15 minutes
+          const minutes = Math.ceil(defaultTime.getMinutes() / 15) * 15;
+          const hours = minutes === 60 ? defaultTime.getHours() + 1 : defaultTime.getHours();
+          const finalMinutes = minutes === 60 ? 0 : minutes;
+          this.elements.scheduleTimeInput.value = `${hours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
         }
 
         // Update preview
@@ -1497,9 +1494,14 @@ window.UIManager = Object.assign(__existingUI, {
       });
     }
 
-    // Schedule date change - update preview
+    // Schedule date/time change - update preview
     if (this.elements.scheduleDateInput) {
       this.elements.scheduleDateInput.addEventListener('change', () => {
+        this._updateSchedulePreview();
+      });
+    }
+    if (this.elements.scheduleTimeInput) {
+      this.elements.scheduleTimeInput.addEventListener('change', () => {
         this._updateSchedulePreview();
       });
     }
@@ -1523,19 +1525,20 @@ window.UIManager = Object.assign(__existingUI, {
         }
 
         const scheduledDate = this.elements.scheduleDateInput?.value;
+        const scheduledTime = this.elements.scheduleTimeInput?.value;
 
-        if (!scheduledDate) {
-          this.showTemporaryMessage('Please select a date', 'error');
+        if (!scheduledDate || !scheduledTime) {
+          this.showTemporaryMessage('Please select a date and time', 'error');
           return;
         }
 
-        // Create the scheduled datetime at 9 AM PST (17:00 UTC)
-        const scheduledAt = new Date(`${scheduledDate}T17:00:00Z`);
+        // Create the scheduled datetime in local timezone
+        const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`);
         const now = new Date();
         
         // Validate it's in the future
         if (scheduledAt <= now) {
-          this.showTemporaryMessage('Please select a future date', 'error');
+          this.showTemporaryMessage('Please select a future date and time', 'error');
           return;
         }
 
@@ -1619,6 +1622,9 @@ window.UIManager = Object.assign(__existingUI, {
             scheduledSuccessView.style.display = 'block';
           }
 
+          // Find and show similar people recommendations
+          this.findAndShowScheduledSimilarPeople();
+
         } catch (error) {
           console.error('Failed to schedule email:', error);
           this.showTemporaryMessage('Failed to schedule email. Please try again.', 'error');
@@ -1654,25 +1660,30 @@ window.UIManager = Object.assign(__existingUI, {
   // Update schedule preview text
   _updateSchedulePreview() {
     const dateValue = this.elements.scheduleDateInput?.value;
+    const timeValue = this.elements.scheduleTimeInput?.value;
 
-    if (dateValue && this.elements.schedulePreview) {
-      // 9 AM PST = 17:00 UTC
-      const scheduledDate = new Date(`${dateValue}T17:00:00Z`);
+    if (dateValue && timeValue && this.elements.schedulePreview) {
+      const scheduledDate = new Date(`${dateValue}T${timeValue}:00`);
       const now = new Date();
       
       // Check if the scheduled time is in the past
       if (scheduledDate <= now) {
-        this.elements.schedulePreview.textContent = '⚠️ Please select a future date';
+        this.elements.schedulePreview.textContent = '⚠️ Please select a future time';
         this.elements.schedulePreview.style.display = 'block';
         this.elements.schedulePreview.style.color = '#e74c3c';
         this.elements.schedulePreview.style.background = 'rgba(231, 76, 60, 0.08)';
       } else {
         const formattedDate = scheduledDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'long',
+          weekday: 'short',
+          month: 'short',
           day: 'numeric'
         });
-        this.elements.schedulePreview.textContent = `Your email will be sent on ${formattedDate} at 9:00 AM PST`;
+        const formattedTime = scheduledDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        this.elements.schedulePreview.textContent = `Your email will be sent on ${formattedDate} at ${formattedTime}`;
         this.elements.schedulePreview.style.display = 'block';
         this.elements.schedulePreview.style.color = 'var(--primary-color)';
         this.elements.schedulePreview.style.background = 'rgba(11, 102, 194, 0.08)';

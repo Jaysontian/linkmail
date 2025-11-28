@@ -9,6 +9,8 @@
   let currentJobId = null;
   let referralButtonInjected = false;
   let referralPopupVisible = false;
+  let loadingSkeletonInjected = false;
+  let isCheckingContacts = false;
 
   // Check if we're on a LinkedIn jobs page
   function isLinkedInJobsPage() {
@@ -81,6 +83,52 @@
     }
 
     return null;
+  }
+
+  // Create a loading skeleton button
+  function createLoadingSkeleton() {
+    const button = document.createElement('button');
+    button.id = 'linkmail-get-referred-skeleton';
+    button.className = 'linkmail-referral-btn linkmail-referral-btn-loading';
+    button.disabled = true;
+    button.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="linkmail-spin">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <span>Checking contacts...</span>
+    `;
+    return button;
+  }
+
+  // Inject loading skeleton into the page
+  function injectLoadingSkeleton() {
+    // Don't inject if already present or if actual button is present
+    if (loadingSkeletonInjected || referralButtonInjected) {
+      return;
+    }
+
+    const skeleton = createLoadingSkeleton();
+    const saveButtonContainer = findSaveButtonContainer();
+    
+    if (saveButtonContainer) {
+      saveButtonContainer.insertAdjacentElement('afterend', skeleton);
+      loadingSkeletonInjected = true;
+    } else {
+      const actionsArea = document.querySelector('.job-details-jobs-unified-top-card__container--two-pane');
+      if (actionsArea) {
+        actionsArea.appendChild(skeleton);
+        loadingSkeletonInjected = true;
+      }
+    }
+  }
+
+  // Remove loading skeleton
+  function removeLoadingSkeleton() {
+    const skeleton = document.getElementById('linkmail-get-referred-skeleton');
+    if (skeleton) {
+      skeleton.remove();
+    }
+    loadingSkeletonInjected = false;
   }
 
   // Create the "Get Referred" button
@@ -245,7 +293,23 @@
       button.remove();
     }
     referralButtonInjected = false;
+    removeLoadingSkeleton();
     hideReferralPopup();
+  }
+
+  // Wait for company name element to appear (with timeout)
+  async function waitForCompanyName(maxWaitMs = 2000) {
+    const startTime = Date.now();
+    const checkInterval = 100; // Check every 100ms
+    
+    while (Date.now() - startTime < maxWaitMs) {
+      const companyName = getCompanyNameFromJobListing();
+      if (companyName) {
+        return companyName;
+      }
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+    return null;
   }
 
   // Main function to check for contacts at the company
@@ -270,17 +334,24 @@
       return;
     }
 
+    // Prevent concurrent checks
+    if (isCheckingContacts) {
+      return;
+    }
+
     currentJobId = jobId;
+    isCheckingContacts = true;
 
-    // Wait a bit for the job details to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Show loading skeleton immediately while we wait
+    injectLoadingSkeleton();
 
-    // Get company name from the job listing
-    const companyName = getCompanyNameFromJobListing();
+    // Wait for company name element to appear (smart waiting instead of fixed delay)
+    const companyName = await waitForCompanyName(2000);
     
     if (!companyName) {
       console.log('[JobsReferral] Could not find company name on job listing');
       removeReferralButton();
+      isCheckingContacts = false;
       return;
     }
 
@@ -289,6 +360,9 @@
     try {
       // Search for contacts at this company
       const result = await window.BackendAPI.searchContactsByCompany(companyName, 20);
+      
+      // Remove skeleton before showing actual button
+      removeLoadingSkeleton();
       
       if (result.results && result.results.length > 0) {
         console.log(`[JobsReferral] Found ${result.results.length} contacts at ${companyName}`);
@@ -300,7 +374,18 @@
     } catch (error) {
       console.error('[JobsReferral] Error checking for referral contacts:', error);
       removeReferralButton();
+    } finally {
+      isCheckingContacts = false;
     }
+  }
+
+  // Handle URL change
+  function handleUrlChange() {
+    currentJobId = null;
+    referralButtonInjected = false;
+    loadingSkeletonInjected = false;
+    isCheckingContacts = false;
+    checkForReferralContacts();
   }
 
   // Set up observers to detect URL changes and page updates
@@ -308,24 +393,44 @@
     // Check on initial load
     checkForReferralContacts();
 
-    // Set up interval to check for URL changes (LinkedIn uses SPA navigation)
+    // Track last URL to detect changes
     let lastUrl = window.location.href;
-    setInterval(() => {
+
+    // Intercept pushState and replaceState for SPA navigation detection
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(...args) {
+      originalPushState.apply(this, args);
       if (window.location.href !== lastUrl) {
         lastUrl = window.location.href;
-        currentJobId = null; // Reset job ID on URL change
-        referralButtonInjected = false;
-        checkForReferralContacts();
+        handleUrlChange();
       }
-    }, 1000);
+    };
 
-    // Also observe DOM changes for when job details load
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(this, args);
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        handleUrlChange();
+      }
+    };
+
+    // Listen for popstate events (back/forward navigation)
+    window.addEventListener('popstate', () => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        handleUrlChange();
+      }
+    });
+
+    // Also observe DOM changes for when job details load (with reduced debounce)
     const observer = new MutationObserver(
       debounce(() => {
-        if (isLinkedInJobsPage() && !referralButtonInjected) {
+        if (isLinkedInJobsPage() && !referralButtonInjected && !isCheckingContacts) {
           checkForReferralContacts();
         }
-      }, 500)
+      }, 250) // Reduced from 500ms to 250ms
     );
 
     // Start observing once body is available
@@ -337,12 +442,13 @@
       });
     }
 
-    // Listen for popstate events (back/forward navigation)
-    window.addEventListener('popstate', () => {
-      currentJobId = null;
-      referralButtonInjected = false;
-      checkForReferralContacts();
-    });
+    // Fallback: lightweight polling for edge cases (every 2 seconds instead of 1)
+    setInterval(() => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        handleUrlChange();
+      }
+    }, 2000);
   }
 
   // Debounce helper

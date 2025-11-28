@@ -177,6 +177,119 @@
     }
   };
 
+  // Hide the scheduled similar people section
+  window.UIManager.hideScheduledSimilarPeopleSection = function hideScheduledSimilarPeopleSection() {
+    const scheduledSimilarSection = this.container?.querySelector('#scheduled-similar-people-section');
+    if (scheduledSimilarSection) {
+      scheduledSimilarSection.style.display = 'none';
+    }
+  };
+
+  // Find and show similar people for the scheduled success view
+  window.UIManager.findAndShowScheduledSimilarPeople = async function findAndShowScheduledSimilarPeople() {
+    try {
+      const currentLinkedInUrl = window.location.href;
+      
+      if (!window.BackendAPI || !window.BackendAPI.isAuthenticated) {
+        console.log('Cannot find similar people: not authenticated');
+        this.hideScheduledSimilarPeopleSection();
+        return;
+      }
+
+      // Get the recipient's job title, company, and category from the database using LinkedIn URL
+      let jobTitle = '';
+      let company = '';
+      let category = '';
+      
+      try {
+        const contactData = await window.BackendAPI.getEmailByLinkedIn(currentLinkedInUrl);
+        if (contactData && contactData.found) {
+          jobTitle = contactData.jobTitle || '';
+          company = contactData.company || '';
+          category = contactData.category || '';
+        }
+      } catch (error) {
+        console.log('Could not get recipient data from database, trying profile scraping:', error);
+      }
+
+      // If we couldn't get data from database, try scraping the current profile
+      if (!jobTitle || !company) {
+        try {
+          const profileData = await ProfileScraper.scrapeBasicProfileData();
+          jobTitle = jobTitle || profileData.jobTitle || '';
+          company = company || profileData.company || '';
+        } catch (error) {
+          console.log('Could not scrape profile data:', error);
+        }
+      }
+
+      // If we still don't have both job title and company, hide the section
+      if (!jobTitle || !company) {
+        this.hideScheduledSimilarPeopleSection();
+        return;
+      }
+
+      // Search for similar contacts using the new prioritized logic
+      try {
+        let searchResults = null;
+        
+        if (category) {
+          searchResults = await window.BackendAPI.searchSimilarContacts(category, company);
+        } else {
+          searchResults = await window.BackendAPI.searchContacts(jobTitle, company);
+        }
+        
+        if (searchResults && searchResults.results && searchResults.results.length > 0) {
+          const recommendations = searchResults.results.slice(0, 3);
+          
+          if (recommendations.length > 0) {
+            this.showScheduledSimilarPeopleRecommendations(recommendations, jobTitle, company, category);
+          } else {
+            this.hideScheduledSimilarPeopleSection();
+          }
+        } else {
+          this.hideScheduledSimilarPeopleSection();
+        }
+      } catch (error) {
+        console.error('Error searching for similar contacts:', error);
+        this.hideScheduledSimilarPeopleSection();
+      }
+
+    } catch (error) {
+      console.error('Error finding similar people for scheduled email:', error);
+      this.hideScheduledSimilarPeopleSection();
+    }
+  };
+
+  // Show similar people recommendations in the scheduled success view
+  window.UIManager.showScheduledSimilarPeopleRecommendations = function showScheduledSimilarPeopleRecommendations(recommendations, searchJobTitle, searchCompany, searchCategory) {
+    try {
+      const scheduledSimilarSection = this.container?.querySelector('#scheduled-similar-people-section');
+      const scheduledSimilarContainer = this.container?.querySelector('#scheduled-similar-people-container');
+      
+      if (!scheduledSimilarSection || !scheduledSimilarContainer) {
+        console.error('Scheduled similar people UI elements not found');
+        return;
+      }
+
+      // Clear previous recommendations
+      scheduledSimilarContainer.innerHTML = '';
+
+      // Create recommendation cards
+      recommendations.forEach((person) => {
+        const card = this.createRecommendationCard(person, searchJobTitle, searchCompany, searchCategory);
+        scheduledSimilarContainer.appendChild(card);
+      });
+
+      // Show the section
+      scheduledSimilarSection.style.display = 'block';
+      
+      console.log(`Showing ${recommendations.length} scheduled recommendations`);
+    } catch (error) {
+      console.error('Error showing scheduled similar people recommendations:', error);
+    }
+  };
+
   // Show multiple similar people recommendations
   window.UIManager.showSimilarPeopleRecommendations = function showSimilarPeopleRecommendations(recommendations, searchJobTitle, searchCompany, searchCategory) {
     try {

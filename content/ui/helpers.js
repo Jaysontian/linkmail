@@ -77,6 +77,7 @@
       scheduleSendPopup: container.querySelector('#scheduleSendPopup'),
       closeSchedulePopup: container.querySelector('#closeSchedulePopup'),
       scheduleDateInput: container.querySelector('#scheduleDateInput'),
+      scheduleTimeInput: container.querySelector('#scheduleTimeInput'),
       schedulePreview: container.querySelector('#schedulePreview'),
       confirmScheduleButton: container.querySelector('#confirmScheduleButton'),
       scheduledSuccessView: container.querySelector('#linkmail-scheduled-success'),
