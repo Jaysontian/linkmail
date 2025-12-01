@@ -28,23 +28,37 @@
   // Extract company name from the job listing page
   function getCompanyNameFromJobListing() {
     // Try multiple selectors for the company name on LinkedIn job pages
+    // LinkedIn frequently updates class names, so we try many patterns
     const selectors = [
-      // Job detail view - company link
+      // 2024/2025 LinkedIn job detail selectors
       '.job-details-jobs-unified-top-card__company-name a',
       '.job-details-jobs-unified-top-card__company-name',
-      // Alternative selectors
+      '.job-details-jobs-unified-top-card__primary-description-container a',
+      '.job-details-jobs-unified-top-card__primary-description a',
+      '.job-details-jobs-unified-top-card__primary-description-container .app-aware-link',
+      // Jobs unified top card patterns
       '.jobs-unified-top-card__company-name a',
       '.jobs-unified-top-card__company-name',
+      '.jobs-unified-top-card__primary-description a',
+      '.jobs-unified-top-card__primary-description .app-aware-link',
+      // Top card with subtitle pattern
+      '.job-details-jobs-unified-top-card__primary-description-without-tagline a',
+      // Company link in header area
+      '.jobs-details__main-content .app-aware-link[href*="/company/"]',
+      '.job-details-jobs-unified-top-card__container--two-pane a[href*="/company/"]',
+      // Artdeco entity lockup patterns (LinkedIn's component system)
+      '.artdeco-entity-lockup__subtitle a',
+      '.artdeco-entity-lockup__subtitle .app-aware-link',
+      // Legacy selectors
       '.topcard__org-name-link',
       '.topcard__org-name',
-      // Job card in list view
       '.job-card-container__primary-description',
       '.jobs-details-top-card__company-url',
-      // Fallback selectors
       '[data-tracking-control-name="public_jobs_topcard-org-name"]',
       '.jobs-company__name',
-      // New job page layout
-      '.job-details-jobs-unified-top-card__primary-description-container a'
+      // Generic fallbacks - look for company links in the job details header
+      '.jobs-details-top-card a[href*="/company/"]',
+      '.scaffold-layout__detail a[href*="/company/"]'
     ];
 
     for (const selector of selectors) {
@@ -54,6 +68,27 @@
         if (text && text.length > 0) {
           // Clean up the company name (remove extra whitespace, newlines)
           return text.replace(/\s+/g, ' ').trim();
+        }
+      }
+    }
+
+    // Debug: Log what elements we can find in the job details area
+    const debugSelectors = [
+      '.job-details-jobs-unified-top-card__container--two-pane',
+      '.jobs-unified-top-card',
+      '.scaffold-layout__detail'
+    ];
+    
+    for (const sel of debugSelectors) {
+      const container = document.querySelector(sel);
+      if (container) {
+        const links = container.querySelectorAll('a[href*="/company/"]');
+        if (links.length > 0) {
+          const text = links[0].textContent.trim();
+          if (text && text.length > 0) {
+            console.log(`[JobsReferral] Found company via fallback in ${sel}:`, text);
+            return text.replace(/\s+/g, ' ').trim();
+          }
         }
       }
     }
@@ -471,11 +506,56 @@
     setupObservers();
   }
 
+  // Debug helper: log all potential company name elements on the page
+  function debugCompanyNameElements() {
+    console.log('[JobsReferral] === DEBUG: Searching for company name elements ===');
+    
+    // Check main containers
+    const containers = [
+      '.job-details-jobs-unified-top-card__container--two-pane',
+      '.jobs-unified-top-card',
+      '.scaffold-layout__detail',
+      '.jobs-details__main-content'
+    ];
+    
+    containers.forEach(sel => {
+      const el = document.querySelector(sel);
+      if (el) {
+        console.log(`[JobsReferral] Found container: ${sel}`);
+        
+        // Log all links in this container
+        const links = el.querySelectorAll('a');
+        console.log(`[JobsReferral]   - Contains ${links.length} links`);
+        
+        // Log company-related links
+        const companyLinks = el.querySelectorAll('a[href*="/company/"]');
+        companyLinks.forEach((link, i) => {
+          console.log(`[JobsReferral]   - Company link ${i}: "${link.textContent.trim()}" (classes: ${link.className})`);
+        });
+      }
+    });
+    
+    // Log the first few prominent text elements
+    const textElements = document.querySelectorAll('.job-details-jobs-unified-top-card__container--two-pane *');
+    console.log(`[JobsReferral] Elements in top card: ${textElements.length}`);
+    
+    // Try to find any element with company-related class
+    const companyClassElements = document.querySelectorAll('[class*="company"]');
+    companyClassElements.forEach((el, i) => {
+      if (i < 10) {
+        console.log(`[JobsReferral] Element with "company" class: ${el.className} = "${el.textContent.trim().substring(0, 50)}..."`);
+      }
+    });
+    
+    return 'Debug output logged to console';
+  }
+
   // Expose for debugging
   window.JobsReferral = {
     checkForReferralContacts,
     getCompanyNameFromJobListing,
-    isLinkedInJobsPage
+    isLinkedInJobsPage,
+    debugCompanyNameElements
   };
 })();
 

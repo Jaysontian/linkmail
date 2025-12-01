@@ -13,6 +13,8 @@ const OUTPUT_ZIP = path.join(__dirname, 'linkmail-extension.zip');
 const filesToInclude = [
   'manifest.json',
   'background.js',
+  'install-success.html',
+  'install-success.js',
   'assets/',
   'backend/',
   'content/',

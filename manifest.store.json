@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Linkmail",
-  "version": "1.10",
+  "version": "1.15",
   "description": "An AI Email Client for LinkedIn",
   "icons": {
     "16": "assets/logo.png",
@@ -67,6 +67,7 @@
       "content/ui/autocomplete.js",
       "content/ui/bootstrap.js",
       "content/ui-manager.js",
+      "content/jobs-referral.js",
       "content/content.js"
     ],
     "run_at": "document_start"
