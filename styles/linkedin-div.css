@@ -240,6 +240,40 @@
     color: #666;
 }
 
+/* Loading dots animation */
+.loading-text {
+    color: #888;
+}
+
+.loading-dots span {
+    animation: loadingDot 1.4s infinite;
+    opacity: 0;
+}
+
+.loading-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes loadingDot {
+    0%, 20% {
+        opacity: 0;
+    }
+    40% {
+        opacity: 1;
+    }
+    60%, 100% {
+        opacity: 0;
+    }
+}
+
 /* Dropdown container positioning */
 .dropdown-container {
     position: relative;

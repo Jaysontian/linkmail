@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Linkmail",
-  "version": "1.9",
+  "version": "1.18",
   "description": "An AI Email Client for LinkedIn",
   "icons": {
     "16": "assets/logo.png",

@@ -91,6 +91,10 @@
             const view = container.querySelector(selector);
             if (view) view.style.display = 'none';
           });
+
+        // Also hide the "Couldn't find email" popup
+        const noEmailMessage = container.querySelector('#noEmailFoundMessage');
+        if (noEmailMessage) noEmailMessage.style.display = 'none';
       }
 
       setTimeout(() => {

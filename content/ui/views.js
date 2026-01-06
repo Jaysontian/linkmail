@@ -126,6 +126,9 @@
     if (emailSubject) emailSubject.value = '';
     if (recipientInput) recipientInput.value = '';
 
+    // Hide the "Couldn't find email" popup when navigating to a new profile
+    this.hideNoEmailFoundMessage();
+
     const allPrompts = this.container.querySelectorAll('.linkmail-prompt');
     allPrompts.forEach(prompt => prompt.classList.remove('linkmail-prompt-selected'));
     this.selectedTemplate = {};
